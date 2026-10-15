@@ -23,12 +23,15 @@ public partial class SensorsViewModel : ObservableObject
     private readonly HashSet<string> _expandedGroups = [];
     private readonly DispatcherTimer _filterDebounce;
     private readonly SensorCatalog _catalog;
+    private readonly Action<string>? _showInTray;
     private HardwareSnapshot? _latest;
     private string _layoutKey = "";
 
-    public SensorsViewModel(SensorCatalog catalog)
+    /// <param name="showInTray">Shows a sensor in the tray icon; null hides that menu item.</param>
+    public SensorsViewModel(SensorCatalog catalog, Action<string>? showInTray = null)
     {
         _catalog = catalog;
+        _showInTray = showInTray;
         _catalog.NamesChanged += OnNamesChanged;
 
         // Rebuild the list once typing pauses, not on every keystroke.
@@ -139,7 +142,7 @@ public partial class SensorsViewModel : ObservableObject
                 .OrderBy(g => SensorFormat.TypeOrder(g.First().Type))
                 .Select(g =>
                 {
-                    var rows = g.Select(s => _rows[s.Id] = new SensorRowViewModel(s.Id, s.Name, s.Type, _catalog)).ToList();
+                    var rows = g.Select(s => _rows[s.Id] = new SensorRowViewModel(s.Id, s.Name, s.Type, _catalog, _showInTray)).ToList();
                     return new SensorTypeGroupViewModel(g.Key, rows);
                 })
                 .ToList();
@@ -323,9 +326,11 @@ public sealed class SensorTypeGroupViewModel(string title, IReadOnlyList<SensorR
 public partial class SensorRowViewModel : ObservableObject
 {
     private readonly SensorCatalog _catalog;
+    private readonly Action<string>? _showInTray;
 
-    public SensorRowViewModel(string id, string originalName, SensorType type, SensorCatalog catalog)
+    public SensorRowViewModel(string id, string originalName, SensorType type, SensorCatalog catalog, Action<string>? showInTray = null)
     {
+        _showInTray = showInTray;
         Id = id;
         OriginalName = originalName;
         Type = type;
@@ -395,4 +400,9 @@ public partial class SensorRowViewModel : ObservableObject
 
     [RelayCommand]
     private void ResetName() => _catalog.ResetName(Id);
+
+    public bool CanShowInTray => _showInTray is not null;
+
+    [RelayCommand]
+    private void ShowInTray() => _showInTray?.Invoke(Id);
 }

@@ -3,54 +3,78 @@
 **Goal:** Pulse becomes an always-available background app: a live temperature in the tray, close to
 tray, and automatic start at logon without an admin prompt.
 
+**Status:** done, except checks that need admin rights (listed at the bottom).
+
 ## Why now
 
 It needs the app icon and Settings page (step 1), the idle mode (step 2) so a hidden Pulse is cheap,
 and the single-instance guard (step 0). Alerts (step 4) need Pulse running in the background, which
 this step provides.
 
-## Design
+## What was built
 
-### Tray icon
-- Library: evaluate `WPF-UI.Tray` (same family as the UI library), `H.NotifyIcon.Wpf`, or WinForms
-  `NotifyIcon` via `UseWindowsForms`. Pick the one that supports dynamic icons and a WPF context menu
-  without pulling in much. Record the decision in this file.
-- **Live number icon:** draw the chosen value (default: CPU package temperature) as text onto a
-  16/32 px bitmap each update, colored by the heat scale, and swap the tray icon. The old Open Hardware
-  Monitor did exactly this in `G:\code\openhardwaremonitor\GUI\SensorNotifyIcon.cs`, which is useful
-  reference (MPL-2.0; if code is copied rather than re-implemented, keep its license header).
-- **Tooltip:** CPU temperature and load, GPU temperature and load, pump speed, system power.
-- **Menu:** Open Pulse, a pick list for which value the icon shows (any sensor through the step 1
-  catalog), Start with Windows (toggle), Exit.
-- Left-click toggles the window.
+### Tray library
+**`H.NotifyIcon.Wpf` 2.4.1.** Compared with `WPF-UI.Tray` it supports updating the icon at runtime,
+native notifications (`ShowNotification`) and click commands, and its menu is a normal WPF
+`ContextMenu`, so it picks up the WPF-UI dark theme. Two things to know:
+- `ForceCreate()` turns on Windows Efficiency Mode by default, which throttles the process. Pulse calls
+  `ForceCreate(enablesEfficiencyMode: false)`.
+- Its `ToIcon()` doesn't accept rendered bitmaps (`RenderTargetBitmap`), so `TrayIcon.ToIcon` converts
+  the pixels to a GDI icon itself.
 
-### Window behaviour
-- Settings → Startup and tray:
-  - Close button: "Minimize to tray" (default) or "Exit".
-  - Start minimized to tray.
-  - Show tray icon.
-- First time the window is closed to the tray, show a one-time notification ("Pulse is still running
-  in the tray") so it doesn't look like it quit.
+### Tray icon (`Views/TrayIcon.cs`, `Services/TrayText.cs`)
+- **Live number:** drawn at the system's small-icon size (16 px at 100% scaling, 24 at 150%, 32 at 200%)
+  as bold text on a dark rounded square. Temperatures and loads use the heat colors; other readings are white.
+  It's only redrawn when the text or color changes. Two or three characters: "72", "146", "2.5k", "5.7".
+- **What it shows:** automatic by default (CPU package temperature, or CPU load without the driver), or
+  any choice from the tray menu, Settings, or right-click → **Show in tray icon** on the All sensors page.
+- **Tooltip:** CPU temperature and load, GPU temperature and load, pump speed, system power
+  (kept within Windows' 127-character limit).
+- **Menu:** Open Pulse · Tray icon shows ▸ · Start with Windows · Exit Pulse.
+- **Left-click** toggles the window.
+- It listens to the sensor stream directly, so it keeps updating while the window is hidden.
 
-### Start with Windows without UAC
-- A normal Run-key autostart triggers the admin prompt on every logon because of the manifest.
-  Instead, register a **scheduled task**: trigger "At logon" for the current user, "Run with highest
-  privileges", action `Pulse.exe --tray`.
-- Use the Task Scheduler COM API (or the `TaskScheduler` NuGet package). The old app's
-  `GUI\StartupManager.cs` and `GUI\TaskScheduler.cs` show the approach.
-- Creating the task requires admin; Pulse already runs elevated. If it isn't, the toggle explains
-  why it's disabled.
-- The task should allow running on battery and have no time limit (the defaults stop it after 3 days).
-- `--tray` starts minimized to the tray.
+### Window behavior (`App.xaml.cs`)
+- Closing the window hides it to the tray (default), or exits if the user chose that or turned the
+  tray icon off. The log records which happened.
+- The first close to the tray shows a notification: "Pulse is still running".
+- `--tray` (used by the startup task) or the "Start in the tray" setting starts Pulse hidden.
+  Launching Pulse again brings the window back (single instance, step 0).
+- Exit removes the tray icon first, so no ghost icon is left behind.
 
-## Tasks
-- [ ] Choose a tray library; implement the dynamic number icon.
-- [ ] Tray menu and tooltip; left-click toggles the window.
-- [ ] Close-to-tray and start-minimized settings; first-close notification.
-- [ ] Scheduled-task autostart with toggle in Settings and the tray menu; `--tray` argument.
-- [ ] Remove the task on uninstall or if the toggle is turned off; handle a moved exe (re-point the task).
-- [ ] Tests: settings round-trip; command-line parsing.
+### Start with Windows (`Services/StartupTask.cs`)
+- A scheduled task named **Pulse**: "At log on" of the current user (5 s delay), run with highest
+  privileges, action `Pulse.exe --tray`. So Pulse starts elevated, with no admin prompt.
+- Overrides Task Scheduler defaults that would hurt a monitor: no 3-day time limit, runs on battery,
+  normal priority (5) instead of below-normal (7).
+- Created with `schtasks /Create /XML` (no extra dependency). The task is the source of truth; settings
+  don't store it.
+- If Pulse has been moved since the task was made, startup re-points the task at the new location.
+- Changing it needs admin rights; when Pulse isn't elevated, the toggle is disabled and says why.
+
+### Settings → Startup and tray
+Start with Windows · Show icon in the notification area · Tray icon shows · When I close the window
+(keep running in the tray / exit) · Start in the tray.
+
+## Verified (non-admin copy on the dev machine)
+- The tray icon appears and renders the live number (seen in the overflow flyout). The tooltip read
+  "Pulse | CPU 10% | GPU 37 °C · 34% | Power 264 W".
+- Closing with the title bar button and with a plain window close both hide to the tray. A second
+  launch exits with code 2 and brings the window back; live updates resume.
+- `--tray` starts with no window and the tray icon present.
+
+**Windows 11 note:** new tray icons go into the hidden overflow (the ^ arrow). Drag Pulse's icon onto
+the taskbar, or turn it on in Settings → Personalization → Taskbar → Other system tray icons.
+There's no supported way for an app to do this itself.
+
+## Tests
+81 passing (21 new): argument parsing, the task definition (logon trigger, highest privileges,
+`--tray`, the overridden defaults, special characters in the path), tray number formatting
+(units, k suffix, GHz), automatic choice and its load fallback, a chosen sensor and a missing one,
+the tooltip text and limit, the menu choices, and startup settings defaults and migration.
 
 ## Done when
-- After a reboot, Pulse appears in the tray with no UAC prompt and shows the CPU temperature.
-- Closing the window keeps Pulse in the tray using next to no CPU; clicking the icon restores it instantly.
+- [ ] After a reboot, Pulse appears in the tray with no UAC prompt and shows the CPU temperature.
+      Needs admin: turn on Start with Windows, then sign out and back in.
+- [x] Closing the window keeps Pulse in the tray, idling; clicking the icon or launching again restores it.
+- [ ] Check by eye: tray menu, the "still running" notification, and Show in tray icon from All sensors.

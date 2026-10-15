@@ -15,11 +15,13 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsService _settings;
     private readonly SensorCatalog _catalog;
+    private readonly SensorStream _stream;
 
-    public SettingsViewModel(SettingsService settings, SensorCatalog catalog, bool driverInstalled)
+    public SettingsViewModel(SettingsService settings, SensorCatalog catalog, bool driverInstalled, SensorStream stream)
     {
         _settings = settings;
         _catalog = catalog;
+        _stream = stream;
 
         Version = Assembly.GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "dev";
@@ -49,6 +51,104 @@ public partial class SettingsViewModel : ObservableObject
             _settings.Update(s => s.General.UpdateIntervalSeconds = value.Seconds);
             OnPropertyChanged();
         }
+    }
+
+    // Startup and tray
+
+    public bool ShowTrayIcon
+    {
+        get => _settings.Current.Startup.ShowTrayIcon;
+        set => UpdateStartup(s => s.ShowTrayIcon = value);
+    }
+
+    public bool StartMinimized
+    {
+        get => _settings.Current.Startup.StartMinimized;
+        set => UpdateStartup(s => s.StartMinimized = value);
+    }
+
+    public bool CloseToTray
+    {
+        get => _settings.Current.Startup.CloseToTray;
+        set { if (value) UpdateStartup(s => s.CloseToTray = true); }
+    }
+
+    public bool CloseExits
+    {
+        get => !_settings.Current.Startup.CloseToTray;
+        set { if (value) UpdateStartup(s => s.CloseToTray = false); }
+    }
+
+    public ObservableCollection<TrayChoice> TrayChoices { get; } = [];
+
+    public TrayChoice? SelectedTrayChoice
+    {
+        get => TrayChoices.FirstOrDefault(c => c.SensorId == _settings.Current.Startup.TraySensorId);
+        set
+        {
+            if (value is not null && value.SensorId != _settings.Current.Startup.TraySensorId)
+                UpdateStartup(s => s.TraySensorId = value.SensorId);
+        }
+    }
+
+    /// <summary>Whether the start-with-Windows task exists. Read from Task Scheduler when the page opens.</summary>
+    [ObservableProperty] public partial bool StartWithWindows { get; set; }
+
+    /// <summary>Creating the task needs admin rights.</summary>
+    public bool CanChangeStartWithWindows { get; } = HardwareService.IsElevated;
+
+    public string StartWithWindowsHint => CanChangeStartWithWindows
+        ? "Starts Pulse in the notification area when you sign in, without the admin prompt."
+        : "Needs Pulse to run as administrator. Restart Pulse as administrator to change this.";
+
+    private bool _loadingStartup;
+
+    partial void OnStartWithWindowsChanged(bool value)
+    {
+        if (_loadingStartup || !CanChangeStartWithWindows)
+            return;
+        _ = ApplyStartWithWindowsAsync(value);
+    }
+
+    private async Task ApplyStartWithWindowsAsync(bool enable)
+    {
+        var ok = enable
+            ? await StartupTask.EnableAsync(Environment.ProcessPath!)
+            : await StartupTask.DisableAsync();
+        if (!ok)
+            await LoadStartWithWindowsAsync();
+    }
+
+    private async Task LoadStartWithWindowsAsync()
+    {
+        var enabled = await StartupTask.IsEnabledAsync();
+        _loadingStartup = true;
+        StartWithWindows = enabled;
+        _loadingStartup = false;
+    }
+
+    private void UpdateStartup(Action<StartupSettings> change)
+    {
+        _settings.Update(s => change(s.Startup));
+        OnPropertyChanged(nameof(ShowTrayIcon));
+        OnPropertyChanged(nameof(StartMinimized));
+        OnPropertyChanged(nameof(CloseToTray));
+        OnPropertyChanged(nameof(CloseExits));
+        OnPropertyChanged(nameof(SelectedTrayChoice));
+    }
+
+    private void RefreshTrayChoices()
+    {
+        var current = _settings.Current.Startup.TraySensorId;
+        var choices = TrayText.Choices(_stream.Latest, _catalog.RoleSensor(SensorRoles.Pump)).ToList();
+        // A sensor picked from All sensors ("Show in tray icon") isn't one of the common choices.
+        if (current is not null && choices.All(c => c.SensorId != current))
+            choices.Add(new TrayChoice(_catalog.Find(current)?.DisplayName ?? current, current));
+
+        TrayChoices.Clear();
+        foreach (var choice in choices)
+            TrayChoices.Add(choice);
+        OnPropertyChanged(nameof(SelectedTrayChoice));
     }
 
     // Units
@@ -82,9 +182,12 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial string PumpText { get; set; } = "";
     [ObservableProperty] public partial bool HasPumpChoice { get; set; }
 
-    /// <summary>Re-reads names and roles; called when the page opens and after any rename.</summary>
+    /// <summary>Re-reads names, roles, tray choices and the startup task; called when the page opens and after any rename.</summary>
     public void Refresh()
     {
+        RefreshTrayChoices();
+        _ = LoadStartWithWindowsAsync();
+
         RenamedSensors.Clear();
         foreach (var sensor in _catalog.RenamedSensors())
         {

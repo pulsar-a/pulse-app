@@ -43,6 +43,9 @@ command is `mingw32-make start`. Other targets:
 
 Only one Pulse runs at a time; launching it again brings the open window to the front.
 
+Closing the window keeps Pulse running in the notification area (configurable in Settings → Startup and tray).
+On Windows 11, new tray icons start in the hidden overflow (the ^ arrow); drag Pulse's icon next to the clock to keep it visible.
+
 To run it without `make`, use an elevated terminal:
 
 ```powershell

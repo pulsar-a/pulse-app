@@ -17,6 +17,7 @@ public sealed class Settings
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public GeneralSettings General { get; set; } = new();
+    public StartupSettings Startup { get; set; } = new();
     public UnitSettings Units { get; set; } = new();
     public SensorSettings Sensors { get; set; } = new();
 
@@ -32,8 +33,30 @@ public sealed class GeneralSettings
     /// <summary>Seconds between sensor readings; one of <see cref="UpdateIntervalChoices"/>.</summary>
     public double UpdateIntervalSeconds { get; set; } = 1;
 
+    [JsonIgnore]
     public TimeSpan UpdateInterval =>
         TimeSpan.FromSeconds(UpdateIntervalChoices.Contains(UpdateIntervalSeconds) ? UpdateIntervalSeconds : 1);
+}
+
+/// <summary>
+/// Tray and startup behavior. "Start with Windows" isn't stored here: the scheduled task itself
+/// is the source of truth (see <see cref="StartupTask"/>).
+/// </summary>
+public sealed class StartupSettings
+{
+    public bool ShowTrayIcon { get; set; } = true;
+
+    /// <summary>Closing the window keeps Pulse running in the tray (when the tray icon is shown).</summary>
+    public bool CloseToTray { get; set; } = true;
+
+    /// <summary>Start hidden in the tray, even when launched normally.</summary>
+    public bool StartMinimized { get; set; }
+
+    /// <summary>The sensor whose value the tray icon shows; null means automatic (CPU temperature, or load).</summary>
+    public string? TraySensorId { get; set; }
+
+    /// <summary>Whether the "Pulse is still running" notice has been shown after the first close to tray.</summary>
+    public bool CloseNoticeShown { get; set; }
 }
 
 public sealed class UnitSettings
@@ -159,6 +182,7 @@ public sealed class SettingsService : IDisposable
     {
         var changed = false;
         settings.General ??= new GeneralSettings();
+        settings.Startup ??= new StartupSettings();
         settings.Units ??= new UnitSettings();
         settings.Sensors ??= new SensorSettings();
         settings.Sensors.Names ??= new Dictionary<string, string>();

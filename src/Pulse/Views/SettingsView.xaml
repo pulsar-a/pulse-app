@@ -37,6 +37,63 @@
                 </StackPanel>
             </Border>
 
+            <!-- Startup and tray -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="Startup and tray" Style="{StaticResource SectionTitle}" />
+
+                    <DockPanel Margin="0,0,0,14">
+                        <ui:ToggleSwitch DockPanel.Dock="Right" VerticalAlignment="Center"
+                                         IsChecked="{Binding StartWithWindows}" IsEnabled="{Binding CanChangeStartWithWindows}"
+                                         AutomationProperties.Name="Start with Windows" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Start with Windows" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="{Binding StartWithWindowsHint}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DockPanel Margin="0,0,0,14">
+                        <ui:ToggleSwitch DockPanel.Dock="Right" VerticalAlignment="Center"
+                                         IsChecked="{Binding ShowTrayIcon}" AutomationProperties.Name="Show tray icon" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Show icon in the notification area" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="A live reading next to the clock. Click it to open Pulse; right-click for options."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <StackPanel IsEnabled="{Binding ShowTrayIcon}">
+                        <DockPanel Margin="0,0,0,14">
+                            <ComboBox DockPanel.Dock="Right" MinWidth="220" VerticalAlignment="Center"
+                                      ItemsSource="{Binding TrayChoices}" SelectedItem="{Binding SelectedTrayChoice}"
+                                      DisplayMemberPath="Label" AutomationProperties.Name="Tray icon shows" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Tray icon shows" Style="{StaticResource SettingLabel}" />
+                                <TextBlock Text="Any sensor can be picked: right-click it on the All sensors page."
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <TextBlock Text="When I close the window" Style="{StaticResource SettingLabel}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,14">
+                            <RadioButton Content="Keep Pulse running in the tray" GroupName="CloseAction" Margin="0,0,24,0"
+                                         IsChecked="{Binding CloseToTray}" />
+                            <RadioButton Content="Exit Pulse" GroupName="CloseAction" IsChecked="{Binding CloseExits}" />
+                        </StackPanel>
+
+                        <DockPanel>
+                            <ui:ToggleSwitch DockPanel.Dock="Right" VerticalAlignment="Center"
+                                             IsChecked="{Binding StartMinimized}" AutomationProperties.Name="Start minimized" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Start in the tray" Style="{StaticResource SettingLabel}" />
+                                <TextBlock Text="Open Pulse hidden, even when you launch it yourself."
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Units -->
             <Border Style="{StaticResource PulseCard}">
                 <StackPanel>

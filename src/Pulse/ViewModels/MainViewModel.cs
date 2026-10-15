@@ -31,8 +31,8 @@ public partial class MainViewModel : ObservableObject
 
         _catalog = new SensorCatalog(settings);
         Dashboard = new DashboardViewModel(driverInstalled, _catalog, stream);
-        Sensors = new SensorsViewModel(_catalog);
-        Settings = new SettingsViewModel(settings, _catalog, driverInstalled);
+        Sensors = new SensorsViewModel(_catalog, id => settings.Update(s => s.Startup.TraySensorId = id));
+        Settings = new SettingsViewModel(settings, _catalog, driverInstalled, stream);
 
         ApplySettings();
         settings.Changed += ApplySettings;
@@ -73,6 +73,7 @@ public partial class MainViewModel : ObservableObject
 
     public DashboardViewModel Dashboard { get; }
     public SensorsViewModel Sensors { get; }
+    public SensorCatalog Catalog => _catalog;
     public SettingsViewModel Settings { get; }
 
     [ObservableProperty] public partial bool IsDashboardSelected { get; set; } = true;
