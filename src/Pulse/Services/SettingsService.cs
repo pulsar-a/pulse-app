@@ -50,6 +50,12 @@ public sealed class StartupSettings
 {
     public bool ShowTrayIcon { get; set; } = true;
 
+    /// <summary>
+    /// Keep the icon next to the clock rather than in the ^ overflow. Windows treats every new build or
+    /// copy of Pulse as a new app and hides it, so Pulse switches it back on at each start (see TrayPromotion).
+    /// </summary>
+    public bool KeepTrayIconVisible { get; set; } = true;
+
     /// <summary>Closing the window keeps Pulse running in the tray (when the tray icon is shown).</summary>
     public bool CloseToTray { get; set; } = true;
 

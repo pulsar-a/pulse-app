@@ -69,6 +69,68 @@ public sealed class TrayIcon : IDisposable
 
         _stream.SnapshotPublished += OnSnapshotPublished;
         _settings.Changed += OnSettingsChanged;
+        _keepVisible = settings.Current.Startup.KeepTrayIconVisible;
+        _showIcon = settings.Current.Startup.ShowTrayIcon;
+        SchedulePromotion();
+    }
+
+    // ---- Keeping the icon next to the clock ----------------------------------------------------
+
+    private static readonly TimeSpan[] PromotionAttempts = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30)];
+    private DispatcherTimer? _promotionTimer;
+    private bool _keepVisible;
+    private bool _showIcon;
+
+    /// <summary>
+    /// Windows writes its record of a new icon shortly after the icon appears, so try a few times:
+    /// right away, then after 1, 5 and 30 seconds, until the record is there.
+    /// </summary>
+    private void SchedulePromotion()
+    {
+        _promotionTimer?.Stop();
+        if (!Promote()) return;
+
+        var attempt = 0;
+        _promotionTimer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher) { Interval = PromotionAttempts[0] };
+        _promotionTimer.Tick += (_, _) =>
+        {
+            attempt++;
+            if (!Promote() || attempt >= PromotionAttempts.Length)
+            {
+                _promotionTimer!.Stop();
+                return;
+            }
+            _promotionTimer!.Interval = PromotionAttempts[attempt];
+        };
+        _promotionTimer.Start();
+    }
+
+    /// <summary>Applies "Always show it next to the clock" to Windows' record. True means "not found yet, try again".</summary>
+    private bool Promote()
+    {
+        var startup = _settings.Current.Startup;
+        if (!startup.ShowTrayIcon || Environment.ProcessPath is not { } exe)
+            return false;
+
+        PromotionResult result;
+        try
+        {
+            result = TrayPromotion.Apply(Microsoft.Win32.Registry.CurrentUser, exe, startup.KeepTrayIconVisible);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or System.IO.IOException)
+        {
+            Log.Write($"Couldn't change whether the tray icon shows next to the clock: {ex.Message}");
+            return false;
+        }
+
+        if (result == PromotionResult.Changed)
+        {
+            Log.Write(startup.KeepTrayIconVisible ? "Tray icon set to always show next to the clock" : "Tray icon left to Windows (overflow)");
+            // Re-add the icon so the taskbar picks the change up now rather than at the next sign-in.
+            _icon.Visibility = Visibility.Collapsed;
+            ApplyVisibility();
+        }
+        return result == PromotionResult.NotFound;
     }
 
     public bool IsVisible => _settings.Current.Startup.ShowTrayIcon;
@@ -93,6 +155,13 @@ public sealed class TrayIcon : IDisposable
     {
         // Settings change often (every step of a slider); only the tray's own choices matter here.
         var s = _settings.Current;
+        if (_keepVisible != s.Startup.KeepTrayIconVisible || _showIcon != s.Startup.ShowTrayIcon)
+        {
+            _keepVisible = s.Startup.KeepTrayIconVisible;
+            _showIcon = s.Startup.ShowTrayIcon;
+            SchedulePromotion();
+        }
+
         var key = $"{s.Startup.ShowTrayIcon}|{s.Startup.TraySensorId}|{s.Units.Temperature}|{string.Join(",", s.Sensors.Names)}|{string.Join(",", s.Sensors.Roles)}";
         if (key == _settingsKey) return;
         _settingsKey = key;

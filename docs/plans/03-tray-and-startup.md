@@ -78,3 +78,24 @@ the tooltip text and limit, the menu choices, and startup settings defaults and 
       Needs admin: turn on Start with Windows, then sign out and back in.
 - [x] Closing the window keeps Pulse in the tray, idling; clicking the icon or launching again restores it.
 - [ ] Check by eye: tray menu, the "still running" notification, and Show in tray icon from All sensors.
+
+## Later fix: keeping the icon next to the clock
+Windows 11 hides every new tray icon under the ^ arrow, and it tells icons apart by the program's path.
+Each build folder (the output path changed with the target framework), a published copy, or a test copy
+counted as a new app, so "always show" never carried over. There's no API for this. Windows keeps the
+choice in `HKCU\Control Panel\NotifyIconSettings`: one key per icon, with `ExecutablePath` and
+`IsPromoted`, the same value the taskbar settings page writes.
+
+- New setting, Settings → Startup and tray → **Always show it next to the clock** (on by default).
+- At every start, and when the setting changes, Pulse finds Windows' record for its own exe and sets
+  `IsPromoted` (`Services/TrayPromotion.cs`). Windows writes that record a moment after the icon first
+  appears, so Pulse tries again after 1, 5 and 30 seconds. After a change it re-adds its icon so the
+  taskbar picks it up.
+- Turning the setting off hands the icon back to Windows (overflow). Hiding it in Windows' own settings
+  while the Pulse setting is on is undone at the next start; the setting says so.
+- Windows 10 keeps these choices in an opaque blob; there Pulse does nothing.
+- Tests run against a scratch key under `HKCU\Software\PulseTests`: a new build's record gets
+  promoted, other apps are untouched, turning it off, before Windows has a record, and no Windows 11
+  settings.
+- Not yet confirmed on the real taskbar: whether the icon moves out of the overflow straight away or
+  only once Pulse restarts.

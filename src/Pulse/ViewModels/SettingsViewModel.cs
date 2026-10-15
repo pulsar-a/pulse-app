@@ -62,6 +62,12 @@ public partial class SettingsViewModel : ObservableObject
         set => UpdateStartup(s => s.ShowTrayIcon = value);
     }
 
+    public bool KeepTrayIconVisible
+    {
+        get => _settings.Current.Startup.KeepTrayIconVisible;
+        set => UpdateStartup(s => s.KeepTrayIconVisible = value);
+    }
+
     public bool StartMinimized
     {
         get => _settings.Current.Startup.StartMinimized;
@@ -132,6 +138,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         _settings.Update(s => change(s.Startup));
         OnPropertyChanged(nameof(ShowTrayIcon));
+        OnPropertyChanged(nameof(KeepTrayIconVisible));
         OnPropertyChanged(nameof(StartMinimized));
         OnPropertyChanged(nameof(CloseToTray));
         OnPropertyChanged(nameof(CloseExits));

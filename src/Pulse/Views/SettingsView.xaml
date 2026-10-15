@@ -70,6 +70,16 @@
 
                     <StackPanel IsEnabled="{Binding ShowTrayIcon}">
                         <DockPanel Margin="0,0,0,14">
+                            <ui:ToggleSwitch DockPanel.Dock="Right" VerticalAlignment="Center"
+                                             IsChecked="{Binding KeepTrayIconVisible}" AutomationProperties.Name="Always show it next to the clock" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Always show it next to the clock" Style="{StaticResource SettingLabel}" />
+                                <TextBlock Text="Windows hides new tray icons under the ^ arrow, and sees every new copy or build of Pulse as a new app. Pulse turns it back on each time it starts. Hide it here rather than in Windows' settings, or Pulse will show it again."
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <DockPanel Margin="0,0,0,14">
                             <ComboBox DockPanel.Dock="Right" MinWidth="220" VerticalAlignment="Center"
                                       ItemsSource="{Binding TrayChoices}" SelectedItem="{Binding SelectedTrayChoice}"
                                       DisplayMemberPath="Label" AutomationProperties.Name="Tray icon shows" />
