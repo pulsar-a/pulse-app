@@ -342,7 +342,7 @@ public partial class SettingsViewModel : ObservableObject
         PumpText = pump switch
         {
             null => "Not chosen yet. Pulse picks it automatically when only one motherboard header spins.",
-            "" => "Cleared. Pick it in the CPU cooling card on the dashboard.",
+            "" => "Not on a motherboard header (change it in the CPU cooling card).",
             _ when _catalog.Find(pump) is { } info => $"{info.OriginalName} · {info.HardwareName}",
             _ => $"{pump} (not detected right now)",
         };
@@ -351,6 +351,18 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>Forgets the pump choice so Pulse can detect it again.</summary>
     [RelayCommand]
     private void ResetPump() => _catalog.ForgetRole(SensorRoles.Pump);
+
+    // Dashboard
+
+    [ObservableProperty] public partial string? DashboardStatus { get; private set; }
+
+    /// <summary>Puts the built-in cards back in their original order and sizes; pinned tiles stay.</summary>
+    [RelayCommand]
+    private void ResetDashboard()
+    {
+        DashboardViewModel.ResetLayout(_settings);
+        DashboardStatus = "Done. Pinned tiles were kept, at the end.";
+    }
 
     // About
 

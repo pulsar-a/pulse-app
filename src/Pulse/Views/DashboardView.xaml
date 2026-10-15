@@ -11,8 +11,13 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:DashboardViewModel}">
 
+
+    <!--
+        Every card is a DataTemplate picked by its view model's type, so the tile list can hold any of them
+        in any order. Clicking a card opens its sensor's details (outside edit mode).
+    -->
     <UserControl.Resources>
-        <DataTemplate x:Key="GaugeCard" DataType="{x:Type vm:GaugeCardViewModel}">
+        <DataTemplate DataType="{x:Type vm:GaugeCardViewModel}">
             <Border Style="{StaticResource ClickableCard}" ToolTip="Show history">
                 <Border.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
@@ -86,95 +91,24 @@
                 </Grid>
             </Border>
         </DataTemplate>
-    </UserControl.Resources>
 
-    <Grid>
-    <!-- Skeleton cards while the first readings come in. -->
-    <ScrollViewer VerticalScrollBarVisibility="Disabled" Padding="24,0,24,24"
-                  Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
-        <StackPanel>
-            <UniformGrid Columns="4">
-                <Border Style="{StaticResource PulseCard}">
-                    <StackPanel>
-                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
-                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource PulseCard}">
-                    <StackPanel>
-                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
-                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource PulseCard}">
-                    <StackPanel>
-                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
-                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource PulseCard}">
-                    <StackPanel>
-                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
-                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
-                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
+        <DataTemplate DataType="{x:Type vm:CoresCardViewModel}">
             <Border Style="{StaticResource PulseCard}">
-                <StackPanel>
-                    <controls:Shimmer Height="34" Width="220" CornerRadius="9" HorizontalAlignment="Left" Margin="0,0,0,14" />
-                    <controls:Shimmer Height="88" CornerRadius="8" />
-                </StackPanel>
-            </Border>
-        </StackPanel>
-    </ScrollViewer>
-
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,0,24,24"
-                  Visibility="{Binding IsLoading, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
-        <StackPanel>
-
-            <!-- Headline gauges -->
-            <ItemsControl ItemsSource="{Binding Cards}" ItemTemplate="{StaticResource GaugeCard}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="4" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-            </ItemsControl>
-
-            <!-- Per-core strip and CPU cooling -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-            <Border Grid.Column="0" Style="{StaticResource PulseCard}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,14">
                         <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Cpu.Soft}">
                             <ui:SymbolIcon Symbol="Temperature24" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Cpu}" />
                         </Border>
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding CoresSubtitle}" VerticalAlignment="Center"
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding Subtitle}" VerticalAlignment="Center"
                                    Style="{StaticResource Secondary}" />
-                        <TextBlock Text="{Binding CoresTitle}" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding Title}" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
                     </DockPanel>
 
                     <ItemsControl ItemsSource="{Binding Cores}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <UniformGrid Rows="1" />
+                                <!-- One row of bars; wraps into two (or more) when they'd get too thin to read. -->
+                                <controls:StripPanel MinItemWidth="30" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
@@ -197,8 +131,10 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
+        </DataTemplate>
 
-            <Border Grid.Column="1" Style="{StaticResource ClickableCard}" DataContext="{Binding Cooling}" ToolTip="Show history">
+        <DataTemplate DataType="{x:Type vm:CoolingViewModel}">
+            <Border Style="{StaticResource ClickableCard}" ToolTip="Show history">
                 <Border.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
                 </Border.InputBindings>
@@ -242,46 +178,42 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <ui:Button Content="Change pump header" Appearance="Transparent" FontSize="12"
-                                       Padding="8,4" Margin="-8,6,0,0" HorizontalAlignment="Left"
-                                       Command="{Binding DataContext.ClearPumpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                       Visibility="{Binding CanChangePump, Converter={StaticResource BoolToVisibility}}" />
                         </StackPanel>
                     </Grid>
 
-                    <!-- Pick which generic fan header is the pump. -->
-                    <ItemsControl ItemsSource="{Binding Candidates}" Margin="0,12,0,0"
-                                  Visibility="{Binding ShowPumpPicker, Converter={StaticResource BoolToVisibility}}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:PumpCandidateViewModel}">
-                                <Border Background="{DynamicResource Pulse.QuietFill}" CornerRadius="8" Padding="12,6" Margin="0,0,0,6">
-                                    <DockPanel>
-                                        <ui:Button DockPanel.Dock="Right" Content="Set as pump" FontSize="12" Padding="10,4"
-                                                   Command="{Binding DataContext.SetPumpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                   CommandParameter="{Binding Id}" />
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}"
-                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                            <TextBlock Text="{Binding SpeedText}" Style="{StaticResource Caption}" />
-                                        </StackPanel>
-                                    </DockPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <!-- Which generic fan header is the pump: every spinning header with its speed, always at hand. -->
+                    <DockPanel Margin="0,14,0,0" Visibility="{Binding ShowHeaderPicker, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Pump header" Style="{StaticResource Secondary}" FontSize="13" VerticalAlignment="Center"
+                                   Margin="0,0,12,0" />
+                        <Grid>
+                            <ComboBox ItemsSource="{Binding Headers}" SelectedItem="{Binding SelectedHeader}"
+                                      AutomationProperties.Name="Pump header" ToolTip="The motherboard fan header your pump is plugged into">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:PumpCandidateViewModel}">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding SpeedText}" Style="{StaticResource Caption}"
+                                                       VerticalAlignment="Center" Margin="12,0,0,0" />
+                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                                <ComboBox.ItemContainerStyle>
+                                    <Style TargetType="ComboBoxItem" BasedOn="{StaticResource {x:Type ComboBoxItem}}">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    </Style>
+                                </ComboBox.ItemContainerStyle>
+                            </ComboBox>
+                            <TextBlock Text="Choose a header" Style="{StaticResource Secondary}" FontSize="13" Margin="12,0,0,0"
+                                       VerticalAlignment="Center" IsHitTestVisible="False"
+                                       Visibility="{Binding SelectedHeader, Converter={x:Static views:Converters.NullToVisibility}}" />
+                        </Grid>
+                    </DockPanel>
                 </StackPanel>
             </Border>
-            </Grid>
+        </DataTemplate>
 
-            <!-- Fans, drives, network -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="1.25*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <Border Grid.Column="0" Style="{StaticResource PulseCard}">
+        <DataTemplate DataType="{x:Type vm:FansCardViewModel}">
+                <Border Style="{StaticResource PulseCard}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,12">
                             <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Fans.Soft}">
@@ -290,10 +222,10 @@
                             <TextBlock Text="Fans" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
                         </DockPanel>
 
-                        <TextBlock Text="{Binding FansEmptyText}" Style="{StaticResource Secondary}" TextWrapping="Wrap"
+                        <TextBlock Text="{Binding EmptyText}" Style="{StaticResource Secondary}" TextWrapping="Wrap"
                                    Visibility="{Binding HasFans, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
 
-                        <ItemsControl ItemsSource="{Binding Fans}">
+                        <ItemsControl ItemsSource="{Binding Rows}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:FanRowViewModel}">
                                     <StackPanel Margin="0,0,0,12" Cursor="Hand" Background="Transparent" ToolTip="Show history">
@@ -315,8 +247,10 @@
                         </ItemsControl>
                     </StackPanel>
                 </Border>
+        </DataTemplate>
 
-                <Border Grid.Column="1" Style="{StaticResource PulseCard}">
+        <DataTemplate DataType="{x:Type vm:DrivesCardViewModel}">
+                <Border Style="{StaticResource PulseCard}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,12">
                             <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Storage.Soft}">
@@ -329,7 +263,7 @@
                                    Style="{StaticResource Secondary}" TextWrapping="Wrap"
                                    Visibility="{Binding HasDrives, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
 
-                        <ItemsControl ItemsSource="{Binding Drives}">
+                        <ItemsControl ItemsSource="{Binding Rows}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:DriveRowViewModel}">
                                     <DockPanel Margin="0,0,0,14" Cursor="Hand" Background="Transparent" ToolTip="Show temperature history">
@@ -390,8 +324,10 @@
                         </ItemsControl>
                     </StackPanel>
                 </Border>
+        </DataTemplate>
 
-                <Border Grid.Column="2" Style="{StaticResource ClickableCard}" DataContext="{Binding Network}" ToolTip="Show download history">
+        <DataTemplate DataType="{x:Type vm:NetworkViewModel}">
+                <Border Style="{StaticResource ClickableCard}" ToolTip="Show download history">
                     <Border.InputBindings>
                         <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
                     </Border.InputBindings>
@@ -432,7 +368,313 @@
                         <TextBlock Text="{Binding Totals}" Style="{StaticResource Caption}" Margin="0,8,0,0" />
                     </StackPanel>
                 </Border>
+        </DataTemplate>
+
+
+        <!-- Pinned sensors: one in large type with a sparkline, or a group of rows. -->
+        <DataTemplate DataType="{x:Type vm:PinnedTileViewModel}">
+            <Border Style="{StaticResource ClickableCard}" ToolTip="Show history">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Primary.SensorId}" />
+                </Border.InputBindings>
+                <Grid>
+                    <!-- One sensor -->
+                    <Grid DataContext="{Binding Primary}"
+                          Visibility="{Binding DataContext.IsGroup, RelativeSource={RelativeSource AncestorType=Border}, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <DockPanel Grid.Row="0">
+                            <Border Style="{StaticResource IconChip}" Background="{Binding AccentSoftBrush}">
+                                <ui:SymbolIcon Symbol="Pin20" FontSize="17" Foreground="{Binding AccentBrush}" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource CardTitle}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" />
+                                <TextBlock Text="{Binding Hardware}" Style="{StaticResource Secondary}" ToolTip="{Binding Hardware}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <StackPanel Grid.Row="1" Margin="0,16,0,0">
+                            <TextBlock Text="{Binding ValueText}" FontSize="34" Style="{StaticResource Metric}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0"
+                                        Visibility="{Binding MaxText, Converter={x:Static views:Converters.NotNullToVisibility}}">
+                                <Border Background="{DynamicResource Pulse.SubtleFill}" CornerRadius="6" Padding="6,1" Margin="0,0,4,0"
+                                        ToolTip="Lowest since Pulse started">
+                                    <TextBlock FontSize="11" Style="{StaticResource Metric}" FontWeight="Normal">
+                                        <Run Text="▾" Foreground="{DynamicResource TextFillColorTertiaryBrush}" /><Run Text="{Binding MinText, Mode=OneWay}" />
+                                    </TextBlock>
+                                </Border>
+                                <Border Background="{DynamicResource Pulse.SubtleFill}" CornerRadius="6" Padding="6,1"
+                                        ToolTip="Highest since Pulse started">
+                                    <TextBlock FontSize="11" Style="{StaticResource Metric}" FontWeight="Normal">
+                                        <Run Text="▴" Foreground="{Binding AccentBrush}" /><Run Text="{Binding MaxText, Mode=OneWay}" />
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                        <Grid Grid.Row="3" Height="54" Margin="0,14,0,0">
+                            <controls:Sparkline Values="{Binding History}" Color="{Binding Accent}" Capacity="{Binding HistoryCapacity}" />
+                            <TextBlock Text="Last minute" Style="{StaticResource Caption}" VerticalAlignment="Top" />
+                        </Grid>
+                    </Grid>
+
+                    <!-- A group -->
+                    <StackPanel Visibility="{Binding IsGroup, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel Margin="0,0,0,10">
+                            <Border Style="{StaticResource IconChip}">
+                                <ui:SymbolIcon Symbol="Pin20" FontSize="17" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Border>
+                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding Sensors}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:PinnedSensorViewModel}">
+                                    <Grid Margin="0,0,0,10" Background="Transparent" Cursor="Hand">
+                                        <Grid.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                                        </Grid.InputBindings>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            <TextBlock Text="{Binding Hardware}" Style="{StaticResource Caption}" />
+                                        </StackPanel>
+                                        <controls:Sparkline Grid.Column="1" Height="24" Values="{Binding History}" Color="{Binding Accent}"
+                                                            Capacity="{Binding HistoryCapacity}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="{Binding ValueText}" FontSize="15" MinWidth="64" TextAlignment="Right"
+                                                   VerticalAlignment="Center" Style="{StaticResource Metric}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+
+        <!--
+            A tile: the card, plus edit-mode chrome on top of it. In edit mode the chrome covers the card
+            (so clicks don't open details), shows the size, hide and remove buttons, and is what you drag.
+        -->
+        <DataTemplate x:Key="Tile" DataType="{x:Type vm:DashboardTileViewModel}">
+            <Grid x:Name="TileRoot">
+                <ContentPresenter Content="{Binding Card}" />
+
+                <Border x:Name="EditChrome" Margin="6" CornerRadius="14" Cursor="SizeAll"
+                        Background="{DynamicResource Pulse.EditOverlay}" BorderBrush="{DynamicResource Pulse.EditBorder}" BorderThickness="1.5"
+                        Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}"
+                        MouseLeftButtonDown="Tile_MouseLeftButtonDown" MouseMove="Tile_MouseMove"
+                        ToolTip="Drag to move">
+                    <!-- One floating pill in the middle of the dimmed card, so nothing covers the card's own header. -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border Background="{DynamicResource Pulse.PopupBackground}" BorderBrush="{DynamicResource Pulse.CardBorder}"
+                                BorderThickness="1" CornerRadius="20" Padding="12,5,5,5">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="ReOrderDotsVertical20" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="{Binding Title}" FontSize="13" Style="{StaticResource Secondary}" MaxWidth="170"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <!-- Opens a menu of sizes rather than cycling: one deliberate choice, so the card
+                                     resizing (and this button moving with it) can't catch a second click. -->
+                                <ui:Button MinWidth="38" Padding="8,3" Margin="0,0,4,0" Cursor="Hand" Click="SizeButton_Click"
+                                           ToolTip="Change the size" AutomationProperties.Name="Change size"
+                                           Visibility="{Binding CanResize, Converter={StaticResource BoolToVisibility}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding SizeLabel}" VerticalAlignment="Center" />
+                                        <ui:SymbolIcon Symbol="ChevronDown12" FontSize="10" Margin="5,1,0,0" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <ui:Button.ContextMenu>
+                                        <ContextMenu ItemsSource="{Binding SizeOptions}">
+                                            <ContextMenu.ItemContainerStyle>
+                                                <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                    <Setter Property="Command" Value="{Binding Choose}" />
+                                                    <Setter Property="Header" Value="{Binding}" />
+                                                    <Setter Property="HeaderTemplate">
+                                                        <Setter.Value>
+                                                            <DataTemplate DataType="{x:Type vm:TileSizeOption}">
+                                                                <DockPanel MinWidth="250">
+                                                                    <ui:SymbolIcon x:Name="Check" DockPanel.Dock="Left" Symbol="Checkmark16" FontSize="14"
+                                                                                   Width="16" Margin="0,0,10,0" VerticalAlignment="Center" Opacity="0" />
+                                                                    <!-- How much of a row the card would take -->
+                                                                    <Grid DockPanel.Dock="Right" Width="72" Height="6" Margin="16,0,0,0" VerticalAlignment="Center">
+                                                                        <Border Background="{DynamicResource Pulse.Track}" CornerRadius="3" />
+                                                                        <Border x:Name="Fill" Background="{DynamicResource TextFillColorTertiaryBrush}" CornerRadius="3"
+                                                                                Width="{Binding PreviewWidth}" HorizontalAlignment="Left" />
+                                                                    </Grid>
+                                                                    <StackPanel>
+                                                                        <TextBlock x:Name="Name" Text="{Binding Label}" />
+                                                                        <TextBlock Text="{Binding Hint}" Style="{StaticResource Caption}" />
+                                                                    </StackPanel>
+                                                                </DockPanel>
+                                                                <DataTemplate.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                                        <Setter TargetName="Check" Property="Opacity" Value="1" />
+                                                                        <Setter TargetName="Name" Property="FontWeight" Value="SemiBold" />
+                                                                        <Setter TargetName="Fill" Property="Background" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                                    </DataTrigger>
+                                                                </DataTemplate.Triggers>
+                                                            </DataTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </ContextMenu.ItemContainerStyle>
+                                        </ContextMenu>
+                                    </ui:Button.ContextMenu>
+                                </ui:Button>
+                                <ui:Button Padding="7,4" Cursor="Hand" ToolTip="Hide this card" AutomationProperties.Name="Hide card"
+                                           Command="{Binding DataContext.HideTileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           CommandParameter="{Binding}"
+                                           Visibility="{Binding IsPinned, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
+                                    <ui:SymbolIcon Symbol="EyeOff20" FontSize="15" />
+                                </ui:Button>
+                                <ui:Button Padding="7,4" Cursor="Hand" ToolTip="Remove from the dashboard" AutomationProperties.Name="Remove tile"
+                                           Command="{Binding DataContext.RemoveTileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           CommandParameter="{Binding}"
+                                           Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisibility}}">
+                                    <ui:SymbolIcon Symbol="Delete20" FontSize="15" />
+                                </ui:Button>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- A pinned group can be named. -->
+                        <ui:TextBox Margin="0,10,0,0" Width="230" PlaceholderText="Name this group"
+                                    Text="{Binding Card.CustomTitle, Mode=OneWay}" Tag="{Binding Id}"
+                                    LostKeyboardFocus="GroupTitle_LostKeyboardFocus" KeyDown="GroupTitle_KeyDown"
+                                    AutomationProperties.Name="Group name"
+                                    Visibility="{Binding Card.IsGroup, Converter={StaticResource BoolToVisibility}, FallbackValue=Collapsed}" />
+                    </StackPanel>
+                </Border>
             </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsDragging}" Value="True">
+                    <Setter TargetName="TileRoot" Property="Opacity" Value="0.35" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+    <!-- Skeleton cards while the first readings come in. -->
+    <ScrollViewer VerticalScrollBarVisibility="Disabled" Padding="24,0,24,24"
+                  Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+        <StackPanel>
+            <UniformGrid Columns="4">
+                <Border Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
+                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
+                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
+                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
+                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <controls:Shimmer Height="34" Width="220" CornerRadius="9" HorizontalAlignment="Left" Margin="0,0,0,14" />
+                    <controls:Shimmer Height="88" CornerRadius="8" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+
+    <ScrollViewer x:Name="TilesScroll" VerticalScrollBarVisibility="Auto" Padding="24,0,24,24"
+                  Visibility="{Binding IsLoading, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
+        <StackPanel>
+            <!-- Edit mode: what you can do, cards to bring back, and the way out. -->
+            <Border Style="{StaticResource PulseCard}" Padding="16,12"
+                    BorderBrush="{DynamicResource Pulse.EditBorder}"
+                    Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                        <ui:Button Content="Pin a sensor" Margin="0,0,6,0" Command="{Binding PinSensorCommand}">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="Pin20" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <ui:Button Content="Reset layout" Appearance="Transparent" Margin="0,0,6,0" Command="{Binding ResetLayoutCommand}"
+                                   ToolTip="Put the built-in cards back in their original order and sizes. Pinned tiles stay." />
+                        <ui:Button Content="Done" Appearance="Primary" Command="{Binding EndEditCommand}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock Text="Customize your dashboard" Style="{StaticResource CardTitle}" />
+                        <TextBlock Style="{StaticResource Secondary}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                   Text="Drag cards to reorder them. The size button picks how wide a card is; the eye hides it. Pin any sensor from its details, All sensors, or here." />
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
+                                    Visibility="{Binding HasHiddenTiles, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="Hidden:" Style="{StaticResource Secondary}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <ItemsControl ItemsSource="{Binding HiddenTiles}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:DashboardTileViewModel}">
+                                        <ui:Button Padding="10,4" Margin="0,0,6,4" FontSize="12" ToolTip="Show this card again"
+                                                   Command="{Binding DataContext.ShowTileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                   CommandParameter="{Binding}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:SymbolIcon Symbol="Add16" FontSize="12" Margin="0,0,4,0" />
+                                                <TextBlock Text="{Binding Title}" />
+                                            </StackPanel>
+                                        </ui:Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <ItemsControl x:Name="TileList" ItemsSource="{Binding Tiles}" ItemTemplate="{StaticResource Tile}" Focusable="False"
+                          AllowDrop="True" DragOver="TileList_DragOver" DragLeave="TileList_DragLeave" Drop="TileList_Drop">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <controls:TileFlowPanel AnimateMoves="{Binding IsEditing}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="controls:TileFlowPanel.Span" Value="{Binding Span}" />
+                        <Setter Property="controls:TileFlowPanel.MinTileWidth" Value="{Binding MinWidth}" />
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+            </ItemsControl>
         </StackPanel>
     </ScrollViewer>
     </Grid>

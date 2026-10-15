@@ -16,6 +16,9 @@
     <SolidColorBrush x:Key="Pulse.CardBorder" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="Pulse.CardHover" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="Pulse.CardBorderHover" Color="#24FFFFFF" />
+    <!-- Dashboard edit mode: a veil over each card, and its outline. -->
+    <SolidColorBrush x:Key="Pulse.EditOverlay" Color="#99101114" />
+    <SolidColorBrush x:Key="Pulse.EditBorder" Color="#66FFFFFF" />
     <!-- Dims the page behind the details panel. -->
     <SolidColorBrush x:Key="Pulse.Scrim" Color="#66000000" />
     <SolidColorBrush x:Key="Pulse.SubtleFill" Color="#14FFFFFF" />

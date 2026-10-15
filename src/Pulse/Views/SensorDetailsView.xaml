@@ -113,6 +113,33 @@
 
                 <!-- Actions -->
                 <WrapPanel Margin="0,20,0,0">
+                    <ui:Button x:Name="PinButton" Margin="0,0,8,8" Click="PinButton_Click"
+                               Visibility="{Binding CanPin, Converter={StaticResource BoolToVisibility}}">
+                        <ui:Button.Icon>
+                            <ui:SymbolIcon x:Name="PinIcon" Symbol="Pin20" />
+                        </ui:Button.Icon>
+                        <ui:Button.Style>
+                            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                <Setter Property="Content" Value="Pin to dashboard" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                        <Setter Property="Content" Value="Unpin" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ui:Button.Style>
+                        <ui:Button.ContextMenu>
+                            <ContextMenu ItemsSource="{Binding PinChoices}">
+                                <ContextMenu.ItemContainerStyle>
+                                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                        <Setter Property="Header" Value="{Binding Label}" />
+                                        <Setter Property="Command" Value="{Binding DataContext.PinToCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                        <Setter Property="CommandParameter" Value="{Binding}" />
+                                    </Style>
+                                </ContextMenu.ItemContainerStyle>
+                            </ContextMenu>
+                        </ui:Button.ContextMenu>
+                    </ui:Button>
                     <ui:Button Content="Create alert" Margin="0,0,8,8" Command="{Binding CreateAlertCommand}">
                         <ui:Button.Icon>
                             <ui:SymbolIcon Symbol="Alert20" />

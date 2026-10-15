@@ -9,6 +9,10 @@ public static class Converters
     public static readonly IValueConverter NotNullToVisibility = new Lambda(v =>
         v is null || v is string { Length: 0 } ? Visibility.Collapsed : Visibility.Visible);
 
+    /// <summary>Visible only while the value is null, for placeholders like "Choose a header".</summary>
+    public static readonly IValueConverter NullToVisibility = new Lambda(v =>
+        v is null ? Visibility.Visible : Visibility.Collapsed);
+
     public static readonly IValueConverter InverseBoolToVisibility = new Lambda(v =>
         v is true ? Visibility.Collapsed : Visibility.Visible);
 

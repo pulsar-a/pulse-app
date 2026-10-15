@@ -31,9 +31,13 @@ public partial class MainViewModel : ObservableObject
 
         _catalog = new SensorCatalog(settings);
         Dashboard = new DashboardViewModel(driverInstalled, _catalog, stream) { OpenDetails = OpenDetails };
-        Sensors = new SensorsViewModel(_catalog, id => settings.Update(s => s.Startup.TraySensorId = id), CreateAlert, OpenDetails);
+        Sensors = new SensorsViewModel(_catalog, id => settings.Update(s => s.Startup.TraySensorId = id), CreateAlert, OpenDetails)
+        {
+            Pin = id => Dashboard.Pin(id),
+        };
         Settings = new SettingsViewModel(settings, _catalog, driverInstalled, stream);
         Search = new SensorSearchViewModel(_catalog, stream, OpenDetails);
+        Dashboard.RequestPinSearch = () => Search.Open(id => Dashboard.Pin(id), "Pin a sensor to the dashboard");
 
         ApplySettings();
         settings.Changed += ApplySettings;
@@ -61,7 +65,7 @@ public partial class MainViewModel : ObservableObject
             if (_isWindowActive == value)
                 return;
             _isWindowActive = value;
-            _hardware.IsIdle = !value;
+            _hardware.IsIdle = !value && !_isMiniActive;
             Log.Write(value ? "Window shown: live updates resumed" : "Window hidden: idle mode");
 
             // Catch up straight away with the newest reading instead of waiting for the next tick.
@@ -71,6 +75,25 @@ public partial class MainViewModel : ObservableObject
     }
 
     private volatile bool _isWindowActive = true;
+    private volatile bool _isMiniActive;
+
+    /// <summary>The mini window is showing: keep reading at full speed even with the main window hidden.</summary>
+    public bool IsMiniActive
+    {
+        get => _isMiniActive;
+        set
+        {
+            if (_isMiniActive == value) return;
+            _isMiniActive = value;
+            _hardware.IsIdle = !_isWindowActive && !value;
+        }
+    }
+
+    /// <summary>Opens or closes the mini window; set by the app.</summary>
+    public Action? ToggleMini { get; set; }
+
+    [RelayCommand]
+    private void ToggleMiniWindow() => ToggleMini?.Invoke();
 
     public DashboardViewModel Dashboard { get; }
     public SensorsViewModel Sensors { get; }
@@ -89,7 +112,7 @@ public partial class MainViewModel : ObservableObject
     public void AttachHistory(Services.History.HistoryRecorder recorder, Services.History.HistoryStore store)
     {
         Settings.AttachHistory(recorder);
-        Details = new SensorDetailsViewModel(store, _stream, _catalog, _settings, CreateAlert);
+        Details = new SensorDetailsViewModel(store, _stream, _catalog, _settings, CreateAlert) { PinBoard = Dashboard, CardAccent = Dashboard.CardAccent };
     }
 
     /// <summary>Opens the details panel for a sensor: from a dashboard card, a sensor row, or the search.</summary>
@@ -159,6 +182,7 @@ public partial class MainViewModel : ObservableObject
     {
         SensorFormat.TemperatureUnit = _settings.Current.Units.Temperature;
         var interval = _settings.Current.General.UpdateInterval;
+        if (interval == Dashboard.SampleInterval) return;
         _hardware.Interval = interval;
         Dashboard.SampleInterval = interval;
     }

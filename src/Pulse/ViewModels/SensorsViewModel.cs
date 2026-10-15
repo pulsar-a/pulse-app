@@ -49,6 +49,9 @@ public partial class SensorsViewModel : ObservableObject
         };
     }
 
+    /// <summary>Pins a sensor to the dashboard; null hides that menu item.</summary>
+    public Action<string>? Pin { get; init; }
+
     /// <summary>Hardware headers, sensor-type headers and sensor rows, in display order.</summary>
     public BulkObservableCollection<object> Items { get; } = [];
 
@@ -148,7 +151,7 @@ public partial class SensorsViewModel : ObservableObject
                 .OrderBy(g => SensorFormat.TypeOrder(g.First().Type))
                 .Select(g =>
                 {
-                    var rows = g.Select(s => _rows[s.Id] = new SensorRowViewModel(s.Id, s.Name, s.Type, _catalog, _showInTray, _createAlert, _openDetails)).ToList();
+                    var rows = g.Select(s => _rows[s.Id] = new SensorRowViewModel(s.Id, s.Name, s.Type, _catalog, _showInTray, _createAlert, _openDetails, Pin)).ToList();
                     return new SensorTypeGroupViewModel(g.Key, rows);
                 })
                 .ToList();
@@ -334,11 +337,13 @@ public partial class SensorRowViewModel : ObservableObject
     private readonly SensorCatalog _catalog;
     private readonly Action<string>? _showInTray;
     private readonly Action<string>? _openDetailsAction;
+    private readonly Action<string>? _pin;
     private readonly Action<string>? _createAlert;
 
     public SensorRowViewModel(string id, string originalName, SensorType type, SensorCatalog catalog, Action<string>? showInTray = null, Action<string>? createAlert = null,
-        Action<string>? openDetails = null)
+        Action<string>? openDetails = null, Action<string>? pin = null)
     {
+        _pin = pin;
         _showInTray = showInTray;
         _openDetailsAction = openDetails;
         _createAlert = createAlert;
@@ -424,4 +429,9 @@ public partial class SensorRowViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenDetails() => _openDetailsAction?.Invoke(Id);
+
+    public bool CanPin => _pin is not null;
+
+    [RelayCommand]
+    private void PinToDashboard() => _pin?.Invoke(Id);
 }

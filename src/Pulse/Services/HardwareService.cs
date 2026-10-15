@@ -82,23 +82,54 @@ public sealed class HardwareService : IDisposable
     /// Updates the hardware (all of it, or only what <paramref name="shouldUpdate"/> says is due),
     /// then copies every sensor into an immutable snapshot. Hardware that wasn't updated keeps its
     /// previous readings.
+    ///
+    /// Each device is read on its own: if one throws (a USB device that just vanished), it's reported to
+    /// <paramref name="failed"/> and shows no values in this snapshot, and every other device still reads.
     /// </summary>
     internal static HardwareSnapshot TakeSnapshot(
         Computer computer,
         IReadOnlyDictionary<int, IReadOnlyList<VolumeInfo>> volumes,
-        Func<IHardware, bool>? shouldUpdate = null)
+        Func<IHardware, bool>? shouldUpdate = null,
+        Action<IHardware, Exception>? failed = null,
+        Action<IHardware>? succeeded = null) =>
+        TakeSnapshot(computer.Hardware.ToList(), volumes, shouldUpdate, failed, succeeded);
+
+    internal static HardwareSnapshot TakeSnapshot(
+        IReadOnlyList<IHardware> devices,
+        IReadOnlyDictionary<int, IReadOnlyList<VolumeInfo>> volumes,
+        Func<IHardware, bool>? shouldUpdate = null,
+        Action<IHardware, Exception>? failed = null,
+        Action<IHardware>? succeeded = null)
     {
-        foreach (var hardware in computer.Hardware)
+        HashSet<IHardware>? broken = null;
+        foreach (var hardware in devices)
         {
-            if (shouldUpdate is null || shouldUpdate(hardware))
+            if (shouldUpdate is not null && !shouldUpdate(hardware))
+                continue;
+            try
+            {
                 Update(hardware);
+                succeeded?.Invoke(hardware);
+            }
+            catch (Exception ex)
+            {
+                (broken ??= []).Add(hardware);
+                failed?.Invoke(hardware, ex);
+            }
         }
 
         return new HardwareSnapshot(
-            computer.Hardware.Where(IsInteresting).Select(Capture).ToList(),
+            devices.Where(IsInteresting).Select(h => broken?.Contains(h) == true ? WithoutValues(Capture(h)) : Capture(h)).ToList(),
             volumes,
             DateTime.Now);
     }
+
+    /// <summary>A device whose read failed: its sensors without values (held briefly by <see cref="ReadingHold"/>).</summary>
+    private static HardwareReading WithoutValues(HardwareReading hardware) => hardware with
+    {
+        Sensors = hardware.Sensors.Select(s => s with { Value = null }).ToList(),
+        SubHardware = hardware.SubHardware.Select(WithoutValues).ToList(),
+    };
 
     private async Task RunAsync(CancellationToken ct)
     {
@@ -124,8 +155,16 @@ public sealed class HardwareService : IDisposable
                 // Drive letters rarely change, so a WMI query every half minute is plenty.
                 if (now >= nextVolumeRefresh)
                 {
-                    volumes = QueryVolumes();
                     nextVolumeRefresh = now + VolumeRefresh;
+                    try
+                    {
+                        volumes = QueryVolumes();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Keep the letters we had; a WMI hiccup mustn't stop the sensors.
+                        Log.Write($"Couldn't list drive letters: {ex.Message}");
+                    }
                 }
 
                 // LHM looks for drives only once, in Open(). When another tool (ASUS Armoury Crate, for one)
@@ -135,27 +174,51 @@ public sealed class HardwareService : IDisposable
                 {
                     storageRescans++;
                     nextRescan = now + RescanSpacing;
-                    computer.IsStorageEnabled = false;
-                    computer.IsStorageEnabled = true;
-                    Log.Write($"Drive re-scan {storageRescans}: " + string.Join(", ",
-                        computer.Hardware.Where(h => h.HardwareType == HardwareType.Storage).Select(h => h.Identifier)));
+                    Reopen(computer, HardwareType.Storage);
                 }
 
                 TimeSpan delay;
                 HardwareSnapshot snapshot;
+                var reopen = new HashSet<HardwareType>();
+                // Decide what to read under the lock, then read without it. The UI thread takes this lock to
+                // change the interval or idle mode; holding it through the reads (a USB PSU fighting with
+                // iCUE can take seconds) froze the UI on every settings change.
+                HashSet<IHardware> toRead;
                 lock (_scheduleGate)
                 {
-                    snapshot = TakeSnapshot(computer, volumes, hardware =>
+                    toRead = computer.Hardware.Where(hardware =>
                     {
                         var id = hardware.Identifier.ToString();
-                        if (!_schedule.IsDue(id, hardware.HardwareType, now))
+                        if (!_schedule.IsDue(id, hardware.HardwareType, now) || !_health.CanRead(id, now))
                             return false;
                         _schedule.MarkRead(id, now);
                         return true;
-                    });
+                    }).ToHashSet();
                     delay = _schedule.TickInterval;
                 }
+
+                snapshot = TakeSnapshot(computer, volumes, toRead.Contains,
+                    failed: (hardware, ex) =>
+                    {
+                        if (_health.Failed(hardware.Identifier.ToString(), hardware.Name, ex, now) == FailureAction.Reopen)
+                            reopen.Add(hardware.HardwareType);
+                    },
+                    succeeded: hardware => _health.Succeeded(hardware.Identifier.ToString(), hardware.Name));
                 _stream.Publish(_hold.Apply(snapshot));
+
+                // Reopen what keeps failing, and keep trying for a group that came back empty (the device
+                // was still gone when it was reopened) until it's there again.
+                foreach (var (type, due) in _retryReopen.ToList())
+                {
+                    if (now >= due) reopen.Add(type);
+                }
+                foreach (var type in reopen)
+                {
+                    if (Reopen(computer, type))
+                        _retryReopen.Remove(type);
+                    else
+                        _retryReopen[type] = now + DeviceHealth.ReopenSpacing;
+                }
 
                 // Keep a steady rhythm: subtract the time this tick took from the wait.
                 var elapsed = DateTime.UtcNow - now;
@@ -167,12 +230,62 @@ public sealed class HardwareService : IDisposable
         }
         catch (Exception ex)
         {
+            // Only opening the hardware can end up here now; a device failing mid-run is handled per device.
             Log.Write($"Polling failed: {ex}");
             Failed?.Invoke(ex);
         }
         finally
         {
             computer.Close();
+        }
+    }
+
+    private readonly DeviceHealth _health = new();
+    private readonly Dictionary<HardwareType, DateTime> _retryReopen = new();
+
+    /// <summary>
+    /// Closes and reopens one group of hot-pluggable devices, for a device that keeps failing after it
+    /// was reset. CPU, motherboard and memory are never reopened (they don't vanish, and reopening them
+    /// goes through the driver); their failures are just retried.
+    /// </summary>
+    /// <returns>True when the group is open again with at least one device in it.</returns>
+    private static bool Reopen(Computer computer, HardwareType type)
+    {
+        try
+        {
+            switch (type)
+            {
+                case HardwareType.Psu:
+                    computer.IsPsuEnabled = false;
+                    computer.IsPsuEnabled = true;
+                    break;
+                case HardwareType.Cooler:
+                    computer.IsControllerEnabled = false;
+                    computer.IsControllerEnabled = true;
+                    break;
+                case HardwareType.Storage:
+                    computer.IsStorageEnabled = false;
+                    computer.IsStorageEnabled = true;
+                    break;
+                case HardwareType.Network:
+                    computer.IsNetworkEnabled = false;
+                    computer.IsNetworkEnabled = true;
+                    break;
+                case HardwareType.Battery:
+                    computer.IsBatteryEnabled = false;
+                    computer.IsBatteryEnabled = true;
+                    break;
+                default:
+                    return true;
+            }
+            var found = computer.Hardware.Where(h => h.HardwareType == type).Select(h => h.Name).ToList();
+            Log.Write(found.Count > 0 ? $"Reopened {type}: {string.Join(", ", found)}" : $"Reopened {type}: nothing found yet, will try again");
+            return found.Count > 0;
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"Couldn't reopen {type}: {ex.Message}. Will try again.");
+            return false;
         }
     }
 

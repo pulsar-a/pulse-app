@@ -22,6 +22,31 @@ public partial class SensorDetailsView : UserControl
             }, DispatcherPriority.Input);
     }
 
+    /// <summary>
+    /// Pin, or unpin when already pinned. With pinned tiles on the dashboard, a menu asks whether the
+    /// sensor gets its own tile or joins one of them.
+    /// </summary>
+    private void PinButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not SensorDetailsViewModel details) return;
+        if (details.IsPinned)
+        {
+            details.UnpinCommand.Execute(null);
+            return;
+        }
+        if (details.PinChoices.Count <= 1)
+        {
+            details.PinToCommand.Execute(null);
+            return;
+        }
+
+        var menu = PinButton.ContextMenu!;
+        menu.DataContext = details;
+        menu.PlacementTarget = PinButton;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        menu.IsOpen = true;
+    }
+
     /// <summary>Clicking away saves the rename.</summary>
     private void NameBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
     {

@@ -77,13 +77,53 @@ public partial class CoolingViewModel : ObservableObject
     [ObservableProperty] public partial IReadOnlyList<double>? History { get; set; }
     [ObservableProperty] public partial int HistoryCapacity { get; set; } = GaugeCardViewModel.HistoryLength;
 
-    /// <summary>Spinning motherboard fan headers the user can pick as the pump.</summary>
-    public System.Collections.ObjectModel.ObservableCollection<PumpCandidateViewModel> Candidates { get; } = [];
+    /// <summary>
+    /// Every spinning motherboard fan header, plus "not on a header": the choices for which one is the pump.
+    /// Motherboards like the Z790 Hero don't say which header the pump is on, so the user picks it here.
+    /// </summary>
+    public System.Collections.ObjectModel.ObservableCollection<PumpCandidateViewModel> Headers { get; } = [];
 
-    [ObservableProperty] public partial bool ShowPumpPicker { get; set; }
+    /// <summary>The header picked as the pump; null until someone chooses.</summary>
+    [ObservableProperty] public partial PumpCandidateViewModel? SelectedHeader { get; set; }
 
-    /// <summary>True when the pump reading comes from a header the user picked, so they can undo it.</summary>
-    [ObservableProperty] public partial bool CanChangePump { get; set; }
+    [ObservableProperty] public partial bool ShowHeaderPicker { get; set; }
+
+    /// <summary>Called with the chosen header's sensor id ("" for "not on a header") when the user picks one.</summary>
+    public Action<string>? PumpChosen { get; set; }
+
+    private bool _syncing;
+
+    partial void OnSelectedHeaderChanged(PumpCandidateViewModel? value)
+    {
+        if (!_syncing && value is not null)
+            PumpChosen?.Invoke(value.Id);
+    }
+
+    /// <summary>Updates the choices and the selection from the readings without counting it as a choice.</summary>
+    public void SyncHeaders(IReadOnlyList<(string Id, string Name, string Speed)> headers, string? selectedId)
+    {
+        _syncing = true;
+        try
+        {
+            if (!Headers.Select(h => h.Id).SequenceEqual(headers.Select(h => h.Id)))
+            {
+                var existing = Headers.ToDictionary(h => h.Id);
+                Headers.Clear();
+                foreach (var header in headers)
+                    Headers.Add(existing.GetValueOrDefault(header.Id) ?? new PumpCandidateViewModel { Id = header.Id });
+            }
+            for (var i = 0; i < headers.Count; i++)
+            {
+                Headers[i].Name = headers[i].Name;
+                Headers[i].SpeedText = headers[i].Speed;
+            }
+            SelectedHeader = selectedId is null ? null : Headers.FirstOrDefault(h => h.Id == selectedId);
+        }
+        finally
+        {
+            _syncing = false;
+        }
+    }
 
     /// <summary>Recent samples of the headline reading from the sensor stream; NaN marks a gap.</summary>
     public void SetHistory(double[] values, int capacity)

@@ -8,7 +8,19 @@ namespace Pulse.Views;
 
 public partial class SensorsView : UserControl
 {
-    public SensorsView() => InitializeComponent();
+    public SensorsView()
+    {
+        InitializeComponent();
+        SizeChanged += (_, e) => FitToWidth(e.NewSize.Width);
+    }
+
+    /// <summary>Below 680 px the min and max columns go, so sensor names keep enough room.</summary>
+    private void FitToWidth(double width)
+    {
+        var narrow = width < 680;
+        Resources["RangeColumn"] = new GridLength(narrow ? 0 : 130);
+        Resources["RangeVisibility"] = narrow ? Visibility.Collapsed : Visibility.Visible;
+    }
 
     /// <summary>When the rename box appears, focus it with the name selected, ready to type over.</summary>
     private void RenameBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)

@@ -18,6 +18,44 @@ public static class Palette
     public static Color Storage => Accent("Storage", Color.FromRgb(0x38, 0xBD, 0xF8));
     public static Color Fans => Accent("Fans", Color.FromRgb(0x2D, 0xD4, 0xBF));
 
+    /// <summary>
+    /// The accent for a sensor, matching the dashboard's color code: what it belongs to comes first
+    /// (anything on the graphics card is green, memory purple, power yellow, network blue), and only
+    /// sensors on shared chips like the motherboard fall back to their kind (teal fans, warm temperatures).
+    /// </summary>
+    public static Color ForSensor(LibreHardwareMonitor.Hardware.SensorType type, LibreHardwareMonitor.Hardware.HardwareType? hardware)
+    {
+        if (type == LibreHardwareMonitor.Hardware.SensorType.Power)
+            return Power;
+        return hardware switch
+        {
+            LibreHardwareMonitor.Hardware.HardwareType.Cpu => Cpu,
+            LibreHardwareMonitor.Hardware.HardwareType.GpuNvidia or LibreHardwareMonitor.Hardware.HardwareType.GpuAmd
+                or LibreHardwareMonitor.Hardware.HardwareType.GpuIntel => Gpu,
+            LibreHardwareMonitor.Hardware.HardwareType.Memory => Memory,
+            LibreHardwareMonitor.Hardware.HardwareType.Storage => Storage,
+            LibreHardwareMonitor.Hardware.HardwareType.Network => Network,
+            LibreHardwareMonitor.Hardware.HardwareType.Psu => Power,
+            // The cooling card is blue.
+            LibreHardwareMonitor.Hardware.HardwareType.Cooler => Network,
+            _ => ForSensor(type),
+        };
+    }
+
+    /// <summary>The accent for a kind of sensor: warm for temperatures, teal for fans, yellow for power...</summary>
+    public static Color ForSensor(LibreHardwareMonitor.Hardware.SensorType type) => type switch
+    {
+        LibreHardwareMonitor.Hardware.SensorType.Temperature => Cpu,
+        LibreHardwareMonitor.Hardware.SensorType.Load or LibreHardwareMonitor.Hardware.SensorType.Control
+            or LibreHardwareMonitor.Hardware.SensorType.Level => Gpu,
+        LibreHardwareMonitor.Hardware.SensorType.Fan or LibreHardwareMonitor.Hardware.SensorType.Flow => Fans,
+        LibreHardwareMonitor.Hardware.SensorType.Power or LibreHardwareMonitor.Hardware.SensorType.Voltage
+            or LibreHardwareMonitor.Hardware.SensorType.Current or LibreHardwareMonitor.Hardware.SensorType.Energy => Power,
+        LibreHardwareMonitor.Hardware.SensorType.Throughput => Network,
+        LibreHardwareMonitor.Hardware.SensorType.Clock or LibreHardwareMonitor.Hardware.SensorType.Frequency => Storage,
+        _ => Memory,
+    };
+
     private static Color Accent(string name, Color fallback) =>
         Application.Current?.TryFindResource($"Pulse.Accent.{name}.Color") is Color color ? color : fallback;
 

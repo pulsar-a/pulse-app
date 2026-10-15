@@ -18,7 +18,13 @@
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,0,24,24">
-        <StackPanel MaxWidth="820" HorizontalAlignment="Left" MinWidth="560">
+        <!-- Fills the width up to 820 px, left-aligned; narrower windows just get a narrower column. -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="820" />
+                <ColumnDefinition Width="0" />
+            </Grid.ColumnDefinitions>
+        <StackPanel>
 
             <!-- General -->
             <Border Style="{StaticResource PulseCard}">
@@ -146,9 +152,10 @@
                                             <ui:SymbolIcon Symbol="Delete20" />
                                         </ui:Button>
 
-                                        <!-- "Above [95] °C for [10] seconds" -->
-                                        <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,8,0,0"
+                                        <!-- "Above [95] °C for [10] seconds"; the two halves wrap onto two lines in a narrow window. -->
+                                        <WrapPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,8,0,0"
                                                     IsEnabled="{Binding Enabled}">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                             <TextBlock Text="{Binding ConditionText}" Style="{StaticResource Secondary}" FontSize="13"
                                                        VerticalAlignment="Center" Margin="0,0,8,0" />
                                             <ui:NumberBox Width="120" Value="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}"
@@ -156,6 +163,8 @@
                                                           AutomationProperties.Name="Threshold" />
                                             <TextBlock Text="{Binding UnitText}" Style="{StaticResource Secondary}" FontSize="13"
                                                        VerticalAlignment="Center" Margin="8,0,16,0" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                             <TextBlock Text="for" Style="{StaticResource Secondary}" FontSize="13"
                                                        VerticalAlignment="Center" Margin="0,0,8,0" />
                                             <ui:NumberBox Width="100" Value="{Binding HoldSeconds, UpdateSourceTrigger=PropertyChanged}"
@@ -163,7 +172,8 @@
                                                           AutomationProperties.Name="Seconds" />
                                             <TextBlock Text="seconds" Style="{StaticResource Secondary}" FontSize="13"
                                                        VerticalAlignment="Center" Margin="8,0,0,0" />
-                                        </StackPanel>
+                                            </StackPanel>
+                                        </WrapPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -235,6 +245,130 @@
                         <TextBlock Text="{Binding HistoryStatus}" Style="{StaticResource Caption}" TextWrapping="Wrap"
                                    VerticalAlignment="Center" />
                     </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Dashboard -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="Dashboard" Style="{StaticResource SectionTitle}" />
+                    <DockPanel>
+                        <ui:Button DockPanel.Dock="Right" Content="Reset layout" VerticalAlignment="Center"
+                                   Command="{Binding ResetDashboardCommand}" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Layout" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="Reorder, resize and hide cards with the pencil button on the dashboard. Reset puts the built-in cards back as they were; pinned sensors stay."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock Text="{Binding DashboardStatus}" Style="{StaticResource Caption}" Margin="0,8,0,0"
+                               Visibility="{Binding DashboardStatus, Converter={x:Static views:Converters.NotNullToVisibility}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Mini window -->
+            <Border Style="{StaticResource PulseCard}" Visibility="{Binding HasMini, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="Mini window" Style="{StaticResource SectionTitle}" />
+
+                    <DockPanel Margin="0,0,0,14">
+                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding MiniOpen}" VerticalAlignment="Center"
+                                         AutomationProperties.Name="Show the mini window" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Show the mini window" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="A small readout that stays on top of other windows and games. Drag it anywhere; right-click it for options."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <TextBlock Text="Shows" Style="{StaticResource SettingLabel}" />
+                    <ItemsControl ItemsSource="{Binding MiniRows}" Margin="0,6,0,6">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:MiniItemRow}">
+                                <Border Background="{DynamicResource Pulse.QuietFill}" CornerRadius="8" Padding="12,6,6,6" Margin="0,0,0,4">
+                                    <DockPanel>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <ui:Button Appearance="Transparent" Padding="6" Command="{Binding MoveUp}" ToolTip="Move up"
+                                                       AutomationProperties.Name="Move up">
+                                                <ui:SymbolIcon Symbol="ArrowUp16" />
+                                            </ui:Button>
+                                            <ui:Button Appearance="Transparent" Padding="6" Command="{Binding MoveDown}" ToolTip="Move down"
+                                                       AutomationProperties.Name="Move down">
+                                                <ui:SymbolIcon Symbol="ArrowDown16" />
+                                            </ui:Button>
+                                            <ui:Button Appearance="Transparent" Padding="6" Command="{Binding Remove}" ToolTip="Remove"
+                                                       AutomationProperties.Name="Remove">
+                                                <ui:SymbolIcon Symbol="Dismiss16" />
+                                            </ui:Button>
+                                        </StackPanel>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Label}" FontSize="13" Style="{StaticResource Secondary}"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <ui:Button Content="Add a sensor…" Margin="0,0,8,0" Command="{Binding AddMiniSensorCommand}">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="Add16" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <ui:Button Content="Back to the defaults" Appearance="Transparent" Command="{Binding ResetMiniItemsCommand}" />
+                    </StackPanel>
+
+                    <TextBlock Text="Layout" Style="{StaticResource SettingLabel}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,16">
+                        <RadioButton Content="Stacked" GroupName="MiniLayout" Margin="0,0,24,0" IsChecked="{Binding MiniStacked}" />
+                        <RadioButton Content="Side by side" GroupName="MiniLayout" IsChecked="{Binding MiniSideBySide}" />
+                    </StackPanel>
+
+                    <DockPanel Margin="0,0,0,16">
+                        <TextBlock DockPanel.Dock="Right" Width="44" TextAlignment="Right" VerticalAlignment="Center"
+                                   Style="{StaticResource SettingLabel}" Text="{Binding MiniOpacityPercent, StringFormat={}{0:0}%}" />
+                        <TextBlock Text="Opacity" Style="{StaticResource SettingLabel}" VerticalAlignment="Center" Width="120" />
+                        <Slider Minimum="40" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                                Value="{Binding MiniOpacityPercent}" AutomationProperties.Name="Mini window opacity" />
+                    </DockPanel>
+
+                    <CheckBox Content="Let clicks go through it to the window underneath" IsChecked="{Binding MiniClickThrough}" />
+                    <TextBlock Text="Its right-click menu can't be reached then; turn this off here or from the tray icon."
+                               Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="28,0,0,10" />
+                    <CheckBox Content="Hide it while Pulse's own window is in front" IsChecked="{Binding MiniHideWhenPulseActive}"
+                              Margin="0,0,0,16" />
+
+                    <TextBlock Text="Shortcut" Style="{StaticResource SettingLabel}" />
+                    <TextBlock Text="Shows or hides the mini window from anywhere, even in a game."
+                               Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                    <!-- The current shortcut; "Set" listens for the next keys pressed, "Reset" goes back to Ctrl + Alt + P. -->
+                    <WrapPanel Margin="0,8,0,0">
+                        <Border x:Name="ShortcutBox" MinWidth="180" CornerRadius="6" Padding="12,7" Margin="0,0,8,4"
+                                Background="{DynamicResource Pulse.QuietFill}" BorderThickness="1" Focusable="True"
+                                BorderBrush="{DynamicResource Pulse.CardBorder}" AutomationProperties.Name="Current shortcut">
+                            <TextBlock Text="{Binding ShortcutText}" FontSize="14" Style="{StaticResource Metric}" FontWeight="Normal" />
+                        </Border>
+                        <ui:Button x:Name="SetShortcutButton" Margin="0,0,8,4" Command="{Binding SetShortcutCommand}">
+                            <ui:Button.Style>
+                                <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                    <Setter Property="Content" Value="Set" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsRecordingShortcut}" Value="True">
+                                            <Setter Property="Content" Value="Cancel" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:Button.Style>
+                        </ui:Button>
+                        <ui:Button Content="Reset" Appearance="Transparent" Margin="0,0,0,4" Command="{Binding ResetShortcutCommand}"
+                                   IsEnabled="{Binding CanResetShortcut}" ToolTip="Back to Ctrl + Alt + P" />
+                    </WrapPanel>
+                    <TextBlock Text="{Binding ShortcutHint}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,0"
+                               Visibility="{Binding ShortcutHint, Converter={x:Static views:Converters.NotNullToVisibility}}" />
+                    <TextBlock Text="{Binding HotkeyProblem}" Foreground="{DynamicResource Pulse.Warning}" FontSize="12" Margin="0,8,0,0"
+                               TextWrapping="Wrap" Visibility="{Binding HotkeyProblem, Converter={x:Static views:Converters.NotNullToVisibility}}" />
                 </StackPanel>
             </Border>
 
@@ -323,5 +457,6 @@
                 </StackPanel>
             </Border>
         </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

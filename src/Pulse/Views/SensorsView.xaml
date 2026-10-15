@@ -13,6 +13,9 @@
     <UserControl.Resources>
         <!-- Value, Min and Max columns share these widths across header and sensor rows. -->
         <GridLength x:Key="ValueColumn">130</GridLength>
+        <!-- Min and max columns; dropped in a narrow window so names keep their room (see SensorsView.xaml.cs). -->
+        <GridLength x:Key="RangeColumn">130</GridLength>
+        <Visibility x:Key="RangeVisibility">Visible</Visibility>
 
         <!-- Clickable hardware header. -->
         <Style x:Key="HeaderButton" TargetType="Button">
@@ -79,13 +82,13 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="{StaticResource ValueColumn}" />
-                    <ColumnDefinition Width="{StaticResource ValueColumn}" />
-                    <ColumnDefinition Width="{StaticResource ValueColumn}" />
+                    <ColumnDefinition Width="{DynamicResource RangeColumn}" />
+                    <ColumnDefinition Width="{DynamicResource RangeColumn}" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Style="{StaticResource Secondary}" />
                 <TextBlock Grid.Column="1" Text="Value" HorizontalAlignment="Right" Style="{StaticResource Caption}" />
-                <TextBlock Grid.Column="2" Text="Min" HorizontalAlignment="Right" Style="{StaticResource Caption}" />
-                <TextBlock Grid.Column="3" Text="Max" HorizontalAlignment="Right" Style="{StaticResource Caption}" />
+                <TextBlock Visibility="{DynamicResource RangeVisibility}" Grid.Column="2" Text="Min" HorizontalAlignment="Right" Style="{StaticResource Caption}" />
+                <TextBlock Visibility="{DynamicResource RangeVisibility}" Grid.Column="3" Text="Max" HorizontalAlignment="Right" Style="{StaticResource Caption}" />
             </Grid>
         </DataTemplate>
 
@@ -108,6 +111,12 @@
                                 <ui:SymbolIcon Symbol="ArrowCounterclockwise20" />
                             </MenuItem.Icon>
                         </MenuItem>
+                        <MenuItem Header="Pin to dashboard" Command="{Binding PinToDashboardCommand}"
+                                  Visibility="{Binding CanPin, Converter={StaticResource BoolToVisibility}}">
+                            <MenuItem.Icon>
+                                <ui:SymbolIcon Symbol="Pin20" />
+                            </MenuItem.Icon>
+                        </MenuItem>
                         <MenuItem Header="Alert when above…" Command="{Binding CreateAlertCommand}"
                                   Visibility="{Binding CanCreateAlert, Converter={StaticResource BoolToVisibility}}">
                             <MenuItem.Icon>
@@ -126,8 +135,8 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="{StaticResource ValueColumn}" />
-                        <ColumnDefinition Width="{StaticResource ValueColumn}" />
-                        <ColumnDefinition Width="{StaticResource ValueColumn}" />
+                        <ColumnDefinition Width="{DynamicResource RangeColumn}" />
+                        <ColumnDefinition Width="{DynamicResource RangeColumn}" />
                     </Grid.ColumnDefinitions>
 
                     <!-- Name, with a pencil marker when renamed; the original name is in the tooltip. -->
@@ -171,9 +180,9 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <TextBlock Grid.Column="2" Text="{Binding MinText}" FontSize="13"
+                    <TextBlock Visibility="{DynamicResource RangeVisibility}" Grid.Column="2" Text="{Binding MinText}" FontSize="13"
                                HorizontalAlignment="Right" Style="{StaticResource Secondary}" />
-                    <TextBlock Grid.Column="3" Text="{Binding MaxText}" FontSize="13"
+                    <TextBlock Visibility="{DynamicResource RangeVisibility}" Grid.Column="3" Text="{Binding MaxText}" FontSize="13"
                                HorizontalAlignment="Right" Style="{StaticResource Secondary}" />
                 </Grid>
             </Border>
@@ -194,7 +203,7 @@
         <DockPanel Margin="0,0,0,2">
             <TextBlock DockPanel.Dock="Right" Text="{Binding Summary}" VerticalAlignment="Center"
                        Style="{StaticResource Secondary}" />
-            <ui:TextBox Width="340" HorizontalAlignment="Left" PlaceholderText="Search sensors, devices or drive letters"
+            <ui:TextBox MaxWidth="340" HorizontalAlignment="Stretch" Margin="0,0,12,0" PlaceholderText="Search sensors, devices or drive letters"
                         AutomationProperties.Name="Search sensors"
                         Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}">
                 <ui:TextBox.Icon>

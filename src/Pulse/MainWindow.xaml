@@ -11,7 +11,8 @@
                  Title="Pulse"
                  Icon="pack://application:,,,/Resources/Pulse.ico"
                  Width="1360" Height="920"
-                 MinWidth="1120" MinHeight="680"
+                 MinWidth="480" MinHeight="520"
+                 SizeChanged="Window_SizeChanged"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True"
                  WindowBackdropType="Mica"
@@ -33,10 +34,19 @@
         </ui:TitleBar>
 
         <!-- Header: machine name, live status, page switcher -->
-        <Grid Grid.Row="1" Margin="30,2,30,10">
-            <StackPanel>
-                <TextBlock Text="{Binding MachineName}" FontSize="24"
-                           Style="{StaticResource Metric}" />
+        <!-- In a narrow window the buttons move under the title (see Window_SizeChanged). -->
+        <Grid x:Name="Header" Grid.Row="1" Margin="30,2,30,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Margin="0,0,16,0">
+                <TextBlock Text="{Binding MachineName}" FontSize="24" TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding MachineName}" Style="{StaticResource Metric}" />
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Grid Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center">
                         <Ellipse x:Name="LiveHalo" Fill="{DynamicResource Pulse.Live}" Opacity="0" RenderTransformOrigin="0.5,0.5">
@@ -50,7 +60,18 @@
                 </StackPanel>
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+            <StackPanel x:Name="HeaderActions" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+
+            <Button Style="{StaticResource RoundIconButton.Plain}" Margin="0,0,10,0" Command="{Binding Dashboard.BeginEditCommand}"
+                    ToolTip="Customize the dashboard" AutomationProperties.Name="Customize dashboard"
+                    Visibility="{Binding IsDashboardSelected, Converter={StaticResource BoolToVisibility}}">
+                <ui:SymbolIcon Symbol="Edit24" FontSize="18" />
+            </Button>
+
+            <Button Style="{StaticResource RoundIconButton.Plain}" Margin="0,0,10,0" Command="{Binding ToggleMiniWindowCommand}"
+                    ToolTip="Mini window: a small readout that stays on top" AutomationProperties.Name="Mini window">
+                <ui:SymbolIcon Symbol="PictureInPicture24" FontSize="18" />
+            </Button>
 
             <Button Style="{StaticResource RoundIconButton.Plain}" Margin="0,0,10,0" Click="SearchButton_Click"
                     ToolTip="Search sensors (Ctrl+K)" AutomationProperties.Name="Search sensors">
@@ -125,17 +146,17 @@
             <Border Background="{DynamicResource Pulse.QuietFill}" CornerRadius="20" Padding="4">
                 <StackPanel Orientation="Horizontal">
                     <RadioButton Style="{StaticResource NavPill}" GroupName="Pages"
-                                 IsChecked="{Binding IsDashboardSelected}">
+                                 IsChecked="{Binding IsDashboardSelected}" ToolTip="Dashboard">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Gauge24" FontSize="16" Margin="0,0,6,0" />
-                            <TextBlock Text="Dashboard" />
+                            <ui:SymbolIcon x:Name="DashboardIcon" Symbol="Gauge24" FontSize="16" Margin="0,0,6,0" />
+                            <TextBlock x:Name="DashboardLabel" Text="Dashboard" />
                         </StackPanel>
                     </RadioButton>
                     <RadioButton Style="{StaticResource NavPill}" GroupName="Pages"
-                                 IsChecked="{Binding IsSensorsSelected}">
+                                 IsChecked="{Binding IsSensorsSelected}" ToolTip="All sensors">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="TableSimple24" FontSize="16" Margin="0,0,6,0" />
-                            <TextBlock Text="All sensors" />
+                            <ui:SymbolIcon x:Name="SensorsIcon" Symbol="TableSimple24" FontSize="16" Margin="0,0,6,0" />
+                            <TextBlock x:Name="SensorsLabel" Text="All sensors" />
                         </StackPanel>
                     </RadioButton>
                     <RadioButton Style="{StaticResource NavPill}" GroupName="Pages"
@@ -149,7 +170,7 @@
         </Grid>
 
         <!-- Banners -->
-        <StackPanel Grid.Row="2" Margin="30,0,30,4">
+        <StackPanel x:Name="Banners" Grid.Row="2" Margin="30,0,30,4">
             <Border Background="{DynamicResource Pulse.Warning.Background}" BorderBrush="{DynamicResource Pulse.Warning.Border}" BorderThickness="1"
                     CornerRadius="10" Padding="14,10" Margin="0,0,0,8"
                     Visibility="{Binding ShowElevationBanner, Converter={StaticResource BoolToVisibility}}">
@@ -220,7 +241,7 @@
                     <ScaleTransform />
                 </Border.RenderTransform>
                 <DockPanel>
-                    <ui:TextBox x:Name="SearchBox" DockPanel.Dock="Top" Margin="12" PlaceholderText="Search sensors: name, hardware or kind"
+                    <ui:TextBox x:Name="SearchBox" DockPanel.Dock="Top" Margin="12" PlaceholderText="{Binding Prompt}"
                                 Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="SearchBox_PreviewKeyDown"
                                 AutomationProperties.Name="Search sensors">
                         <ui:TextBox.Icon>

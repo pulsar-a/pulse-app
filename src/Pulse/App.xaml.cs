@@ -16,6 +16,7 @@ public partial class App : Application
     private SingleInstance? _instance;
     private TrayIcon? _tray;
     private HistoryRecorder? _history;
+    private MiniController? _mini;
     private bool _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -76,6 +77,21 @@ public partial class App : Application
         // History: every minute of every sensor, on disk (Settings → History).
         _history = new HistoryRecorder(stream, settings);
         viewModel.AttachHistory(_history, new HistoryStore(stream, _history.DatabasePath));
+
+        // The mini window: always on top, for games (Settings → Mini window).
+        _mini = new MiniController(settings, new MiniViewModel(viewModel.Catalog, stream, settings, Dispatcher),
+            active => viewModel.IsMiniActive = active,
+            () =>
+            {
+                BringToFront();
+                viewModel.IsSettingsSelected = true;
+            });
+        viewModel.ToggleMini = _mini.Toggle;
+        viewModel.Settings.AttachMini(_mini, () => viewModel.Search.Open(
+            id => SettingsViewModel.AddMiniItem(settings, id), "Add a sensor to the mini window"));
+        _tray.Mini = _mini;
+        MainWindow.Activated += (_, _) => _mini.SetPulseInFront(true);
+        MainWindow.Deactivated += (_, _) => _mini.SetPulseInFront(false);
 
         // --tray (from the start-with-Windows task) or "Start minimized": stay in the tray until asked.
         var startHidden = arguments.StartInTray || settings.Current.Startup.StartMinimized;
@@ -162,6 +178,7 @@ public partial class App : Application
     {
         // Remove the tray icon first, so it doesn't linger in the notification area.
         _tray?.Dispose();
+        _mini?.Dispose();
         _hardware?.Dispose();
         // After polling stops, so the minute in progress is complete when it's written.
         _history?.Dispose();

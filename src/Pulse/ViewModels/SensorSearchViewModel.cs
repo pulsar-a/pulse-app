@@ -26,6 +26,7 @@ public partial class SensorSearchViewModel : ObservableObject
     private readonly SensorStream _stream;
     private readonly Action<string> _openDetails;
     private IReadOnlyList<SensorInfo> _sensors = [];
+    private Action<string>? _choose;
     private Dictionary<string, float?> _values = new();
 
     public SensorSearchViewModel(SensorCatalog catalog, SensorStream stream, Action<string> openDetails)
@@ -40,11 +41,21 @@ public partial class SensorSearchViewModel : ObservableObject
     [ObservableProperty] public partial SearchResult? SelectedResult { get; set; }
     [ObservableProperty] public partial bool HasNoResults { get; private set; }
 
+    /// <summary>The search box's hint: what choosing a sensor will do.</summary>
+    [ObservableProperty] public partial string Prompt { get; private set; } = DefaultPrompt;
+
+    private const string DefaultPrompt = "Search sensors: name, hardware or kind";
+
     public ObservableCollection<SearchResult> Results { get; } = [];
 
-    /// <summary>Opens the palette with an empty query, taking a fresh copy of the sensor list.</summary>
-    public void Open()
+    /// <summary>
+    /// Opens the palette with an empty query, taking a fresh copy of the sensor list. By default choosing a
+    /// sensor opens its details; <paramref name="choose"/> does something else instead (pin it, for one).
+    /// </summary>
+    public void Open(Action<string>? choose = null, string? prompt = null)
     {
+        _choose = choose;
+        Prompt = prompt ?? DefaultPrompt;
         _sensors = _catalog.AllSensors();
         _values = new Dictionary<string, float?>();
         foreach (var sensor in _stream.Latest?.Hardware.SelectMany(h => h.AllSensors) ?? [])
@@ -84,7 +95,7 @@ public partial class SensorSearchViewModel : ObservableObject
     {
         if ((result ?? SelectedResult) is not { } chosen) return;
         IsOpen = false;
-        _openDetails(chosen.Sensor.Id);
+        (_choose ?? _openDetails)(chosen.Sensor.Id);
     }
 
     /// <summary>

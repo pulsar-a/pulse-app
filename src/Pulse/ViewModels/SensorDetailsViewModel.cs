@@ -18,6 +18,12 @@ public sealed record DetailsRange(string Label, TimeSpan Span)
     public override string ToString() => Label;
 }
 
+/// <summary>Where "Pin to dashboard" can put a sensor: a new tile (null) or an existing pinned tile.</summary>
+public sealed record PinChoice(string? TileId, string Label)
+{
+    public override string ToString() => Label;
+}
+
 public sealed record CompareChoice(string? SensorId, string Label)
 {
     public override string ToString() => Label;
@@ -58,6 +64,46 @@ public partial class SensorDetailsViewModel : ObservableObject
         SelectedRange = Ranges[1];
         _stream.SnapshotPublished += OnSnapshotPublished;
         _catalog.NamesChanged += () => { if (SensorId is not null) RefreshName(); };
+        _settings.Changed += () => { if (IsOpen) RefreshPin(); };
+    }
+
+    /// <summary>The color of the dashboard card showing a sensor, so the chart matches it.</summary>
+    public Func<string, Color?>? CardAccent { get; init; }
+
+    /// <summary>The dashboard, for "Pin to dashboard"; null hides the button (tests, previews).</summary>
+    public IPinBoard? PinBoard { get; init; }
+
+    public bool CanPin => PinBoard is not null;
+
+    [ObservableProperty] public partial bool IsPinned { get; private set; }
+
+    /// <summary>A new tile, then every pinned tile the sensor could join.</summary>
+    public ObservableCollection<PinChoice> PinChoices { get; } = [];
+
+    private void RefreshPin()
+    {
+        if (PinBoard is null || SensorId is null) return;
+        IsPinned = PinBoard.IsPinned(SensorId);
+        PinChoices.Clear();
+        PinChoices.Add(new PinChoice(null, "As a new tile"));
+        foreach (var (id, title) in PinBoard.PinTargets())
+            PinChoices.Add(new PinChoice(id, $"Add to “{title}”"));
+    }
+
+    [RelayCommand]
+    private void PinTo(PinChoice? choice)
+    {
+        if (PinBoard is null || SensorId is null) return;
+        PinBoard.Pin(SensorId, choice?.TileId);
+        Status = "Pinned to the dashboard.";
+    }
+
+    [RelayCommand]
+    private void Unpin()
+    {
+        if (PinBoard is null || SensorId is null) return;
+        PinBoard.Unpin(SensorId);
+        Status = "Removed from the dashboard.";
     }
 
     public IReadOnlyList<DetailsRange> Ranges { get; } =
@@ -104,7 +150,7 @@ public partial class SensorDetailsViewModel : ObservableObject
         SensorId = sensorId;
         var info = _catalog.Find(sensorId);
         _type = info?.Type ?? SensorType.Temperature;
-        Accent = AccentFor(_type);
+        Accent = CardAccent?.Invoke(sensorId) ?? Palette.ForSensor(_type, info?.HardwareType);
         ValueFormatter = FormatterFor(_type);
         RefreshName();
         Status = null;
@@ -112,6 +158,7 @@ public partial class SensorDetailsViewModel : ObservableObject
         BuildCompareChoices();
         SelectedCompare = CompareChoices[0];
         UpdateLiveValue(_stream.Latest);
+        RefreshPin();
         IsOpen = true;
         Log.Write($"Details opened for {sensorId}");
         _ = LoadAsync();
@@ -325,16 +372,6 @@ public partial class SensorDetailsViewModel : ObservableObject
 
     // ---- Look ---------------------------------------------------------------------------------
 
-    private static Color AccentFor(SensorType type) => type switch
-    {
-        SensorType.Temperature => Palette.Cpu,
-        SensorType.Load or SensorType.Control or SensorType.Level => Palette.Gpu,
-        SensorType.Fan or SensorType.Flow => Palette.Fans,
-        SensorType.Power or SensorType.Voltage or SensorType.Current or SensorType.Energy => Palette.Power,
-        SensorType.Throughput => Palette.Network,
-        SensorType.Clock or SensorType.Frequency => Palette.Storage,
-        _ => Palette.Memory,
-    };
 
     /// <summary>Axis and tooltip formatting: compact for temperatures and rates, the standard units otherwise.</summary>
     public static Func<double, string> FormatterFor(SensorType type) => type switch

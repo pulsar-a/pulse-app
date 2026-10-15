@@ -13,7 +13,7 @@ public enum TemperatureUnit
 /// <summary>User choices that LHM can't detect, saved to %LOCALAPPDATA%\Pulse\settings.json.</summary>
 public sealed class Settings
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public GeneralSettings General { get; set; } = new();
@@ -22,6 +22,8 @@ public sealed class Settings
     public SensorSettings Sensors { get; set; } = new();
     public AlertSettings Alerts { get; set; } = new();
     public HistorySettings History { get; set; } = new();
+    public DashboardSettings Dashboard { get; set; } = new();
+    public MiniSettings Mini { get; set; } = new();
 
     /// <summary>Version 1 stored the pump header here; <see cref="SettingsService.Load"/> moves it into roles.</summary>
     [JsonPropertyName("PumpSensorId")]
@@ -200,6 +202,12 @@ public sealed class SettingsService : IDisposable
         settings.Alerts ??= new AlertSettings();
         settings.History ??= new HistorySettings();
         settings.Alerts.Rules ??= [];
+        settings.Dashboard ??= new DashboardSettings();
+        settings.Mini ??= new MiniSettings();
+        settings.Mini.Positions ??= new Dictionary<string, MiniPosition>();
+        settings.Mini.Hotkey ??= "";
+        if (settings.Dashboard.Tiles is { } tiles && DashboardLayout.Normalize(tiles))
+            changed = true;
         if (AlertDefaults.AddMissing(settings.Alerts.Rules))
             changed = true;
 
@@ -209,6 +217,11 @@ public sealed class SettingsService : IDisposable
             settings.LegacyPumpSensorId = null;
             changed = true;
         }
+
+        // Version 3: "hide the mini window while Pulse is in front" became opt-in. Builds before it saved it
+        // switched on, which made the header button seem to do nothing.
+        if (settings.SchemaVersion < 3)
+            settings.Mini.HideWhenPulseActive = false;
 
         if (settings.SchemaVersion < Settings.CurrentSchemaVersion)
         {

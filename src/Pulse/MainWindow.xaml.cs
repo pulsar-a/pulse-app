@@ -70,6 +70,34 @@ public partial class MainWindow : FluentWindow
         _viewModel.OpenAlertSettingsCommand.Execute(null);
     }
 
+    // ---- Narrow windows ------------------------------------------------------------------------
+
+    /// <summary>
+    /// Fits the chrome to the window width: under 940 px the header buttons move below the title, under
+    /// 640 px the page buttons drop their labels and the side margins shrink. The details panel and the
+    /// search never get wider than the window. (The dashboard tiles reflow on their own.)
+    /// </summary>
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e) => FitToWidth(ActualWidth);
+
+    private void FitToWidth(double width)
+    {
+        var stacked = width < 940;
+        Grid.SetRow(HeaderActions, stacked ? 1 : 0);
+        Grid.SetColumn(HeaderActions, stacked ? 0 : 1);
+        HeaderActions.HorizontalAlignment = stacked ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+        HeaderActions.Margin = stacked ? new Thickness(0, 10, 0, 0) : new Thickness(0);
+
+        var narrow = width < 640;
+        DashboardLabel.Visibility = SensorsLabel.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        DashboardIcon.Margin = SensorsIcon.Margin = narrow ? new Thickness(0) : new Thickness(0, 0, 6, 0);
+        var side = narrow ? 14 : 30;
+        Header.Margin = new Thickness(side, 2, side, 10);
+        Banners.Margin = new Thickness(side, 0, side, 4);
+
+        DetailsPanel.Width = Math.Min(540, width);
+        SearchBoxCard.Width = Math.Min(620, Math.Max(200, width - 24));
+    }
+
     private void UpdateActivity() =>
         _viewModel.IsWindowActive = IsVisible && WindowState != WindowState.Minimized;
 
@@ -248,6 +276,8 @@ public partial class MainWindow : FluentWindow
                 _viewModel.Search.Close();
             else if (_viewModel.Details is { IsOpen: true } details)
                 details.CloseCommand.Execute(null);
+            else if (_viewModel.Dashboard.IsEditing)
+                _viewModel.Dashboard.EndEditCommand.Execute(null);
             else
                 return;
             e.Handled = true;

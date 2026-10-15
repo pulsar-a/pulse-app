@@ -107,8 +107,8 @@ public class DashboardViewModelTests : PulseTest
 
         Assert.Equal("", Pump(settings));
         Assert.False(dashboard.Cooling.HasData);
-        Assert.True(dashboard.Cooling.ShowPumpPicker);
-        Assert.Single(dashboard.Cooling.Candidates);
+        Assert.True(dashboard.Cooling.ShowHeaderPicker);
+        Assert.Equal("Not on a motherboard header", dashboard.Cooling.SelectedHeader!.Name);
     }
 
     [Fact]
@@ -118,8 +118,57 @@ public class DashboardViewModelTests : PulseTest
         dashboard.Apply(Of(Board(1200, 2538)));
 
         Assert.Null(Pump(settings));
-        Assert.True(dashboard.Cooling.ShowPumpPicker);
-        Assert.Equal(2, dashboard.Cooling.Candidates.Count);
+        Assert.True(dashboard.Cooling.ShowHeaderPicker);
+        Assert.Null(dashboard.Cooling.SelectedHeader);
+        Assert.Equal(["Fan #1", "Fan #2", "Not on a motherboard header"], dashboard.Cooling.Headers.Select(h => h.Name));
+    }
+
+    [Fact]
+    public void Every_spinning_header_stays_listed_after_the_pump_is_picked()
+    {
+        var dashboard = NewDashboard(out var settings);
+        dashboard.Apply(Of(Board(1200, 2538)));
+
+        dashboard.Cooling.SelectedHeader = dashboard.Cooling.Headers.Single(h => h.Name == "Fan #2");
+        dashboard.Apply(Of(Board(1200, 2538)));
+
+        Assert.Equal("/lpc/nct6798d/0/fan/1", Pump(settings));
+        Assert.True(dashboard.Cooling.HasData);
+        Assert.True(dashboard.Cooling.ShowHeaderPicker);
+        Assert.Equal(["Fan #1", "Fan #2", "Not on a motherboard header"], dashboard.Cooling.Headers.Select(h => h.Name));
+        Assert.Equal("Fan #2", dashboard.Cooling.SelectedHeader!.Name);
+        Assert.Equal("2,538 rpm", dashboard.Cooling.SelectedHeader.SpeedText);
+    }
+
+    [Fact]
+    public void Switching_the_pump_to_another_header_or_to_none()
+    {
+        var dashboard = NewDashboard(out var settings);
+        dashboard.Apply(Of(Board(1200, 2538)));
+        dashboard.Cooling.SelectedHeader = dashboard.Cooling.Headers.Single(h => h.Name == "Fan #2");
+        dashboard.Apply(Of(Board(1200, 2538)));
+
+        dashboard.Cooling.SelectedHeader = dashboard.Cooling.Headers.Single(h => h.Name == "Fan #1");
+        dashboard.Apply(Of(Board(1200, 2538)));
+        Assert.Equal("/lpc/nct6798d/0/fan/0", Pump(settings));
+        Assert.Contains(dashboard.Fans, f => f.Name == "Fan #2");
+
+        dashboard.Cooling.SelectedHeader = dashboard.Cooling.Headers.Single(h => h.Id == "");
+        dashboard.Apply(Of(Board(1200, 2538)));
+        Assert.Equal("", Pump(settings));
+        Assert.False(dashboard.Cooling.HasData);
+        Assert.Equal(2, dashboard.Fans.Count);
+    }
+
+    [Fact]
+    public void Ticks_do_not_count_as_choosing_a_header()
+    {
+        var dashboard = NewDashboard(out var settings);
+        for (var i = 0; i < 3; i++)
+            dashboard.Apply(Of(Board(1200, 2538 + i)));
+
+        Assert.Null(Pump(settings));
+        Assert.Null(dashboard.Cooling.SelectedHeader);
     }
 
     [Fact]

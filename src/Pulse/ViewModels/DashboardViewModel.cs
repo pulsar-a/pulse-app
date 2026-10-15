@@ -7,10 +7,23 @@ using Pulse.Controls;
 using Pulse.Models;
 using Pulse.Services;
 using Wpf.Ui.Controls;
+using Color = System.Windows.Media.Color;
 
 namespace Pulse.ViewModels;
 
-public partial class DashboardViewModel : ObservableObject
+/// <summary>What other parts of Pulse need to pin sensors to the dashboard.</summary>
+public interface IPinBoard
+{
+    bool IsPinned(string sensorId);
+
+    /// <summary>Pinned tiles a sensor can be added to, as (tile id, title).</summary>
+    IReadOnlyList<(string Id, string Title)> PinTargets();
+
+    void Pin(string sensorId, string? intoTileId = null);
+    void Unpin(string sensorId);
+}
+
+public partial class DashboardViewModel : ObservableObject, IPinBoard
 {
     private static readonly Regex CoreTemperature = new(@"^(P-Core|E-Core|Core|CPU Core) #(\d+)$");
     private static readonly Regex CoreLoad = new(@"^CPU Core #(\d+)( Thread #\d+)?$");
@@ -22,13 +35,26 @@ public partial class DashboardViewModel : ObservableObject
     private readonly bool _isElevated = HardwareService.IsElevated;
     private readonly SensorCatalog _catalog;
     private readonly SensorStream _stream;
+    private readonly SettingsService _settings;
+    private readonly Dictionary<string, DashboardTileViewModel> _tiles = new();
 
     public DashboardViewModel(bool driverInstalled, SensorCatalog catalog, SensorStream stream)
     {
         _driverInstalled = driverInstalled;
         _catalog = catalog;
         _stream = stream;
+        _settings = catalog.Settings;
         Cards = [Cpu, Gpu, Memory, Power];
+        Cooling.PumpChosen = id =>
+        {
+            if (id == PumpSensorId) return;
+            if (id.Length == 0) ClearPump();
+            else SetPump(id);
+        };
+
+        // Every layout change (here, from the details panel, or "Reset" in Settings) goes through settings.
+        SyncTiles();
+        _settings.Changed += SyncTiles;
     }
 
     /// <summary>Opens the sensor details panel; set by the main view model.</summary>
@@ -69,15 +95,15 @@ public partial class DashboardViewModel : ObservableObject
     private string? PumpSensorId => _catalog.RoleSensor(SensorRoles.Pump);
 
     /// <summary>Remembers which fan header the pump is on; the next tick moves it into the cooling card.</summary>
-    [RelayCommand]
     private void SetPump(string sensorId) => _catalog.SetRole(SensorRoles.Pump, sensorId);
 
     /// <summary>
-    /// Shows the header picker again. The role is cleared rather than forgotten, meaning "the user chose",
-    /// so a lone header isn't automatically re-picked straight away.
+    /// "Not on a motherboard header". The role is cleared rather than forgotten, meaning "the user chose",
+    /// so a lone header isn't automatically picked again.
     /// </summary>
-    [RelayCommand]
     private void ClearPump() => _catalog.ClearRole(SensorRoles.Pump);
+
+    private const string NoHeaderLabel = "Not on a motherboard header";
 
     public GaugeCardViewModel Cpu { get; } = new("Processor", SymbolRegular.DeveloperBoard24, Palette.Cpu);
     public GaugeCardViewModel Gpu { get; } = new("Graphics", SymbolRegular.DesktopPulse24, Palette.Gpu);
@@ -85,19 +111,19 @@ public partial class DashboardViewModel : ObservableObject
     public GaugeCardViewModel Power { get; } = new("System power", SymbolRegular.Flash24, Palette.Power);
     public IReadOnlyList<GaugeCardViewModel> Cards { get; }
 
-    public ObservableCollection<CoreTileViewModel> Cores { get; } = [];
-    public ObservableCollection<FanRowViewModel> Fans { get; } = [];
-    public ObservableCollection<DriveRowViewModel> Drives { get; } = [];
+    public CoresCardViewModel CoresCard { get; } = new();
+    public FansCardViewModel FansCard { get; } = new();
+    public DrivesCardViewModel DrivesCard { get; } = new();
     public NetworkViewModel Network { get; } = new();
     public CoolingViewModel Cooling { get; } = new();
 
+    public ObservableCollection<CoreTileViewModel> Cores => CoresCard.Cores;
+    public ObservableCollection<FanRowViewModel> Fans => FansCard.Rows;
+    public ObservableCollection<DriveRowViewModel> Drives => DrivesCard.Rows;
+    public string CoresTitle => CoresCard.Title;
+
     /// <summary>True until the first snapshot arrives; the view shows skeleton cards meanwhile.</summary>
     [ObservableProperty] public partial bool IsLoading { get; set; } = true;
-    [ObservableProperty] public partial string CoresTitle { get; set; } = "Cores";
-    [ObservableProperty] public partial string CoresSubtitle { get; set; } = "";
-    [ObservableProperty] public partial bool HasFans { get; set; }
-    [ObservableProperty] public partial bool HasDrives { get; set; }
-    [ObservableProperty] public partial string FansEmptyText { get; set; } = "";
 
     public void Apply(HardwareSnapshot snapshot)
     {
@@ -114,6 +140,7 @@ public partial class DashboardViewModel : ObservableObject
         UpdateFans(snapshot);
         UpdateDrives(snapshot);
         UpdateNetwork(snapshot);
+        UpdatePinned(snapshot);
         IsLoading = false;
     }
 
@@ -309,8 +336,8 @@ public partial class DashboardViewModel : ObservableObject
             var pCores = temps.Count(s => s.Name.StartsWith("P-Core"));
             var eCores = temps.Count(s => s.Name.StartsWith("E-Core"));
             var hottest = temps.Where(s => s.HasValue).MaxBy(s => s.Value)!;
-            CoresTitle = "Core temperatures";
-            CoresSubtitle = (pCores > 0 && eCores > 0 ? $"{pCores} P-cores, {eCores} E-cores · " : $"{temps.Count} cores · ")
+            CoresCard.Title = "Core temperatures";
+            CoresCard.Subtitle = (pCores > 0 && eCores > 0 ? $"{pCores} P-cores, {eCores} E-cores · " : $"{temps.Count} cores · ")
                             + $"hottest {_catalog.DisplayName(hottest)} at {SensorFormat.WholeTemperature(hottest.Value!.Value)}";
         }
         else
@@ -323,8 +350,8 @@ public partial class DashboardViewModel : ObservableObject
                 .OrderBy(g => g.Key)
                 .Select(g => ($"{g.Key}", $"Core #{g.Key}", g.Max(s => s.Value), g.MaxBy(s => s.Value)!.Id))
                 .ToList();
-            CoresTitle = "Core load";
-            CoresSubtitle = _driverInstalled
+            CoresCard.Title = "Core load";
+            CoresCard.Subtitle = _driverInstalled
                 ? $"{tiles.Count} cores · temperatures unavailable"
                 : $"{tiles.Count} cores · install PawnIO to see temperatures";
         }
@@ -418,8 +445,8 @@ public partial class DashboardViewModel : ObservableObject
             row.Fraction = fans[i].Rpm / scale;
         }
 
-        HasFans = fans.Count > 0;
-        FansEmptyText = _driverInstalled
+        FansCard.HasFans = fans.Count > 0;
+        FansCard.EmptyText = _driverInstalled
             ? "No fan sensors found."
             : "Motherboard fans need the PawnIO driver.";
     }
@@ -428,7 +455,7 @@ public partial class DashboardViewModel : ObservableObject
     {
         var drives = snapshot.OfType(HardwareType.Storage).ToList();
         Sync(Drives, drives.Count, () => new DriveRowViewModel());
-        HasDrives = drives.Count > 0;
+        DrivesCard.HasDrives = drives.Count > 0;
 
         for (var i = 0; i < drives.Count; i++)
         {
@@ -476,6 +503,7 @@ public partial class DashboardViewModel : ObservableObject
         var sources = new List<string>();
         var candidates = new List<SensorReading>();
         var candidateOwners = new List<string>();
+        var headers = new List<SensorReading>();
 
         foreach (var hardware in snapshot.Hardware)
         {
@@ -485,6 +513,8 @@ public partial class DashboardViewModel : ObservableObject
                 // stopped pump is exactly what they'd want to notice.
                 if (sensor.Type == SensorType.Fan && sensor.Id == PumpSensorId)
                 {
+                    if (owner.Type is HardwareType.SuperIO or HardwareType.EmbeddedController)
+                        headers.Add(sensor);
                     pumps.Insert(0, sensor);
                     if (!sources.Contains(owner.Name))
                         sources.Add(owner.Name);
@@ -511,6 +541,7 @@ public partial class DashboardViewModel : ObservableObject
                     {
                         candidates.Add(sensor);
                         candidateOwners.Add(owner.Name);
+                        headers.Add(sensor);
                     }
                     continue;
                 }
@@ -522,7 +553,7 @@ public partial class DashboardViewModel : ObservableObject
         }
 
         // With only one spinning header there's nothing to choose: assume it's the pump. This happens
-        // only until the user has made a choice, so "Change pump header" doesn't get overruled.
+        // only until the user has made a choice, so their pick in the header list doesn't get overruled.
         if (pumps.Count == 0 && PumpSensorId is null && candidates.Count == 1)
         {
             SetPump(candidates[0].Id);
@@ -531,8 +562,8 @@ public partial class DashboardViewModel : ObservableObject
             candidates.Clear();
         }
 
-        UpdatePumpCandidates(pumps.Count == 0 ? candidates : []);
-        Cooling.CanChangePump = pumps.Count > 0 && pumps[0].Id == PumpSensorId;
+        _coolingIds = pumps.Concat(coolant).Concat(flows).Select(s => s.Id).ToHashSet();
+        UpdatePumpHeaders(headers, namedPump: pumps.Count > 0 && pumps[0].Id != PumpSensorId);
 
         Cooling.HasData = pumps.Count + coolant.Count + flows.Count > 0;
         if (!Cooling.HasData)
@@ -550,10 +581,16 @@ public partial class DashboardViewModel : ObservableObject
                                     + "need the PawnIO driver. Corsair coolers connected over USB aren't supported "
                                     + "by the sensor library yet.";
             }
-            else if (Cooling.ShowPumpPicker)
+            else if (Cooling.ShowHeaderPicker && PumpSensorId is null)
             {
                 Cooling.EmptyTitle = "Which header is your pump on?";
-                Cooling.EmptyText = "Your motherboard doesn't name its fan headers, so pick the one your pump is plugged into.";
+                Cooling.EmptyText = "Your motherboard doesn't name its fan headers, so pick the one your pump is plugged into below.";
+            }
+            else if (PumpSensorId == "")
+            {
+                Cooling.EmptyTitle = "No pump or coolant readings";
+                Cooling.EmptyText = "Your pump isn't on a motherboard header. Corsair coolers connected over USB "
+                                    + "aren't supported by the sensor library yet.";
             }
             else
             {
@@ -603,21 +640,19 @@ public partial class DashboardViewModel : ObservableObject
         Cooling.SetRows(rows);
     }
 
-    private void UpdatePumpCandidates(List<SensorReading> candidates)
+    /// <summary>
+    /// The pump header list: every spinning motherboard header with its speed, then "not on a header".
+    /// Hidden when there are no headers, or when the pump was found by name (a cooler, a "Pump" header)
+    /// and the user never picked one.
+    /// </summary>
+    private void UpdatePumpHeaders(List<SensorReading> headers, bool namedPump)
     {
-        if (!Cooling.Candidates.Select(c => c.Id).SequenceEqual(candidates.Select(c => c.Id)))
-        {
-            Cooling.Candidates.Clear();
-            foreach (var sensor in candidates)
-                Cooling.Candidates.Add(new PumpCandidateViewModel { Id = sensor.Id });
-        }
-
-        for (var i = 0; i < candidates.Count; i++)
-        {
-            Cooling.Candidates[i].Name = _catalog.DisplayName(candidates[i]);
-            Cooling.Candidates[i].SpeedText = $"{candidates[i].Value:N0} rpm";
-        }
-        Cooling.ShowPumpPicker = candidates.Count > 0;
+        Cooling.ShowHeaderPicker = headers.Count > 0 && !(namedPump && PumpSensorId is null);
+        var choices = headers
+            .Select(h => (h.Id, _catalog.DisplayName(h), h.Value is { } rpm ? $"{rpm:N0} rpm" : "no reading"))
+            .Append(("", NoHeaderLabel, ""))
+            .ToList();
+        Cooling.SyncHeaders(choices, PumpSensorId);
     }
 
     /// <summary>The pump shows as "Pump" unless the user renamed it; other sensors by their display name.</summary>
@@ -649,6 +684,211 @@ public partial class DashboardViewModel : ObservableObject
         Network.Totals = $"{SensorFormat.Format(SensorType.Data, downloaded)} received · {SensorFormat.Format(SensorType.Data, uploaded)} sent";
         Network.SetHistory(History(downSensor), History(upSensor), HistorySamples);
         Network.SensorId = downSensor?.Id;
+    }
+
+    // ---- Color code ----------------------------------------------------------------------------
+
+    private HashSet<string> _coolingIds = [];
+
+    /// <summary>
+    /// The accent of the card a sensor appears in, so its details chart (and a pinned tile) use the same
+    /// color: the GPU card's temperature is green, not the orange of temperatures in general.
+    /// </summary>
+    public Color? CardAccent(string sensorId)
+    {
+        foreach (var card in Cards)
+        {
+            if (card.SensorId == sensorId) return card.Accent;
+        }
+        if (_coolingIds.Contains(sensorId) || sensorId == PumpSensorId) return Palette.Network;
+        if (Cores.Any(c => c.SensorId == sensorId)) return Palette.Cpu;
+        if (Fans.Any(f => f.SensorId == sensorId)) return Palette.Fans;
+        if (Drives.Any(d => d.SensorId == sensorId)) return Palette.Storage;
+        if (Network.SensorId == sensorId) return Palette.Network;
+        return null;
+    }
+
+    // ---- Pinned sensors ------------------------------------------------------------------------
+
+    private void UpdatePinned(HardwareSnapshot? snapshot)
+    {
+        var pinned = _tiles.Values.Select(t => t.Card).OfType<PinnedTileViewModel>().ToList();
+        if (pinned.Count == 0 || snapshot is null)
+            return;
+
+        var wanted = pinned.SelectMany(p => p.Sensors).Select(s => s.SensorId).ToHashSet();
+        var found = new Dictionary<string, (SensorReading, string, HardwareType)>();
+        foreach (var hardware in snapshot.Hardware)
+        {
+            foreach (var (owner, sensor) in WithOwners(hardware))
+            {
+                if (wanted.Contains(sensor.Id))
+                    found[sensor.Id] = (sensor, owner.Name, owner.Type);
+            }
+        }
+
+        foreach (var tile in pinned)
+            tile.Update(found, _catalog, _stream, HistorySamples, CardAccent);
+        foreach (var tile in _tiles.Values.Where(t => t.IsPinned))
+            tile.RefreshTitle();
+    }
+
+    public bool IsPinned(string sensorId) =>
+        DashboardLayout.PinnedTileOf(DashboardLayout.Current(_settings.Current.Dashboard), sensorId) is not null;
+
+    public IReadOnlyList<(string Id, string Title)> PinTargets() =>
+        DashboardLayout.Current(_settings.Current.Dashboard)
+            .Where(t => t.KindValue == TileKind.Pinned && _tiles.ContainsKey(t.Id))
+            .Select(t => (t.Id, _tiles[t.Id].Title))
+            .ToList();
+
+    public void Pin(string sensorId, string? intoTileId = null) =>
+        Edit(tiles => { DashboardLayout.Pin(tiles, sensorId, intoTileId); return true; });
+
+    public void Unpin(string sensorId) => Edit(tiles => DashboardLayout.Unpin(tiles, sensorId));
+
+    // ---- Layout and edit mode -----------------------------------------------------------------
+
+    /// <summary>Visible tiles, in order.</summary>
+    public ObservableCollection<DashboardTileViewModel> Tiles { get; } = [];
+
+    /// <summary>Hidden cards; edit mode lists them so they can be brought back.</summary>
+    public ObservableCollection<DashboardTileViewModel> HiddenTiles { get; } = [];
+
+    [ObservableProperty] public partial bool IsEditing { get; set; }
+    [ObservableProperty] public partial bool HasHiddenTiles { get; private set; }
+
+    /// <summary>Opens the sensor search to pick a sensor to pin; set by the main view model.</summary>
+    public Action? RequestPinSearch { get; set; }
+
+    [RelayCommand]
+    private void BeginEdit() => IsEditing = true;
+
+    [RelayCommand]
+    private void EndEdit() => IsEditing = false;
+
+    [RelayCommand]
+    private void HideTile(DashboardTileViewModel? tile)
+    {
+        if (tile is null) return;
+        Edit(tiles => DashboardLayout.SetHidden(tiles, tile.Id, true));
+    }
+
+    [RelayCommand]
+    private void ShowTile(DashboardTileViewModel? tile)
+    {
+        if (tile is null) return;
+        Edit(tiles => DashboardLayout.SetHidden(tiles, tile.Id, false));
+    }
+
+    [RelayCommand]
+    private void RemoveTile(DashboardTileViewModel? tile)
+    {
+        if (tile is null) return;
+        Edit(tiles => DashboardLayout.Remove(tiles, tile.Id));
+    }
+
+    [RelayCommand]
+    private void PinSensor() => RequestPinSearch?.Invoke();
+
+    /// <summary>Back to the default arrangement of the built-in cards. Pinned tiles stay, at the end.</summary>
+    [RelayCommand]
+    private void ResetLayout() => ResetLayout(_settings);
+
+    public static void ResetLayout(SettingsService settings) => settings.Update(s =>
+    {
+        var pinned = s.Dashboard.Tiles?.Where(t => t.KindValue == TileKind.Pinned).ToList() ?? [];
+        s.Dashboard.Tiles = pinned.Count == 0 ? null : [.. DashboardLayout.Default(), .. pinned];
+    });
+
+    /// <summary>Drag and drop: puts a tile just before another one (or at the end).</summary>
+    public void MoveTile(string id, string? beforeId) => Edit(tiles => DashboardLayout.Move(tiles, id, beforeId));
+
+    public void RenameTile(string id, string? title) => Edit(tiles =>
+    {
+        if (tiles.Find(t => t.Id == id) is not { } tile) return false;
+        var clean = string.IsNullOrWhiteSpace(title) ? null : title.Trim();
+        if (tile.Title == clean) return false;
+        tile.Title = clean;
+        return true;
+    });
+
+    /// <summary>Removes one sensor from a pinned group (in edit mode).</summary>
+    public void UnpinFrom(string tileId, string sensorId) => Edit(tiles => DashboardLayout.Unpin(tiles, sensorId, tileId));
+
+    /// <summary>Applies an edit to the saved layout; <see cref="SyncTiles"/> then follows from settings.Changed.</summary>
+    private void Edit(Func<List<TileSettings>, bool> edit) => _settings.Update(s =>
+    {
+        var tiles = DashboardLayout.Current(s.Dashboard).Select(t => t.Clone()).ToList();
+        if (edit(tiles))
+            s.Dashboard.Tiles = tiles;
+    });
+
+    /// <summary>Brings the tile view models in line with the saved layout, reusing what's already there.</summary>
+    private void SyncTiles()
+    {
+        var layout = DashboardLayout.Current(_settings.Current.Dashboard);
+        var ids = new HashSet<string>();
+        var visible = new List<DashboardTileViewModel>();
+        var hidden = new List<DashboardTileViewModel>();
+
+        foreach (var tile in layout)
+        {
+            if (tile.KindValue is not { } kind || !ids.Add(tile.Id))
+                continue;
+            if (!_tiles.TryGetValue(tile.Id, out var vm))
+            {
+                vm = new DashboardTileViewModel(tile.Id, kind, kind == TileKind.Pinned ? new PinnedTileViewModel(tile.Id) : CardFor(kind),
+                    (t, size) => Edit(tiles => DashboardLayout.Resize(tiles, t.Id, size)));
+                _tiles[tile.Id] = vm;
+            }
+            vm.Size = tile.SizeValue;
+            if (vm.Card is PinnedTileViewModel pinned)
+            {
+                pinned.Configure(tile);
+                vm.RefreshTitle();
+            }
+            (tile.Hidden ? hidden : visible).Add(vm);
+        }
+
+        foreach (var gone in _tiles.Keys.Where(id => !ids.Contains(id)).ToList())
+            _tiles.Remove(gone);
+
+        SyncCollection(Tiles, visible);
+        SyncCollection(HiddenTiles, hidden);
+        HasHiddenTiles = hidden.Count > 0;
+        UpdatePinned(_stream.Latest);
+    }
+
+    private object CardFor(TileKind kind) => kind switch
+    {
+        TileKind.Processor => Cpu,
+        TileKind.Graphics => Gpu,
+        TileKind.Memory => Memory,
+        TileKind.Power => Power,
+        TileKind.Cores => CoresCard,
+        TileKind.Cooling => Cooling,
+        TileKind.Fans => FansCard,
+        TileKind.Drives => DrivesCard,
+        TileKind.Network => Network,
+        _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+    };
+
+    /// <summary>Reorders with Move rather than rebuilding, so tiles keep their visuals (and animate into place).</summary>
+    private static void SyncCollection(ObservableCollection<DashboardTileViewModel> target, List<DashboardTileViewModel> wanted)
+    {
+        for (var i = target.Count - 1; i >= 0; i--)
+        {
+            if (!wanted.Contains(target[i]))
+                target.RemoveAt(i);
+        }
+        for (var i = 0; i < wanted.Count; i++)
+        {
+            var at = target.IndexOf(wanted[i]);
+            if (at == i) continue;
+            if (at < 0) target.Insert(i, wanted[i]);
+            else target.Move(at, i);
+        }
     }
 
     private static IEnumerable<(HardwareReading Owner, SensorReading Sensor)> WithOwners(HardwareReading hardware) =>

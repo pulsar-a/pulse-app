@@ -87,8 +87,16 @@ public sealed class TrayIcon : IDisposable
     public void ShowNotification(string title, string message) =>
         _icon.ShowNotification(title, message);
 
+    private string _settingsKey = "";
+
     private void OnSettingsChanged()
     {
+        // Settings change often (every step of a slider); only the tray's own choices matter here.
+        var s = _settings.Current;
+        var key = $"{s.Startup.ShowTrayIcon}|{s.Startup.TraySensorId}|{s.Units.Temperature}|{string.Join(",", s.Sensors.Names)}|{string.Join(",", s.Sensors.Roles)}";
+        if (key == _settingsKey) return;
+        _settingsKey = key;
+
         ApplyVisibility();
         _renderedKey = "";   // unit or tray choice may have changed: redraw
         if (_stream.Latest is { } latest)
@@ -216,6 +224,9 @@ public sealed class TrayIcon : IDisposable
     /// <summary>Tray icons are "small icons": 16 px at 100% scaling, 24 px at 150%, 32 px at 200%.</summary>
     private static int SmallIconSize() => Math.Max(16, GetSystemMetrics(49 /* SM_CXSMICON */));
 
+    /// <summary>The mini window, for its menu entries; set by the app.</summary>
+    public MiniController? Mini { get; set; }
+
     private void BuildMenu()
     {
         var menu = _icon.ContextMenu!;
@@ -224,6 +235,22 @@ public sealed class TrayIcon : IDisposable
         var open = new MenuItem { Header = "Open Pulse", FontWeight = FontWeights.SemiBold };
         open.Click += (_, _) => _showWindow();
         menu.Items.Add(open);
+
+        if (Mini is { } mini)
+        {
+            var shortcut = mini.Shortcut is { } keys ? $"   {keys}" : "";
+            var toggle = new MenuItem { Header = "Mini window" + shortcut, IsCheckable = true, IsChecked = mini.IsOpen };
+            toggle.Click += (_, _) => mini.SetOpen(toggle.IsChecked);
+            menu.Items.Add(toggle);
+
+            // While clicks go through the mini window, its own menu can't be reached: this is the way out.
+            if (mini.IsOpen && _settings.Current.Mini.ClickThrough)
+            {
+                var clickable = new MenuItem { Header = "Make the mini window clickable" };
+                clickable.Click += (_, _) => _settings.Update(s => s.Mini.ClickThrough = false);
+                menu.Items.Add(clickable);
+            }
+        }
         menu.Items.Add(new Separator());
 
         // What the icon shows: the common readings this PC has, plus whatever was picked from All sensors.

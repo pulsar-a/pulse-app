@@ -4,7 +4,8 @@ using Pulse.Models;
 namespace Pulse.Services;
 
 /// <summary>What the catalog knows about one sensor.</summary>
-public sealed record SensorInfo(string Id, string OriginalName, string DisplayName, SensorType Type, string HardwareName)
+public sealed record SensorInfo(string Id, string OriginalName, string DisplayName, SensorType Type, string HardwareName,
+    HardwareType? HardwareType = null)
 {
     public bool IsRenamed => DisplayName != OriginalName;
 }
@@ -17,9 +18,12 @@ public sealed record SensorInfo(string Id, string OriginalName, string DisplayNa
 public sealed class SensorCatalog
 {
     private readonly SettingsService _settings;
-    private Dictionary<string, (SensorReading Sensor, string HardwareName)> _index = new();
+    private Dictionary<string, (SensorReading Sensor, string HardwareName, HardwareType HardwareType)> _index = new();
 
     public SensorCatalog(SettingsService settings) => _settings = settings;
+
+    /// <summary>The settings names and roles live in; the dashboard keeps its layout there too.</summary>
+    public SettingsService Settings => _settings;
 
     /// <summary>Raised after a rename, a reset, or a role change.</summary>
     public event Action? NamesChanged;
@@ -30,16 +34,16 @@ public sealed class SensorCatalog
     /// <summary>Indexes the sensors in a snapshot so names and owners can be looked up by id.</summary>
     public void Update(HardwareSnapshot snapshot)
     {
-        var index = new Dictionary<string, (SensorReading, string)>();
+        var index = new Dictionary<string, (SensorReading, string, HardwareType)>();
         foreach (var hardware in snapshot.Hardware)
             Add(index, hardware);
         _index = index;
     }
 
-    private static void Add(Dictionary<string, (SensorReading, string)> index, HardwareReading hardware)
+    private static void Add(Dictionary<string, (SensorReading, string, HardwareType)> index, HardwareReading hardware)
     {
         foreach (var sensor in hardware.Sensors)
-            index[sensor.Id] = (sensor, hardware.Name);
+            index[sensor.Id] = (sensor, hardware.Name, hardware.Type);
         foreach (var sub in hardware.SubHardware)
             Add(index, sub);
     }
@@ -54,13 +58,13 @@ public sealed class SensorCatalog
 
     public SensorInfo? Find(string sensorId) =>
         _index.TryGetValue(sensorId, out var entry)
-            ? new SensorInfo(sensorId, entry.Sensor.Name, DisplayName(entry.Sensor), entry.Sensor.Type, entry.HardwareName)
+            ? new SensorInfo(sensorId, entry.Sensor.Name, DisplayName(entry.Sensor), entry.Sensor.Type, entry.HardwareName, entry.HardwareType)
             : null;
 
     /// <summary>Every sensor in the latest snapshot, in hardware order.</summary>
     public IReadOnlyList<SensorInfo> AllSensors() =>
         _index.Select(kv => new SensorInfo(kv.Key, kv.Value.Sensor.Name, DisplayName(kv.Value.Sensor), kv.Value.Sensor.Type,
-            kv.Value.HardwareName)).ToList();
+            kv.Value.HardwareName, kv.Value.HardwareType)).ToList();
 
     /// <summary>Renamed sensors, including ones not present right now (shown with their id).</summary>
     public IReadOnlyList<SensorInfo> RenamedSensors() =>
