@@ -7,6 +7,7 @@ namespace Pulse.ViewModels;
 /// <summary>One bar in the per-core strip.</summary>
 public partial class CoreTileViewModel : ObservableObject
 {
+    [ObservableProperty] public partial string? SensorId { get; set; }
     [ObservableProperty] public partial string Label { get; set; } = "";
     [ObservableProperty] public partial string ValueText { get; set; } = "";
     [ObservableProperty] public partial string ToolTip { get; set; } = "";
@@ -16,6 +17,7 @@ public partial class CoreTileViewModel : ObservableObject
 
 public partial class FanRowViewModel : ObservableObject
 {
+    [ObservableProperty] public partial string? SensorId { get; set; }
     [ObservableProperty] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial string Source { get; set; } = "";
     [ObservableProperty] public partial string SpeedText { get; set; } = "";
@@ -25,6 +27,9 @@ public partial class FanRowViewModel : ObservableObject
 public partial class DriveRowViewModel : ObservableObject
 {
     private string _volumesKey = "";
+
+    /// <summary>The drive's temperature sensor, opened when the row is clicked.</summary>
+    [ObservableProperty] public partial string? SensorId { get; set; }
 
     [ObservableProperty] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial IReadOnlyList<VolumeInfo> Volumes { get; set; } = [];
@@ -59,6 +64,8 @@ public partial class PumpCandidateViewModel : ObservableObject
 /// <summary>Pump, coolant and flow readings gathered from every source that reports them.</summary>
 public partial class CoolingViewModel : ObservableObject
 {
+    /// <summary>The headline reading (coolant temperature, else pump speed, else flow).</summary>
+    [ObservableProperty] public partial string? SensorId { get; set; }
     public System.Collections.ObjectModel.ObservableCollection<StatRow> Rows { get; } = [];
 
     [ObservableProperty] public partial bool HasData { get; set; }
@@ -106,6 +113,8 @@ public partial class CoolingViewModel : ObservableObject
 
 public partial class NetworkViewModel : ObservableObject
 {
+    /// <summary>The adapter's download speed sensor.</summary>
+    [ObservableProperty] public partial string? SensorId { get; set; }
     [ObservableProperty] public partial string Adapter { get; set; } = "No active adapter";
     [ObservableProperty] public partial string DownText { get; set; } = "—";
     [ObservableProperty] public partial string UpText { get; set; } = "—";

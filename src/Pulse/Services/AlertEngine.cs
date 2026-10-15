@@ -51,7 +51,7 @@ public sealed class AlertEngine
                        && _states.Any(kv => kv.Key.Rule == r.Id && kv.Value.Status == Status.Firing));
 
     /// <summary>One reading to check: a target key (for per-drive state), a label, the value and the threshold.</summary>
-    private sealed record Check(string Key, string Label, float? Value, double Threshold, SensorType Type);
+    private sealed record Check(string Key, string Label, float? Value, double Threshold, SensorType Type, string? SensorId = null);
 
     public IReadOnlyList<AlertEvent> Evaluate(
         HardwareSnapshot snapshot, IEnumerable<AlertRule> rules, string? pumpSensorId, DateTime now)
@@ -142,25 +142,25 @@ public sealed class AlertEngine
         {
             case AlertTarget.Sensor when rule.SensorId is { } id:
                 var sensor = all.FirstOrDefault(s => s.Id == id);
-                yield return new Check(id, rule.Name, sensor?.Value, rule.Threshold, sensor?.Type ?? SensorType.Temperature);
+                yield return new Check(id, rule.Name, sensor?.Value, rule.Threshold, sensor?.Type ?? SensorType.Temperature, id);
                 break;
 
             case AlertTarget.Pump when pumpSensorId is { Length: > 0 }:
                 var pump = all.FirstOrDefault(s => s.Id == pumpSensorId);
-                yield return new Check(pumpSensorId, "Pump", pump?.Value, rule.Threshold, SensorType.Fan);
+                yield return new Check(pumpSensorId, "Pump", pump?.Value, rule.Threshold, SensorType.Fan, pumpSensorId);
                 break;
 
             case AlertTarget.CpuPackage:
                 var cpu = snapshot.OfType(HardwareType.Cpu).FirstOrDefault()?.First(SensorType.Temperature, "CPU Package", "Core Max");
                 if (cpu is not null)
-                    yield return new Check("cpu", "CPU", cpu.Value, rule.Threshold, SensorType.Temperature);
+                    yield return new Check("cpu", "CPU", cpu.Value, rule.Threshold, SensorType.Temperature, cpu.Id);
                 break;
 
             case AlertTarget.GpuHotSpot:
                 var hotSpot = snapshot.OfType(HardwareType.GpuNvidia, HardwareType.GpuAmd, HardwareType.GpuIntel)
                     .Select(g => g.First(SensorType.Temperature, "GPU Hot Spot")).FirstOrDefault(s => s is not null);
                 if (hotSpot is not null)
-                    yield return new Check("gpu-hotspot", "GPU hot spot", hotSpot.Value, rule.Threshold, SensorType.Temperature);
+                    yield return new Check("gpu-hotspot", "GPU hot spot", hotSpot.Value, rule.Threshold, SensorType.Temperature, hotSpot.Id);
                 break;
 
             case AlertTarget.DriveTemperature:
@@ -172,11 +172,20 @@ public sealed class AlertEngine
                         continue;
                     // NVMe drives report the temperature their maker considers too hot; prefer that.
                     var warning = drive.Value(SensorType.Temperature, "Warning Temperature");
-                    yield return new Check(drive.Id, drive.Name.Trim(), temp.Value, warning ?? rule.Threshold, SensorType.Temperature);
+                    yield return new Check(drive.Id, drive.Name.Trim(), temp.Value, warning ?? rule.Threshold, SensorType.Temperature, temp.Id);
                 }
                 break;
         }
     }
+
+    /// <summary>
+    /// The "above" limit of the first enabled alert watching <paramref name="sensorId"/>, if any. The details
+    /// panel uses it for "time above the limit".
+    /// </summary>
+    public static double? AboveThresholdFor(string sensorId, HardwareSnapshot snapshot, IEnumerable<AlertRule> rules, string? pumpSensorId) =>
+        rules.Where(r => r.Enabled && r.Condition == AlertCondition.Above)
+            .SelectMany(r => Resolve(r, snapshot, pumpSensorId))
+            .FirstOrDefault(c => c.SensorId == sensorId)?.Threshold;
 
     private static string Title(AlertRule rule, Check check) => rule.Target switch
     {

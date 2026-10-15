@@ -15,7 +15,8 @@
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True"
                  WindowBackdropType="Mica"
-                 WindowCornerPreference="Round">
+                 WindowCornerPreference="Round"
+                 KeyDown="Window_KeyDown">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -50,6 +51,11 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+
+            <Button Style="{StaticResource RoundIconButton.Plain}" Margin="0,0,10,0" Click="SearchButton_Click"
+                    ToolTip="Search sensors (Ctrl+K)" AutomationProperties.Name="Search sensors">
+                <ui:SymbolIcon Symbol="Search24" FontSize="18" />
+            </Button>
 
             <!-- Alerts bell: unread badge, and a dropdown with recent alerts. -->
             <Grid DataContext="{Binding Alerts}" Margin="0,0,10,0" VerticalAlignment="Center">
@@ -192,6 +198,87 @@
                                Visibility="{Binding DataContext.IsSensorsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
             <ContentControl x:Name="SettingsPage" Focusable="False" IsTabStop="False"
                                 Visibility="{Binding DataContext.IsSettingsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
+        </Grid>
+
+        <!-- Sensor details: slides in from the right over the dimmed page. Click the dimmed part or press Esc to close. -->
+        <Grid x:Name="DetailsLayer" Grid.Row="1" Grid.RowSpan="3" Visibility="Collapsed">
+            <Border x:Name="DetailsScrim" Background="{DynamicResource Pulse.Scrim}" MouseLeftButtonDown="DetailsScrim_MouseLeftButtonDown" />
+            <views:SensorDetailsView x:Name="DetailsPanel" Width="540" HorizontalAlignment="Right" DataContext="{Binding Details}">
+                <views:SensorDetailsView.RenderTransform>
+                    <TranslateTransform />
+                </views:SensorDetailsView.RenderTransform>
+            </views:SensorDetailsView>
+        </Grid>
+
+        <!-- Ctrl+K: find any sensor by name, hardware or kind, and open its details. -->
+        <Grid x:Name="SearchLayer" Grid.Row="1" Grid.RowSpan="3" Visibility="Collapsed" DataContext="{Binding Search}">
+            <Border Background="{DynamicResource Pulse.Scrim}" MouseLeftButtonDown="SearchScrim_MouseLeftButtonDown" />
+            <Border x:Name="SearchBoxCard" Width="620" MaxHeight="540" VerticalAlignment="Top" Margin="0,40,0,0"
+                    Background="{DynamicResource Pulse.PopupBackground}" BorderBrush="{DynamicResource Pulse.CardBorder}"
+                    BorderThickness="1" CornerRadius="14" RenderTransformOrigin="0.5,0">
+                <Border.RenderTransform>
+                    <ScaleTransform />
+                </Border.RenderTransform>
+                <DockPanel>
+                    <ui:TextBox x:Name="SearchBox" DockPanel.Dock="Top" Margin="12" PlaceholderText="Search sensors: name, hardware or kind"
+                                Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="SearchBox_PreviewKeyDown"
+                                AutomationProperties.Name="Search sensors">
+                        <ui:TextBox.Icon>
+                            <ui:SymbolIcon Symbol="Search24" />
+                        </ui:TextBox.Icon>
+                    </ui:TextBox>
+                    <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource Caption}" Margin="16,8,16,10"
+                               Text="↑ ↓ to choose · Enter to open · Esc to close" />
+                    <Border DockPanel.Dock="Top" Height="1" Background="{DynamicResource Pulse.Divider}" />
+                    <Grid>
+                        <TextBlock Text="No sensors match." Style="{StaticResource Secondary}" Margin="16,14"
+                                   Visibility="{Binding HasNoResults, Converter={StaticResource BoolToVisibility}}" />
+                        <ListBox x:Name="SearchResults" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedResult}"
+                                 Background="Transparent" BorderThickness="0" Margin="6,4" Focusable="False"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Focusable" Value="False" />
+                                    <Setter Property="Cursor" Value="Hand" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="Row" Background="Transparent" CornerRadius="8" Padding="10,7" Margin="0,1">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Row" Property="Background" Value="{DynamicResource Pulse.PillHover}" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="Row" Property="Background" Value="{DynamicResource Pulse.PillSelected}" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <EventSetter Event="PreviewMouseLeftButtonUp" Handler="SearchResult_Click" />
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:SearchResult}">
+                                    <DockPanel Margin="4,2">
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding ValueText}" Style="{StaticResource Metric}"
+                                                   FontSize="14" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource CardTitle}" FontSize="13"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </DockPanel>
+            </Border>
         </Grid>
 
         <!-- Launch splash: a red heartbeat trace that keeps beating until the first readings arrive. -->

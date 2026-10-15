@@ -14,6 +14,10 @@
     <!-- Surfaces -->
     <SolidColorBrush x:Key="Pulse.CardBackground" Color="#0DFFFFFF" />
     <SolidColorBrush x:Key="Pulse.CardBorder" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.CardHover" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.CardBorderHover" Color="#24FFFFFF" />
+    <!-- Dims the page behind the details panel. -->
+    <SolidColorBrush x:Key="Pulse.Scrim" Color="#66000000" />
     <SolidColorBrush x:Key="Pulse.SubtleFill" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="Pulse.QuietFill" Color="#0FFFFFFF" />
     <SolidColorBrush x:Key="Pulse.Divider" Color="#0FFFFFFF" />
@@ -25,6 +29,7 @@
     <SolidColorBrush x:Key="Pulse.SplashBackground" Color="#F20F1013" />
     <!-- Popups sit outside the window, so they can't show Mica: they need an opaque surface. -->
     <SolidColorBrush x:Key="Pulse.PopupBackground" Color="#FF202228" />
+    <SolidColorBrush x:Key="Pulse.TooltipBackground" Color="#F0101114" />
 
     <!-- Category accents: a solid color for marks and text, and a soft tint for icon chips -->
     <Color x:Key="Pulse.Accent.Cpu.Color">#FF7A45</Color>

@@ -75,7 +75,7 @@ public partial class App : Application
 
         // History: every minute of every sensor, on disk (Settings → History).
         _history = new HistoryRecorder(stream, settings);
-        viewModel.Settings.AttachHistory(_history);
+        viewModel.AttachHistory(_history, new HistoryStore(stream, _history.DatabasePath));
 
         // --tray (from the start-with-Windows task) or "Start minimized": stay in the tray until asked.
         var startHidden = arguments.StartInTray || settings.Current.Startup.StartMinimized;

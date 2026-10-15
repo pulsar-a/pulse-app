@@ -57,6 +57,11 @@ public sealed class SensorCatalog
             ? new SensorInfo(sensorId, entry.Sensor.Name, DisplayName(entry.Sensor), entry.Sensor.Type, entry.HardwareName)
             : null;
 
+    /// <summary>Every sensor in the latest snapshot, in hardware order.</summary>
+    public IReadOnlyList<SensorInfo> AllSensors() =>
+        _index.Select(kv => new SensorInfo(kv.Key, kv.Value.Sensor.Name, DisplayName(kv.Value.Sensor), kv.Value.Sensor.Type,
+            kv.Value.HardwareName)).ToList();
+
     /// <summary>Renamed sensors, including ones not present right now (shown with their id).</summary>
     public IReadOnlyList<SensorInfo> RenamedSensors() =>
         Names.Select(kv => Find(kv.Key) ?? new SensorInfo(kv.Key, kv.Key, kv.Value, SensorType.Temperature, "Not detected"))

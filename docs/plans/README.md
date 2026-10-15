@@ -17,7 +17,7 @@ pipeline) come first, even though they're less visible than tray icons or charts
 | 3 ✅ | [Tray icon and start with Windows](03-tray-and-startup.md) | 1, 2 | Live tray temperature, minimize to tray, no-UAC autostart |
 | 4 ✅ | [Alerts](04-alerts.md) | 1, 2, 3 | Notifications for high temperatures and pump failure |
 | 5 ✅ | [History storage](05-history-storage.md) | 2 | Readings saved to SQLite, CSV export |
-| 6 | [Sensor details](06-sensor-details.md) | 1, 2, 5 | Click any sensor for a large chart and stats |
+| 6 ✅ | [Sensor details](06-sensor-details.md) | 1, 2, 5 | Click any sensor for a large chart and stats |
 | 7 | [Customizable dashboard](07-customizable-dashboard.md) | 1, 6 | Pin sensors, reorder and hide cards |
 | 8 | [Responsive layout and mini mode](08-responsive-and-mini-mode.md) | 7 | Reflowing dashboard, always-on-top mini window |
 | 9 | [Visual polish](09-visual-polish.md) | 1, 7 | Rolling numbers, hot-card glow, light theme |

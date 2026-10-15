@@ -13,7 +13,10 @@
 
     <UserControl.Resources>
         <DataTemplate x:Key="GaugeCard" DataType="{x:Type vm:GaugeCardViewModel}">
-            <Border Style="{StaticResource PulseCard}">
+            <Border Style="{StaticResource ClickableCard}" ToolTip="Show history">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                </Border.InputBindings>
                 <!-- The filler row keeps every card's sparkline on the same baseline. -->
                 <Grid>
                     <Grid.RowDefinitions>
@@ -176,7 +179,10 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:CoreTileViewModel}">
-                                <StackPanel Margin="2,0" ToolTip="{Binding ToolTip}">
+                                <StackPanel Margin="2,0" ToolTip="{Binding ToolTip}" Cursor="Hand" Background="Transparent">
+                                    <StackPanel.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                                    </StackPanel.InputBindings>
                                     <Grid Height="88">
                                         <controls:PeakBar Value="{Binding Fraction}" Fill="{Binding Fill}" CornerRadius="6" />
                                         <TextBlock Text="{Binding ValueText}" FontSize="12" Margin="0,6,0,0"
@@ -192,7 +198,10 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Column="1" Style="{StaticResource PulseCard}" DataContext="{Binding Cooling}">
+            <Border Grid.Column="1" Style="{StaticResource ClickableCard}" DataContext="{Binding Cooling}" ToolTip="Show history">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                </Border.InputBindings>
                 <StackPanel>
                     <DockPanel Margin="0,0,0,12">
                         <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Network.Soft}">
@@ -287,7 +296,10 @@
                         <ItemsControl ItemsSource="{Binding Fans}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:FanRowViewModel}">
-                                    <StackPanel Margin="0,0,0,12">
+                                    <StackPanel Margin="0,0,0,12" Cursor="Hand" Background="Transparent" ToolTip="Show history">
+                                        <StackPanel.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                                        </StackPanel.InputBindings>
                                         <DockPanel>
                                             <TextBlock DockPanel.Dock="Right" Text="{Binding SpeedText}" FontSize="13"
                                                        Style="{StaticResource Metric}" />
@@ -320,7 +332,10 @@
                         <ItemsControl ItemsSource="{Binding Drives}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:DriveRowViewModel}">
-                                    <DockPanel Margin="0,0,0,14">
+                                    <DockPanel Margin="0,0,0,14" Cursor="Hand" Background="Transparent" ToolTip="Show temperature history">
+                                        <DockPanel.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                                        </DockPanel.InputBindings>
                                         <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="10"
                                                 Background="{DynamicResource Pulse.SubtleFill}" Margin="0,0,12,0" VerticalAlignment="Top">
                                             <TextBlock Text="{Binding TemperatureText}" FontSize="15"
@@ -376,7 +391,10 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="2" Style="{StaticResource PulseCard}" DataContext="{Binding Network}">
+                <Border Grid.Column="2" Style="{StaticResource ClickableCard}" DataContext="{Binding Network}" ToolTip="Show download history">
+                    <Border.InputBindings>
+                        <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                    </Border.InputBindings>
                     <StackPanel>
                         <DockPanel Margin="0,0,0,12">
                             <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Network.Soft}">

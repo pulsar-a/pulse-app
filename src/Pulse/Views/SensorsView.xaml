@@ -90,10 +90,10 @@
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type vm:SensorRowViewModel}">
-            <Border x:Name="Row" Margin="62,0,14,0" Padding="0,5" BorderBrush="{DynamicResource Pulse.Divider}" BorderThickness="0,1,0,0"
+            <Border x:Name="Row" Margin="62,0,14,0" Padding="0,5" BorderBrush="{DynamicResource Pulse.Divider}" BorderThickness="0,1,0,0" Cursor="Hand"
                     Background="Transparent">
                 <Border.InputBindings>
-                    <MouseBinding Gesture="LeftDoubleClick" Command="{Binding BeginRenameCommand}" />
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding OpenDetailsCommand}" />
                 </Border.InputBindings>
                 <Border.ContextMenu>
                     <ContextMenu>

@@ -270,7 +270,7 @@
                     </DockPanel>
 
                     <TextBlock Text="Renamed sensors" Style="{StaticResource SettingLabel}" Margin="0,0,0,6" />
-                    <TextBlock Text="Rename any sensor on the All sensors page: double-click its name, or right-click it and choose Rename."
+                    <TextBlock Text="Rename any sensor: right-click it on the All sensors page and choose Rename, or use the pencil in its details panel."
                                Style="{StaticResource Caption}" TextWrapping="Wrap"
                                Visibility="{Binding HasRenamedSensors, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
                     <ItemsControl ItemsSource="{Binding RenamedSensors}">

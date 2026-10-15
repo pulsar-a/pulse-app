@@ -27,6 +27,8 @@ public partial class GaugeCardViewModel : ObservableObject
 
     public ObservableCollection<StatRow> Rows { get; } = [];
 
+    /// <summary>The sensor the dial shows; clicking the card opens its details.</summary>
+    [ObservableProperty] public partial string? SensorId { get; set; }
     [ObservableProperty] public partial string Device { get; set; } = "Not detected";
     [ObservableProperty] public partial double Gauge { get; set; }
     [ObservableProperty] public partial string GaugeText { get; set; } = "—";

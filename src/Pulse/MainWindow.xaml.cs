@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -34,6 +35,8 @@ public partial class MainWindow : FluentWindow
         InitializeComponent();
 
         viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        viewModel.Search.PropertyChanged += OnSearchPropertyChanged;
+        WatchDetails();
 
         _splashTimeout = new DispatcherTimer { Interval = MaximumSplash };
         _splashTimeout.Tick += (_, _) => DismissSplash();
@@ -85,12 +88,169 @@ public partial class MainWindow : FluentWindow
             case nameof(MainViewModel.StatusText):
                 PulseLiveDot();
                 return;
+            case nameof(MainViewModel.Details):
+                WatchDetails();
+                return;
             case nameof(MainViewModel.IsLoading) when !_viewModel.IsLoading:
                 var remaining = MinimumSplash - _sinceLaunch.Elapsed;
                 if (remaining > TimeSpan.Zero)
                     await Task.Delay(remaining);
                 DismissSplash();
                 return;
+        }
+    }
+
+    // ---- Sensor details panel ---------------------------------------------------------------------
+
+    private SensorDetailsViewModel? _watchedDetails;
+
+    private void WatchDetails()
+    {
+        if (_watchedDetails is not null)
+            _watchedDetails.PropertyChanged -= OnDetailsPropertyChanged;
+        _watchedDetails = _viewModel.Details;
+        if (_watchedDetails is not null)
+            _watchedDetails.PropertyChanged += OnDetailsPropertyChanged;
+    }
+
+    private void OnDetailsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SensorDetailsViewModel.IsOpen))
+            AnimateDetails(_watchedDetails?.IsOpen == true);
+    }
+
+    /// <summary>Slides the panel in from the right while the page behind dims; the reverse on close.</summary>
+    private void AnimateDetails(bool open)
+    {
+        var slide = (TranslateTransform)DetailsPanel.RenderTransform;
+        var duration = TimeSpan.FromMilliseconds(open ? 320 : 220);
+        var ease = new CubicEase { EasingMode = open ? EasingMode.EaseOut : EasingMode.EaseIn };
+
+        if (open)
+        {
+            BellButton.IsChecked = false;
+            DetailsLayer.Visibility = Visibility.Visible;
+        }
+
+        var fade = new DoubleAnimation(open ? 1 : 0, duration) { EasingFunction = ease };
+        var move = new DoubleAnimation(open ? 0 : DetailsPanel.Width, duration) { EasingFunction = ease };
+        if (open && DetailsScrim.Opacity >= 1 && slide.X == 0)
+        {
+            // Opening while already open (another sensor from the search): just a quick fade of the content.
+            DetailsPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(0.4, 1, TimeSpan.FromMilliseconds(200)));
+            return;
+        }
+        if (open)
+        {
+            DetailsScrim.Opacity = 0;
+            slide.X = DetailsPanel.Width;
+        }
+        else
+        {
+            move.Completed += (_, _) =>
+            {
+                if (_watchedDetails?.IsOpen != true)
+                    DetailsLayer.Visibility = Visibility.Collapsed;
+            };
+        }
+        DetailsScrim.BeginAnimation(OpacityProperty, fade);
+        slide.BeginAnimation(TranslateTransform.XProperty, move);
+    }
+
+    private void DetailsScrim_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
+        _viewModel.Details?.CloseCommand.Execute(null);
+
+    // ---- Ctrl+K search ---------------------------------------------------------------------------
+
+    private void SearchButton_Click(object sender, RoutedEventArgs e) => OpenSearch();
+
+    private void OpenSearch()
+    {
+        BellButton.IsChecked = false;
+        _viewModel.Search.Open();
+    }
+
+    private void OnSearchPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(SensorSearchViewModel.IsOpen))
+            return;
+
+        if (!_viewModel.Search.IsOpen)
+        {
+            SearchLayer.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        SearchLayer.Visibility = Visibility.Visible;
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var duration = TimeSpan.FromMilliseconds(180);
+        var scale = (ScaleTransform)SearchBoxCard.RenderTransform;
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.96, 1, duration) { EasingFunction = ease });
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.96, 1, duration) { EasingFunction = ease });
+        SearchLayer.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        Dispatcher.BeginInvoke(() =>
+        {
+            SearchBox.Focus();
+            Keyboard.Focus(SearchBox);
+        }, DispatcherPriority.Input);
+    }
+
+    private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        var search = _viewModel.Search;
+        switch (e.Key)
+        {
+            case Key.Down:
+                search.Move(1);
+                break;
+            case Key.Up:
+                search.Move(-1);
+                break;
+            case Key.PageDown:
+                search.Move(8);
+                break;
+            case Key.PageUp:
+                search.Move(-8);
+                break;
+            case Key.Enter:
+                search.ChooseCommand.Execute(null);
+                break;
+            default:
+                return;
+        }
+        if (search.SelectedResult is { } selected)
+            SearchResults.ScrollIntoView(selected);
+        e.Handled = true;
+    }
+
+    private void SearchResult_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ListBoxItem { DataContext: SearchResult result })
+            _viewModel.Search.ChooseCommand.Execute(result);
+    }
+
+    private void SearchScrim_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => _viewModel.Search.Close();
+
+    /// <summary>
+    /// Ctrl+K opens the search; Esc closes the topmost overlay. This handles the bubbling event, so a
+    /// control that uses Esc itself (an open dropdown, the rename box) gets it first.
+    /// </summary>
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.K && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            OpenSearch();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            if (_viewModel.Search.IsOpen)
+                _viewModel.Search.Close();
+            else if (_viewModel.Details is { IsOpen: true } details)
+                details.CloseCommand.Execute(null);
+            else
+                return;
+            e.Handled = true;
         }
     }
 

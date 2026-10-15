@@ -31,6 +31,16 @@ public partial class DashboardViewModel : ObservableObject
         Cards = [Cpu, Gpu, Memory, Power];
     }
 
+    /// <summary>Opens the sensor details panel; set by the main view model.</summary>
+    public Action<string>? OpenDetails { get; init; }
+
+    [RelayCommand]
+    private void ShowDetails(string? sensorId)
+    {
+        if (sensorId is { Length: > 0 })
+            OpenDetails?.Invoke(sensorId);
+    }
+
     /// <summary>The polling interval; sparklines show a minute's worth of samples at this rate.</summary>
     public TimeSpan SampleInterval { get; set; } = TimeSpan.FromSeconds(1);
 
@@ -132,6 +142,7 @@ public partial class DashboardViewModel : ObservableObject
             Cpu.HistoryMax = 100;
             Cpu.HistoryLabel = "Temperature, last minute";
             Cpu.SetHistory(History(tempSensor), HistorySamples);
+            Cpu.SensorId = tempSensor?.Id;
         }
         else
         {
@@ -140,6 +151,7 @@ public partial class DashboardViewModel : ObservableObject
             Cpu.HistoryMax = 100;
             Cpu.HistoryLabel = "Load, last minute";
             Cpu.SetHistory(History(loadSensor), HistorySamples);
+            Cpu.SensorId = loadSensor?.Id;
         }
 
         Cpu.SetRows(
@@ -153,7 +165,9 @@ public partial class DashboardViewModel : ObservableObject
     {
         if (gpu is null) return;
 
-        var temp = gpu.Value(SensorType.Temperature, "GPU Core");
+        var tempSensor = gpu.First(SensorType.Temperature, "GPU Core");
+        var temp = tempSensor?.Value;
+        Gpu.SensorId = tempSensor?.Id;
         var hotSpot = gpu.Value(SensorType.Temperature, "GPU Hot Spot");
         var memJunction = gpu.Value(SensorType.Temperature, "GPU Memory Junction");
         var loadSensor = gpu.First(SensorType.Load, "GPU Core");
@@ -219,6 +233,7 @@ public partial class DashboardViewModel : ObservableObject
         Memory.HistoryMax = 100;
         Memory.HistoryLabel = "Usage, last minute";
         Memory.SetHistory(History(loadSensor), HistorySamples);
+        Memory.SensorId = loadSensor?.Id;
 
         var rows = new List<(string, string)>
         {
@@ -253,6 +268,7 @@ public partial class DashboardViewModel : ObservableObject
             Power.HistoryMax = double.NaN;
             Power.HistoryLabel = "System draw, last minute";
             Power.SetHistory(History(totalSensor), HistorySamples);
+            Power.SensorId = totalSensor?.Id;
             Power.SetRows(
                 ("CPU package", SensorFormat.Format(SensorType.Power, cpuPower)),
                 ("Graphics card", SensorFormat.Format(SensorType.Power, gpuPower)),
@@ -269,6 +285,7 @@ public partial class DashboardViewModel : ObservableObject
         Power.HistoryLabel = "Draw, last minute";
         var cpuPowerSensor = cpu?.First(SensorType.Power, "CPU Package", "Package");
         Power.SetHistory(Sum(History(cpuPowerSensor), History(gpuPowerSensor)), HistorySamples);
+        Power.SensorId = cpuPowerSensor?.Id ?? gpuPowerSensor?.Id;
         Power.SetRows(
             ("CPU package", SensorFormat.Format(SensorType.Power, cpuPower)),
             ("Graphics card", SensorFormat.Format(SensorType.Power, gpuPower)));
@@ -282,13 +299,13 @@ public partial class DashboardViewModel : ObservableObject
             .Where(s => s.Type == SensorType.Temperature && CoreTemperature.IsMatch(s.Name))
             .ToList();
 
-        List<(string Label, string Name, float? Value)> tiles;
+        List<(string Label, string Name, float? Value, string Id)> tiles;
         bool showingTemps;
 
         if (temps.Any(s => s.HasValue))
         {
             showingTemps = true;
-            tiles = temps.Select(s => (ShortCoreLabel(s.Name), _catalog.DisplayName(s), s.Value)).ToList();
+            tiles = temps.Select(s => (ShortCoreLabel(s.Name), _catalog.DisplayName(s), s.Value, s.Id)).ToList();
             var pCores = temps.Count(s => s.Name.StartsWith("P-Core"));
             var eCores = temps.Count(s => s.Name.StartsWith("E-Core"));
             var hottest = temps.Where(s => s.HasValue).MaxBy(s => s.Value)!;
@@ -304,7 +321,7 @@ public partial class DashboardViewModel : ObservableObject
                 .Where(s => s.Type == SensorType.Load && CoreLoad.IsMatch(s.Name))
                 .GroupBy(s => int.Parse(CoreLoad.Match(s.Name).Groups[1].Value))
                 .OrderBy(g => g.Key)
-                .Select(g => ($"{g.Key}", $"Core #{g.Key}", g.Max(s => s.Value)))
+                .Select(g => ($"{g.Key}", $"Core #{g.Key}", g.Max(s => s.Value), g.MaxBy(s => s.Value)!.Id))
                 .ToList();
             CoresTitle = "Core load";
             CoresSubtitle = _driverInstalled
@@ -320,9 +337,10 @@ public partial class DashboardViewModel : ObservableObject
 
         for (var i = 0; i < tiles.Count; i++)
         {
-            var (label, name, value) = tiles[i];
+            var (label, name, value, id) = tiles[i];
             var tile = Cores[i];
             tile.Label = label;
+            tile.SensorId = id;
             if (value is not { } v || float.IsNaN(v))
             {
                 tile.ValueText = "";
@@ -394,6 +412,7 @@ public partial class DashboardViewModel : ObservableObject
         {
             var row = Fans[i];
             row.Name = fans[i].Name;
+            row.SensorId = fans[i].Id;
             row.Source = fans[i].Source;
             row.SpeedText = fans[i].Rpm > 0 ? $"{fans[i].Rpm:N0} rpm" : "stopped";
             row.Fraction = fans[i].Rpm / scale;
@@ -415,7 +434,9 @@ public partial class DashboardViewModel : ObservableObject
         {
             var drive = drives[i];
             var row = Drives[i];
-            var temp = drive.AllSensors.FirstOrDefault(s => s.Type == SensorType.Temperature && s.HasValue)?.Value;
+            var tempSensor = drive.AllSensors.FirstOrDefault(s => s.Type == SensorType.Temperature && s.HasValue);
+            var temp = tempSensor?.Value;
+            row.SensorId = tempSensor?.Id;
             var used = drive.Value(SensorType.Load, "Used Space");
             var health = drive.Value(SensorType.Level, "Life", "Remaining Life")
                          ?? (drive.Value(SensorType.Level, "Percentage Used") is { } wear ? 100 - wear : null);
@@ -549,18 +570,21 @@ public partial class DashboardViewModel : ObservableObject
             Cooling.Headline = SensorFormat.Degrees(coolant[0].Value!.Value, "0.0");
             Cooling.HeadlineCaption = Label(coolant[0]);
             Cooling.SetHistory(History(coolant[0]), HistorySamples);
+            Cooling.SensorId = coolant[0].Id;
         }
         else if (pumps.Count > 0)
         {
             Cooling.Headline = $"{pumps[0].Value:N0}";
             Cooling.HeadlineCaption = $"{Label(pumps[0])} · rpm";
             Cooling.SetHistory(History(pumps[0]), HistorySamples);
+            Cooling.SensorId = pumps[0].Id;
         }
         else
         {
             Cooling.Headline = SensorFormat.Format(SensorType.Flow, flows[0].Value);
             Cooling.HeadlineCaption = Label(flows[0]);
             Cooling.SetHistory(History(flows[0]), HistorySamples);
+            Cooling.SensorId = flows[0].Id;
         }
 
         var rows = new List<(string, string)>();
@@ -624,6 +648,7 @@ public partial class DashboardViewModel : ObservableObject
         Network.UpText = SensorFormat.Rate(upSensor?.Value ?? 0);
         Network.Totals = $"{SensorFormat.Format(SensorType.Data, downloaded)} received · {SensorFormat.Format(SensorType.Data, uploaded)} sent";
         Network.SetHistory(History(downSensor), History(upSensor), HistorySamples);
+        Network.SensorId = downSensor?.Id;
     }
 
     private static IEnumerable<(HardwareReading Owner, SensorReading Sensor)> WithOwners(HardwareReading hardware) =>

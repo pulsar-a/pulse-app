@@ -25,14 +25,17 @@ public partial class SensorsViewModel : ObservableObject
     private readonly SensorCatalog _catalog;
     private readonly Action<string>? _showInTray;
     private readonly Action<string>? _createAlert;
+    private readonly Action<string>? _openDetails;
     private HardwareSnapshot? _latest;
     private string _layoutKey = "";
 
     /// <param name="showInTray">Shows a sensor in the tray icon; null hides that menu item.</param>
     /// <param name="createAlert">Creates an alert rule for a sensor; null hides that menu item.</param>
-    public SensorsViewModel(SensorCatalog catalog, Action<string>? showInTray = null, Action<string>? createAlert = null)
+    public SensorsViewModel(SensorCatalog catalog, Action<string>? showInTray = null, Action<string>? createAlert = null,
+        Action<string>? openDetails = null)
     {
         _catalog = catalog;
+        _openDetails = openDetails;
         _showInTray = showInTray;
         _createAlert = createAlert;
         _catalog.NamesChanged += OnNamesChanged;
@@ -145,7 +148,7 @@ public partial class SensorsViewModel : ObservableObject
                 .OrderBy(g => SensorFormat.TypeOrder(g.First().Type))
                 .Select(g =>
                 {
-                    var rows = g.Select(s => _rows[s.Id] = new SensorRowViewModel(s.Id, s.Name, s.Type, _catalog, _showInTray, _createAlert)).ToList();
+                    var rows = g.Select(s => _rows[s.Id] = new SensorRowViewModel(s.Id, s.Name, s.Type, _catalog, _showInTray, _createAlert, _openDetails)).ToList();
                     return new SensorTypeGroupViewModel(g.Key, rows);
                 })
                 .ToList();
@@ -330,11 +333,14 @@ public partial class SensorRowViewModel : ObservableObject
 {
     private readonly SensorCatalog _catalog;
     private readonly Action<string>? _showInTray;
+    private readonly Action<string>? _openDetailsAction;
     private readonly Action<string>? _createAlert;
 
-    public SensorRowViewModel(string id, string originalName, SensorType type, SensorCatalog catalog, Action<string>? showInTray = null, Action<string>? createAlert = null)
+    public SensorRowViewModel(string id, string originalName, SensorType type, SensorCatalog catalog, Action<string>? showInTray = null, Action<string>? createAlert = null,
+        Action<string>? openDetails = null)
     {
         _showInTray = showInTray;
+        _openDetailsAction = openDetails;
         _createAlert = createAlert;
         Id = id;
         OriginalName = originalName;
@@ -415,4 +421,7 @@ public partial class SensorRowViewModel : ObservableObject
 
     [RelayCommand]
     private void CreateAlert() => _createAlert?.Invoke(Id);
+
+    [RelayCommand]
+    private void OpenDetails() => _openDetailsAction?.Invoke(Id);
 }

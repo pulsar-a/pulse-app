@@ -30,9 +30,10 @@ public partial class MainViewModel : ObservableObject
         var driverInstalled = HardwareService.IsDriverInstalled;
 
         _catalog = new SensorCatalog(settings);
-        Dashboard = new DashboardViewModel(driverInstalled, _catalog, stream);
-        Sensors = new SensorsViewModel(_catalog, id => settings.Update(s => s.Startup.TraySensorId = id), CreateAlert);
+        Dashboard = new DashboardViewModel(driverInstalled, _catalog, stream) { OpenDetails = OpenDetails };
+        Sensors = new SensorsViewModel(_catalog, id => settings.Update(s => s.Startup.TraySensorId = id), CreateAlert, OpenDetails);
         Settings = new SettingsViewModel(settings, _catalog, driverInstalled, stream);
+        Search = new SensorSearchViewModel(_catalog, stream, OpenDetails);
 
         ApplySettings();
         settings.Changed += ApplySettings;
@@ -76,8 +77,23 @@ public partial class MainViewModel : ObservableObject
     public SensorCatalog Catalog => _catalog;
     public SettingsViewModel Settings { get; }
 
+    /// <summary>The Ctrl+K sensor search.</summary>
+    public SensorSearchViewModel Search { get; }
+
     /// <summary>Alerts and the bell in the header. Created after the tray icon, which it falls back to for notifications.</summary>
     [ObservableProperty] public partial AlertCenter? Alerts { get; private set; }
+
+    /// <summary>The sensor details panel. Created once history exists, since its charts read from it.</summary>
+    [ObservableProperty] public partial SensorDetailsViewModel? Details { get; private set; }
+
+    public void AttachHistory(Services.History.HistoryRecorder recorder, Services.History.HistoryStore store)
+    {
+        Settings.AttachHistory(recorder);
+        Details = new SensorDetailsViewModel(store, _stream, _catalog, _settings, CreateAlert);
+    }
+
+    /// <summary>Opens the details panel for a sensor: from a dashboard card, a sensor row, or the search.</summary>
+    public void OpenDetails(string sensorId) => Details?.Open(sensorId);
 
     public void AttachAlerts(AlertCenter alerts)
     {
