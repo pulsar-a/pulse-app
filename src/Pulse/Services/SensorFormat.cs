@@ -2,9 +2,35 @@ using LibreHardwareMonitor.Hardware;
 
 namespace Pulse.Services;
 
+/// <summary>
+/// All number and unit formatting in Pulse. View models never build unit strings themselves,
+/// so the user's unit choice applies everywhere. Sensor values stay in LHM's units (°C)
+/// internally; conversion happens only here, for display.
+/// </summary>
 public static class SensorFormat
 {
     public const string Empty = "—";
+
+    /// <summary>The user's temperature unit. Set on the UI thread from settings.</summary>
+    public static TemperatureUnit TemperatureUnit { get; set; } = TemperatureUnit.Celsius;
+
+    private static bool Fahrenheit => TemperatureUnit == TemperatureUnit.Fahrenheit;
+
+    public static string TemperatureSymbol => Fahrenheit ? "°F" : "°C";
+
+    /// <summary>A °C reading in the user's unit.</summary>
+    public static double ToDisplayTemperature(double celsius) => Fahrenheit ? celsius * 9 / 5 + 32 : celsius;
+
+    /// <summary>Compact form for big numbers and chips: "72°".</summary>
+    public static string Degrees(double celsius, string format = "0") =>
+        ToDisplayTemperature(celsius).ToString(format) + "°";
+
+    /// <summary>Whole degrees with the unit: "72 °C".</summary>
+    public static string WholeTemperature(double celsius) => $"{ToDisplayTemperature(celsius):0} {TemperatureSymbol}";
+
+    /// <summary>A temperature difference: converted by scale only, with no 32° offset.</summary>
+    public static string TemperatureDelta(double deltaCelsius) =>
+        $"{(Fahrenheit ? deltaCelsius * 9 / 5 : deltaCelsius):0.0} {TemperatureSymbol}";
 
     public static string Format(SensorType type, float? value)
     {
@@ -17,7 +43,7 @@ public static class SensorFormat
             SensorType.Current => $"{v:0.00} A",
             SensorType.Power => $"{v:0.0} W",
             SensorType.Clock => Clock(v),
-            SensorType.Temperature => $"{v:0.0} °C",
+            SensorType.Temperature => $"{ToDisplayTemperature(v):0.0} {TemperatureSymbol}",
             SensorType.Load => $"{v:0.0} %",
             SensorType.Frequency => $"{v:0} Hz",
             SensorType.Fan => $"{v:N0} RPM",

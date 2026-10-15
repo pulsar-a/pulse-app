@@ -20,13 +20,13 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource CardBorderBrush}"
+                        <Border x:Name="Bg" Background="{DynamicResource Pulse.CardBackground}" BorderBrush="{DynamicResource Pulse.CardBorder}"
                                 BorderThickness="1" CornerRadius="12" Padding="14,10">
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#17FFFFFF" />
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Pulse.HeaderHover}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -63,7 +63,7 @@
                                Style="{StaticResource Caption}">
                         <Run Text="{Binding SensorCount, Mode=OneWay}" /> <Run Text="sensors" />
                     </TextBlock>
-                    <Border Width="34" Height="34" CornerRadius="9" Background="#14FFFFFF" Margin="0,0,12,0">
+                    <Border Width="34" Height="34" CornerRadius="9" Background="{DynamicResource Pulse.SubtleFill}" Margin="0,0,12,0">
                         <ui:SymbolIcon Symbol="{Binding Icon}" FontSize="18" />
                     </Border>
                     <StackPanel VerticalAlignment="Center">
@@ -90,8 +90,26 @@
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type vm:SensorRowViewModel}">
-            <Border x:Name="Row" Margin="62,0,14,0" Padding="0,5" BorderBrush="#0FFFFFFF" BorderThickness="0,1,0,0"
+            <Border x:Name="Row" Margin="62,0,14,0" Padding="0,5" BorderBrush="{DynamicResource Pulse.Divider}" BorderThickness="0,1,0,0"
                     Background="Transparent">
+                <Border.InputBindings>
+                    <MouseBinding Gesture="LeftDoubleClick" Command="{Binding BeginRenameCommand}" />
+                </Border.InputBindings>
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Rename…" Command="{Binding BeginRenameCommand}">
+                            <MenuItem.Icon>
+                                <ui:SymbolIcon Symbol="Rename20" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Reset name" Command="{Binding ResetNameCommand}"
+                                  Visibility="{Binding IsRenamed, Converter={StaticResource BoolToVisibility}}">
+                            <MenuItem.Icon>
+                                <ui:SymbolIcon Symbol="ArrowCounterclockwise20" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -99,11 +117,48 @@
                         <ColumnDefinition Width="{StaticResource ValueColumn}" />
                         <ColumnDefinition Width="{StaticResource ValueColumn}" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                    <TextBlock Grid.Column="1" Text="{Binding ValueText}" FontSize="13"
-                               HorizontalAlignment="Right" Foreground="{Binding ValueBrush}"
-                               Style="{StaticResource Metric}" />
+
+                    <!-- Name, with a pencil marker when renamed; the original name is in the tooltip. -->
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsEditing, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
+                        <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <ui:SymbolIcon Symbol="Pen16" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       Visibility="{Binding IsRenamed, Converter={StaticResource BoolToVisibility}}" />
+                        <StackPanel.ToolTip>
+                            <ToolTip Visibility="{Binding IsRenamed, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock>
+                                    <Run Text="Original name:" /> <Run Text="{Binding OriginalName, Mode=OneWay}" />
+                                </TextBlock>
+                            </ToolTip>
+                        </StackPanel.ToolTip>
+                    </StackPanel>
+
+                    <!-- Inline rename: Enter saves, Esc cancels, clicking away saves. -->
+                    <TextBox Text="{Binding EditText, UpdateSourceTrigger=PropertyChanged}" FontSize="13"
+                             Margin="0,-4,12,-4" Padding="6,2" MinHeight="0"
+                             Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}"
+                             IsVisibleChanged="RenameBox_IsVisibleChanged" LostKeyboardFocus="RenameBox_LostKeyboardFocus"
+                             AutomationProperties.Name="Sensor name">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding CommitRenameCommand}" />
+                            <KeyBinding Key="Escape" Command="{Binding CancelRenameCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+
+                    <TextBlock Grid.Column="1" Text="{Binding ValueText}" FontSize="13" HorizontalAlignment="Right">
+                        <TextBlock.Style>
+                            <!-- Temperatures get their heat color; everything else keeps the theme's text color. -->
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Metric}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ValueBrush, Converter={x:Static views:Converters.IsNotNull}}" Value="True">
+                                        <Setter Property="Foreground" Value="{Binding ValueBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock Grid.Column="2" Text="{Binding MinText}" FontSize="13"
                                HorizontalAlignment="Right" Style="{StaticResource Secondary}" />
                     <TextBlock Grid.Column="3" Text="{Binding MaxText}" FontSize="13"
@@ -112,7 +167,7 @@
             </Border>
             <DataTemplate.Triggers>
                 <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                    <Setter TargetName="Row" Property="Background" Value="#0AFFFFFF" />
+                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource Pulse.RowHover}" />
                 </Trigger>
             </DataTemplate.Triggers>
         </DataTemplate>

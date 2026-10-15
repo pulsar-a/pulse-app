@@ -1,0 +1,2418 @@
+{
+  "Hardware": [
+    {
+      "Id": "/motherboard",
+      "Name": "ASUS ROG MAXIMUS Z790 HERO",
+      "Type": "Motherboard",
+      "Sensors": [],
+      "SubHardware": [
+        {
+          "Id": "/lpc/ec",
+          "Name": "Embedded Controller",
+          "Type": "EmbeddedController",
+          "Sensors": [
+            {
+              "Id": "/lpc/ec/temperature/0",
+              "Name": "VRM",
+              "Type": "Temperature",
+              "Index": 0,
+              "Value": null,
+              "Min": null,
+              "Max": null
+            },
+            {
+              "Id": "/lpc/ec/fan/0",
+              "Name": "CPU Optional Fan",
+              "Type": "Fan",
+              "Index": 0,
+              "Value": null,
+              "Min": null,
+              "Max": null
+            },
+            {
+              "Id": "/lpc/ec/flow/0",
+              "Name": "Water Flow",
+              "Type": "Flow",
+              "Index": 0,
+              "Value": null,
+              "Min": null,
+              "Max": null
+            },
+            {
+              "Id": "/lpc/ec/temperature/1",
+              "Name": "Water In",
+              "Type": "Temperature",
+              "Index": 1,
+              "Value": null,
+              "Min": null,
+              "Max": null
+            },
+            {
+              "Id": "/lpc/ec/temperature/2",
+              "Name": "Water Out",
+              "Type": "Temperature",
+              "Index": 2,
+              "Value": null,
+              "Min": null,
+              "Max": null
+            },
+            {
+              "Id": "/lpc/ec/temperature/3",
+              "Name": "T Sensor",
+              "Type": "Temperature",
+              "Index": 3,
+              "Value": null,
+              "Min": null,
+              "Max": null
+            }
+          ],
+          "SubHardware": []
+        }
+      ]
+    },
+    {
+      "Id": "/intelcpu/0",
+      "Name": "Intel Core i9-14900K",
+      "Type": "Cpu",
+      "Sensors": [
+        {
+          "Id": "/intelcpu/0/load/2",
+          "Name": "CPU Core #1 Thread #1",
+          "Type": "Load",
+          "Index": 2,
+          "Value": 20.72,
+          "Min": 0,
+          "Max": 20.72
+        },
+        {
+          "Id": "/intelcpu/0/load/3",
+          "Name": "CPU Core #1 Thread #2",
+          "Type": "Load",
+          "Index": 3,
+          "Value": 1.8,
+          "Min": 0,
+          "Max": 1.8
+        },
+        {
+          "Id": "/intelcpu/0/load/4",
+          "Name": "CPU Core #2 Thread #1",
+          "Type": "Load",
+          "Index": 4,
+          "Value": 7.21,
+          "Min": 0,
+          "Max": 20.69
+        },
+        {
+          "Id": "/intelcpu/0/load/5",
+          "Name": "CPU Core #2 Thread #2",
+          "Type": "Load",
+          "Index": 5,
+          "Value": 0.9,
+          "Min": 0,
+          "Max": 1.72
+        },
+        {
+          "Id": "/intelcpu/0/load/6",
+          "Name": "CPU Core #3 Thread #1",
+          "Type": "Load",
+          "Index": 6,
+          "Value": 2.7,
+          "Min": 0,
+          "Max": 17.24
+        },
+        {
+          "Id": "/intelcpu/0/load/7",
+          "Name": "CPU Core #3 Thread #2",
+          "Type": "Load",
+          "Index": 7,
+          "Value": 0.9,
+          "Min": 0,
+          "Max": 0.9
+        },
+        {
+          "Id": "/intelcpu/0/load/8",
+          "Name": "CPU Core #4 Thread #1",
+          "Type": "Load",
+          "Index": 8,
+          "Value": 1.8,
+          "Min": 0,
+          "Max": 12.28
+        },
+        {
+          "Id": "/intelcpu/0/load/9",
+          "Name": "CPU Core #4 Thread #2",
+          "Type": "Load",
+          "Index": 9,
+          "Value": 0.9,
+          "Min": 0,
+          "Max": 0.9
+        },
+        {
+          "Id": "/intelcpu/0/load/10",
+          "Name": "CPU Core #5 Thread #1",
+          "Type": "Load",
+          "Index": 10,
+          "Value": 30.63,
+          "Min": 0,
+          "Max": 49.12
+        },
+        {
+          "Id": "/intelcpu/0/load/11",
+          "Name": "CPU Core #5 Thread #2",
+          "Type": "Load",
+          "Index": 11,
+          "Value": 0.9,
+          "Min": 0,
+          "Max": 3.45
+        },
+        {
+          "Id": "/intelcpu/0/load/12",
+          "Name": "CPU Core #6 Thread #1",
+          "Type": "Load",
+          "Index": 12,
+          "Value": 30.63,
+          "Min": 0,
+          "Max": 56.14
+        },
+        {
+          "Id": "/intelcpu/0/load/13",
+          "Name": "CPU Core #6 Thread #2",
+          "Type": "Load",
+          "Index": 13,
+          "Value": 0.9,
+          "Min": 0,
+          "Max": 0.9
+        },
+        {
+          "Id": "/intelcpu/0/load/14",
+          "Name": "CPU Core #7 Thread #1",
+          "Type": "Load",
+          "Index": 14,
+          "Value": 8.11,
+          "Min": 0,
+          "Max": 15.79
+        },
+        {
+          "Id": "/intelcpu/0/load/15",
+          "Name": "CPU Core #7 Thread #2",
+          "Type": "Load",
+          "Index": 15,
+          "Value": 0.9,
+          "Min": 0,
+          "Max": 0.9
+        },
+        {
+          "Id": "/intelcpu/0/load/16",
+          "Name": "CPU Core #8 Thread #1",
+          "Type": "Load",
+          "Index": 16,
+          "Value": 6.31,
+          "Min": 0,
+          "Max": 12.28
+        },
+        {
+          "Id": "/intelcpu/0/load/17",
+          "Name": "CPU Core #8 Thread #2",
+          "Type": "Load",
+          "Index": 17,
+          "Value": 0.9,
+          "Min": 0,
+          "Max": 0.9
+        },
+        {
+          "Id": "/intelcpu/0/load/18",
+          "Name": "CPU Core #9",
+          "Type": "Load",
+          "Index": 18,
+          "Value": 35.14,
+          "Min": 0,
+          "Max": 35.14
+        },
+        {
+          "Id": "/intelcpu/0/load/19",
+          "Name": "CPU Core #10",
+          "Type": "Load",
+          "Index": 19,
+          "Value": 10.81,
+          "Min": 0,
+          "Max": 10.81
+        },
+        {
+          "Id": "/intelcpu/0/load/20",
+          "Name": "CPU Core #11",
+          "Type": "Load",
+          "Index": 20,
+          "Value": 4.5,
+          "Min": 0,
+          "Max": 4.5
+        },
+        {
+          "Id": "/intelcpu/0/load/21",
+          "Name": "CPU Core #12",
+          "Type": "Load",
+          "Index": 21,
+          "Value": 2.7,
+          "Min": 0,
+          "Max": 5.17
+        },
+        {
+          "Id": "/intelcpu/0/load/22",
+          "Name": "CPU Core #13",
+          "Type": "Load",
+          "Index": 22,
+          "Value": 42.34,
+          "Min": 0,
+          "Max": 42.34
+        },
+        {
+          "Id": "/intelcpu/0/load/23",
+          "Name": "CPU Core #14",
+          "Type": "Load",
+          "Index": 23,
+          "Value": 8.11,
+          "Min": 0,
+          "Max": 8.11
+        },
+        {
+          "Id": "/intelcpu/0/load/24",
+          "Name": "CPU Core #15",
+          "Type": "Load",
+          "Index": 24,
+          "Value": 9.91,
+          "Min": 0,
+          "Max": 9.91
+        },
+        {
+          "Id": "/intelcpu/0/load/25",
+          "Name": "CPU Core #16",
+          "Type": "Load",
+          "Index": 25,
+          "Value": 11.71,
+          "Min": 0,
+          "Max": 11.71
+        },
+        {
+          "Id": "/intelcpu/0/load/26",
+          "Name": "CPU Core #17",
+          "Type": "Load",
+          "Index": 26,
+          "Value": 36.04,
+          "Min": 0,
+          "Max": 36.04
+        },
+        {
+          "Id": "/intelcpu/0/load/27",
+          "Name": "CPU Core #18",
+          "Type": "Load",
+          "Index": 27,
+          "Value": 8.11,
+          "Min": 0,
+          "Max": 8.62
+        },
+        {
+          "Id": "/intelcpu/0/load/28",
+          "Name": "CPU Core #19",
+          "Type": "Load",
+          "Index": 28,
+          "Value": 9.01,
+          "Min": 0,
+          "Max": 9.01
+        },
+        {
+          "Id": "/intelcpu/0/load/29",
+          "Name": "CPU Core #20",
+          "Type": "Load",
+          "Index": 29,
+          "Value": 3.6,
+          "Min": 0,
+          "Max": 5.17
+        },
+        {
+          "Id": "/intelcpu/0/load/30",
+          "Name": "CPU Core #21",
+          "Type": "Load",
+          "Index": 30,
+          "Value": 27.03,
+          "Min": 0,
+          "Max": 27.03
+        },
+        {
+          "Id": "/intelcpu/0/load/31",
+          "Name": "CPU Core #22",
+          "Type": "Load",
+          "Index": 31,
+          "Value": 9.01,
+          "Min": 0,
+          "Max": 10.34
+        },
+        {
+          "Id": "/intelcpu/0/load/32",
+          "Name": "CPU Core #23",
+          "Type": "Load",
+          "Index": 32,
+          "Value": 8.11,
+          "Min": 0,
+          "Max": 8.11
+        },
+        {
+          "Id": "/intelcpu/0/load/33",
+          "Name": "CPU Core #24",
+          "Type": "Load",
+          "Index": 33,
+          "Value": 6.31,
+          "Min": 0,
+          "Max": 6.31
+        },
+        {
+          "Id": "/intelcpu/0/load/0",
+          "Name": "CPU Total",
+          "Type": "Load",
+          "Index": 0,
+          "Value": 10.9,
+          "Min": 0,
+          "Max": 11.26
+        },
+        {
+          "Id": "/intelcpu/0/load/1",
+          "Name": "CPU Core Max",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 42.34,
+          "Min": 0,
+          "Max": 56.14
+        },
+        {
+          "Id": "/intelcpu/0/temperature/0",
+          "Name": "Core Max",
+          "Type": "Temperature",
+          "Index": 0,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/1",
+          "Name": "Core Average",
+          "Type": "Temperature",
+          "Index": 1,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/2",
+          "Name": "P-Core #1",
+          "Type": "Temperature",
+          "Index": 2,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/3",
+          "Name": "P-Core #2",
+          "Type": "Temperature",
+          "Index": 3,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/4",
+          "Name": "P-Core #3",
+          "Type": "Temperature",
+          "Index": 4,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/5",
+          "Name": "P-Core #4",
+          "Type": "Temperature",
+          "Index": 5,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/6",
+          "Name": "P-Core #5",
+          "Type": "Temperature",
+          "Index": 6,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/7",
+          "Name": "P-Core #6",
+          "Type": "Temperature",
+          "Index": 7,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/8",
+          "Name": "P-Core #7",
+          "Type": "Temperature",
+          "Index": 8,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/9",
+          "Name": "P-Core #8",
+          "Type": "Temperature",
+          "Index": 9,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/10",
+          "Name": "E-Core #1",
+          "Type": "Temperature",
+          "Index": 10,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/11",
+          "Name": "E-Core #2",
+          "Type": "Temperature",
+          "Index": 11,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/12",
+          "Name": "E-Core #3",
+          "Type": "Temperature",
+          "Index": 12,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/13",
+          "Name": "E-Core #4",
+          "Type": "Temperature",
+          "Index": 13,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/14",
+          "Name": "E-Core #5",
+          "Type": "Temperature",
+          "Index": 14,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/15",
+          "Name": "E-Core #6",
+          "Type": "Temperature",
+          "Index": 15,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/16",
+          "Name": "E-Core #7",
+          "Type": "Temperature",
+          "Index": 16,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/17",
+          "Name": "E-Core #8",
+          "Type": "Temperature",
+          "Index": 17,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/18",
+          "Name": "E-Core #9",
+          "Type": "Temperature",
+          "Index": 18,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/19",
+          "Name": "E-Core #10",
+          "Type": "Temperature",
+          "Index": 19,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/20",
+          "Name": "E-Core #11",
+          "Type": "Temperature",
+          "Index": 20,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/21",
+          "Name": "E-Core #12",
+          "Type": "Temperature",
+          "Index": 21,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/22",
+          "Name": "E-Core #13",
+          "Type": "Temperature",
+          "Index": 22,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/23",
+          "Name": "E-Core #14",
+          "Type": "Temperature",
+          "Index": 23,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/24",
+          "Name": "E-Core #15",
+          "Type": "Temperature",
+          "Index": 24,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/25",
+          "Name": "E-Core #16",
+          "Type": "Temperature",
+          "Index": 25,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/26",
+          "Name": "CPU Package",
+          "Type": "Temperature",
+          "Index": 26,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/27",
+          "Name": "P-Core #1 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 27,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/28",
+          "Name": "P-Core #2 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 28,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/29",
+          "Name": "P-Core #3 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 29,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/30",
+          "Name": "P-Core #4 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 30,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/31",
+          "Name": "P-Core #5 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 31,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/32",
+          "Name": "P-Core #6 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 32,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/33",
+          "Name": "P-Core #7 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 33,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/34",
+          "Name": "P-Core #8 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 34,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/35",
+          "Name": "E-Core #1 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 35,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/36",
+          "Name": "E-Core #2 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 36,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/37",
+          "Name": "E-Core #3 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 37,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/38",
+          "Name": "E-Core #4 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 38,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/39",
+          "Name": "E-Core #5 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 39,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/40",
+          "Name": "E-Core #6 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 40,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/41",
+          "Name": "E-Core #7 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 41,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/42",
+          "Name": "E-Core #8 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 42,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/43",
+          "Name": "E-Core #9 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 43,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/44",
+          "Name": "E-Core #10 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 44,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/45",
+          "Name": "E-Core #11 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 45,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/46",
+          "Name": "E-Core #12 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 46,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/47",
+          "Name": "E-Core #13 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 47,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/48",
+          "Name": "E-Core #14 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 48,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/49",
+          "Name": "E-Core #15 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 49,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/temperature/50",
+          "Name": "E-Core #16 Distance to TjMax",
+          "Type": "Temperature",
+          "Index": 50,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/1",
+          "Name": "P-Core #1",
+          "Type": "Clock",
+          "Index": 1,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/2",
+          "Name": "P-Core #2",
+          "Type": "Clock",
+          "Index": 2,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/3",
+          "Name": "P-Core #3",
+          "Type": "Clock",
+          "Index": 3,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/4",
+          "Name": "P-Core #4",
+          "Type": "Clock",
+          "Index": 4,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/5",
+          "Name": "P-Core #5",
+          "Type": "Clock",
+          "Index": 5,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/6",
+          "Name": "P-Core #6",
+          "Type": "Clock",
+          "Index": 6,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/7",
+          "Name": "P-Core #7",
+          "Type": "Clock",
+          "Index": 7,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/8",
+          "Name": "P-Core #8",
+          "Type": "Clock",
+          "Index": 8,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/9",
+          "Name": "E-Core #1",
+          "Type": "Clock",
+          "Index": 9,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/10",
+          "Name": "E-Core #2",
+          "Type": "Clock",
+          "Index": 10,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/11",
+          "Name": "E-Core #3",
+          "Type": "Clock",
+          "Index": 11,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/12",
+          "Name": "E-Core #4",
+          "Type": "Clock",
+          "Index": 12,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/13",
+          "Name": "E-Core #5",
+          "Type": "Clock",
+          "Index": 13,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/14",
+          "Name": "E-Core #6",
+          "Type": "Clock",
+          "Index": 14,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/15",
+          "Name": "E-Core #7",
+          "Type": "Clock",
+          "Index": 15,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/16",
+          "Name": "E-Core #8",
+          "Type": "Clock",
+          "Index": 16,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/17",
+          "Name": "E-Core #9",
+          "Type": "Clock",
+          "Index": 17,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/18",
+          "Name": "E-Core #10",
+          "Type": "Clock",
+          "Index": 18,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/19",
+          "Name": "E-Core #11",
+          "Type": "Clock",
+          "Index": 19,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/20",
+          "Name": "E-Core #12",
+          "Type": "Clock",
+          "Index": 20,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/21",
+          "Name": "E-Core #13",
+          "Type": "Clock",
+          "Index": 21,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/22",
+          "Name": "E-Core #14",
+          "Type": "Clock",
+          "Index": 22,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/23",
+          "Name": "E-Core #15",
+          "Type": "Clock",
+          "Index": 23,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/clock/24",
+          "Name": "E-Core #16",
+          "Type": "Clock",
+          "Index": 24,
+          "Value": null,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/intelcpu/0/power/0",
+          "Name": "CPU Package",
+          "Type": "Power",
+          "Index": 0,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/intelcpu/0/power/1",
+          "Name": "CPU Cores",
+          "Type": "Power",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/intelcpu/0/power/3",
+          "Name": "CPU Memory",
+          "Type": "Power",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/intelcpu/0/power/4",
+          "Name": "CPU Platform",
+          "Type": "Power",
+          "Index": 4,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/vram",
+      "Name": "Virtual Memory",
+      "Type": "Memory",
+      "Sensors": [
+        {
+          "Id": "/vram/data/2",
+          "Name": "Memory Used",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 47.44065,
+          "Min": 47.44065,
+          "Max": 47.47802
+        },
+        {
+          "Id": "/vram/data/3",
+          "Name": "Memory Available",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 20.317154,
+          "Min": 20.279785,
+          "Max": 20.317154
+        },
+        {
+          "Id": "/vram/load/1",
+          "Name": "Memory",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 70.01504,
+          "Min": 70.01504,
+          "Max": 70.07019
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/ram",
+      "Name": "Total Memory",
+      "Type": "Memory",
+      "Sensors": [
+        {
+          "Id": "/ram/data/0",
+          "Name": "Memory Used",
+          "Type": "Data",
+          "Index": 0,
+          "Value": 30.725327,
+          "Min": 30.725327,
+          "Max": 30.737686
+        },
+        {
+          "Id": "/ram/data/1",
+          "Name": "Memory Available",
+          "Type": "Data",
+          "Index": 1,
+          "Value": 33.03248,
+          "Min": 33.02012,
+          "Max": 33.03248
+        },
+        {
+          "Id": "/ram/load/0",
+          "Name": "Memory",
+          "Type": "Load",
+          "Index": 0,
+          "Value": 48.190693,
+          "Min": 48.190693,
+          "Max": 48.210075
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/gpu-nvidia/0",
+      "Name": "NVIDIA GeForce RTX 4090",
+      "Type": "GpuNvidia",
+      "Sensors": [
+        {
+          "Id": "/gpu-nvidia/0/temperature/0",
+          "Name": "GPU Core",
+          "Type": "Temperature",
+          "Index": 0,
+          "Value": 46,
+          "Min": 46,
+          "Max": 46
+        },
+        {
+          "Id": "/gpu-nvidia/0/clock/0",
+          "Name": "GPU Core",
+          "Type": "Clock",
+          "Index": 0,
+          "Value": 210,
+          "Min": 210,
+          "Max": 210
+        },
+        {
+          "Id": "/gpu-nvidia/0/clock/4",
+          "Name": "GPU Memory",
+          "Type": "Clock",
+          "Index": 4,
+          "Value": 5001.986,
+          "Min": 5001.986,
+          "Max": 5001.986
+        },
+        {
+          "Id": "/gpu-nvidia/0/fan/1",
+          "Name": "GPU Fan 1",
+          "Type": "Fan",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/fan/2",
+          "Name": "GPU Fan 2",
+          "Type": "Fan",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/control/1",
+          "Name": "GPU Fan 1",
+          "Type": "Control",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/control/2",
+          "Name": "GPU Fan 2",
+          "Type": "Control",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/0",
+          "Name": "GPU Core",
+          "Type": "Load",
+          "Index": 0,
+          "Value": 35,
+          "Min": 31,
+          "Max": 35
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/1",
+          "Name": "GPU Memory Controller",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 2,
+          "Min": 2,
+          "Max": 2
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/2",
+          "Name": "GPU Video Engine",
+          "Type": "Load",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/3",
+          "Name": "GPU Bus",
+          "Type": "Load",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/4",
+          "Name": "GPU Power",
+          "Type": "Load",
+          "Index": 4,
+          "Value": 8.261,
+          "Min": 8.022,
+          "Max": 8.271
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/5",
+          "Name": "GPU Board Power",
+          "Type": "Load",
+          "Index": 5,
+          "Value": 32.647,
+          "Min": 32.647,
+          "Max": 33.024
+        },
+        {
+          "Id": "/gpu-nvidia/0/voltage/0",
+          "Name": "GPU Core Voltage",
+          "Type": "Voltage",
+          "Index": 0,
+          "Value": 0.885,
+          "Min": 0.885,
+          "Max": 0.885
+        },
+        {
+          "Id": "/gpu-nvidia/0/smalldata/3",
+          "Name": "D3D Dedicated Memory Used",
+          "Type": "SmallData",
+          "Index": 3,
+          "Value": 2851.7852,
+          "Min": 2851.7852,
+          "Max": 2861.9766
+        },
+        {
+          "Id": "/gpu-nvidia/0/smalldata/4",
+          "Name": "D3D Shared Memory Used",
+          "Type": "SmallData",
+          "Index": 4,
+          "Value": 131.35547,
+          "Min": 131.35547,
+          "Max": 132.4336
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/7",
+          "Name": "D3D 3D",
+          "Type": "Load",
+          "Index": 7,
+          "Value": 5.195785,
+          "Min": 3.9471858,
+          "Max": 5.683949
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/15",
+          "Name": "D3D Overlay",
+          "Type": "Load",
+          "Index": 15,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/18",
+          "Name": "D3D Video Decode",
+          "Type": "Load",
+          "Index": 18,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/8",
+          "Name": "D3D Copy",
+          "Type": "Load",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/9",
+          "Name": "D3D Copy",
+          "Type": "Load",
+          "Index": 9,
+          "Value": 0.023647113,
+          "Min": 0,
+          "Max": 0.024103634
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/16",
+          "Name": "D3D Security",
+          "Type": "Load",
+          "Index": 16,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/19",
+          "Name": "D3D Video Encode",
+          "Type": "Load",
+          "Index": 19,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/20",
+          "Name": "D3D Video Encode",
+          "Type": "Load",
+          "Index": 20,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/14",
+          "Name": "D3D Optical Flow Accelerator 0",
+          "Type": "Load",
+          "Index": 14,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/21",
+          "Name": "D3D VR",
+          "Type": "Load",
+          "Index": 21,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/10",
+          "Name": "D3D Copy",
+          "Type": "Load",
+          "Index": 10,
+          "Value": 0.03353653,
+          "Min": 0,
+          "Max": 0.03353653
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/11",
+          "Name": "D3D Copy",
+          "Type": "Load",
+          "Index": 11,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/12",
+          "Name": "D3D Copy",
+          "Type": "Load",
+          "Index": 12,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/13",
+          "Name": "D3D Copy",
+          "Type": "Load",
+          "Index": 13,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/17",
+          "Name": "D3D Security_1",
+          "Type": "Load",
+          "Index": 17,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/gpu-nvidia/0/temperature/2",
+          "Name": "GPU Hot Spot",
+          "Type": "Temperature",
+          "Index": 2,
+          "Value": 56.15625,
+          "Min": 56.125,
+          "Max": 56.15625
+        },
+        {
+          "Id": "/gpu-nvidia/0/temperature/3",
+          "Name": "GPU Memory Junction",
+          "Type": "Temperature",
+          "Index": 3,
+          "Value": 56,
+          "Min": 54,
+          "Max": 56
+        },
+        {
+          "Id": "/gpu-nvidia/0/smalldata/2",
+          "Name": "GPU Memory Total",
+          "Type": "SmallData",
+          "Index": 2,
+          "Value": 24564,
+          "Min": 24564,
+          "Max": 24564
+        },
+        {
+          "Id": "/gpu-nvidia/0/smalldata/0",
+          "Name": "GPU Memory Free",
+          "Type": "SmallData",
+          "Index": 0,
+          "Value": 21299,
+          "Min": 21289,
+          "Max": 21299
+        },
+        {
+          "Id": "/gpu-nvidia/0/smalldata/1",
+          "Name": "GPU Memory Used",
+          "Type": "SmallData",
+          "Index": 1,
+          "Value": 3264,
+          "Min": 3264,
+          "Max": 3274
+        },
+        {
+          "Id": "/gpu-nvidia/0/load/3",
+          "Name": "GPU Memory",
+          "Type": "Load",
+          "Index": 3,
+          "Value": 13.287802,
+          "Min": 13.287802,
+          "Max": 13.329275
+        },
+        {
+          "Id": "/gpu-nvidia/0/power/0",
+          "Name": "GPU Package",
+          "Type": "Power",
+          "Index": 0,
+          "Value": 36.845,
+          "Min": 36.845,
+          "Max": 37.488
+        },
+        {
+          "Id": "/gpu-nvidia/0/throughput/0",
+          "Name": "GPU PCIe Rx",
+          "Type": "Throughput",
+          "Index": 0,
+          "Value": 234799100,
+          "Min": 116899840,
+          "Max": 234799100
+        },
+        {
+          "Id": "/gpu-nvidia/0/throughput/1",
+          "Name": "GPU PCIe Tx",
+          "Type": "Throughput",
+          "Index": 1,
+          "Value": 31049728,
+          "Min": 31049728,
+          "Max": 68549630
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B06C7F4BF-521D-40C7-A176-C066F5F5D7DB%7D",
+      "Name": "Bluetooth Network Connection",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B06C7F4BF-521D-40C7-A176-C066F5F5D7DB%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B06C7F4BF-521D-40C7-A176-C066F5F5D7DB%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B06C7F4BF-521D-40C7-A176-C066F5F5D7DB%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B06C7F4BF-521D-40C7-A176-C066F5F5D7DB%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B06C7F4BF-521D-40C7-A176-C066F5F5D7DB%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B1ECCAE7D-B41D-4DB9-8FEA-F7611FC92225%7D",
+      "Name": "Ethernet",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B1ECCAE7D-B41D-4DB9-8FEA-F7611FC92225%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 1.9848635,
+          "Min": 1.9848607,
+          "Max": 1.9848635
+        },
+        {
+          "Id": "/nic/%7B1ECCAE7D-B41D-4DB9-8FEA-F7611FC92225%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 80.27618,
+          "Min": 80.27618,
+          "Max": 80.27618
+        },
+        {
+          "Id": "/nic/%7B1ECCAE7D-B41D-4DB9-8FEA-F7611FC92225%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 1729.8539,
+          "Min": 396.14713,
+          "Max": 1729.8539
+        },
+        {
+          "Id": "/nic/%7B1ECCAE7D-B41D-4DB9-8FEA-F7611FC92225%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 1429.8594,
+          "Min": 454.24872,
+          "Max": 1429.8594
+        },
+        {
+          "Id": "/nic/%7B1ECCAE7D-B41D-4DB9-8FEA-F7611FC92225%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0.0025277706,
+          "Min": 0.00068031665,
+          "Max": 0.0025277706
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B0A484393-414F-4790-B866-65D9537128BB%7D",
+      "Name": "Ethernet 2",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B0A484393-414F-4790-B866-65D9537128BB%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0A484393-414F-4790-B866-65D9537128BB%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0A484393-414F-4790-B866-65D9537128BB%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0A484393-414F-4790-B866-65D9537128BB%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0A484393-414F-4790-B866-65D9537128BB%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": "NaN",
+          "Min": null,
+          "Max": null
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B25455BD0-F7D9-4C63-85F7-00A806B5BADD%7D",
+      "Name": "Ethernet 3",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B25455BD0-F7D9-4C63-85F7-00A806B5BADD%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0.013767278,
+          "Min": 0.013767278,
+          "Max": 0.013767278
+        },
+        {
+          "Id": "/nic/%7B25455BD0-F7D9-4C63-85F7-00A806B5BADD%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0.0009920122,
+          "Min": 0.0009920122,
+          "Max": 0.0009920122
+        },
+        {
+          "Id": "/nic/%7B25455BD0-F7D9-4C63-85F7-00A806B5BADD%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B25455BD0-F7D9-4C63-85F7-00A806B5BADD%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B25455BD0-F7D9-4C63-85F7-00A806B5BADD%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B1C641E53-9A8D-4CF7-A3DD-9A043286984C%7D",
+      "Name": "Local Area Connection* 10",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B1C641E53-9A8D-4CF7-A3DD-9A043286984C%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B1C641E53-9A8D-4CF7-A3DD-9A043286984C%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B1C641E53-9A8D-4CF7-A3DD-9A043286984C%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B1C641E53-9A8D-4CF7-A3DD-9A043286984C%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B1C641E53-9A8D-4CF7-A3DD-9A043286984C%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B0A542DAA-9939-4F3D-B4F0-311DFA2B3541%7D",
+      "Name": "Local Area Connection* 5",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B0A542DAA-9939-4F3D-B4F0-311DFA2B3541%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0A542DAA-9939-4F3D-B4F0-311DFA2B3541%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0A542DAA-9939-4F3D-B4F0-311DFA2B3541%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0A542DAA-9939-4F3D-B4F0-311DFA2B3541%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0A542DAA-9939-4F3D-B4F0-311DFA2B3541%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B5B46315B-D0B6-4908-A61E-E21A39315BDD%7D",
+      "Name": "Local Area Connection* 6",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B5B46315B-D0B6-4908-A61E-E21A39315BDD%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B5B46315B-D0B6-4908-A61E-E21A39315BDD%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B5B46315B-D0B6-4908-A61E-E21A39315BDD%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B5B46315B-D0B6-4908-A61E-E21A39315BDD%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B5B46315B-D0B6-4908-A61E-E21A39315BDD%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7BEFFA14A1-EFB9-41F9-BE7D-C819ECC3B9CD%7D",
+      "Name": "Local Area Connection* 7",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7BEFFA14A1-EFB9-41F9-BE7D-C819ECC3B9CD%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BEFFA14A1-EFB9-41F9-BE7D-C819ECC3B9CD%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BEFFA14A1-EFB9-41F9-BE7D-C819ECC3B9CD%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BEFFA14A1-EFB9-41F9-BE7D-C819ECC3B9CD%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BEFFA14A1-EFB9-41F9-BE7D-C819ECC3B9CD%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7BAC01DC7A-CB9D-4404-8887-EB30BF5BE928%7D",
+      "Name": "Local Area Connection* 8",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7BAC01DC7A-CB9D-4404-8887-EB30BF5BE928%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BAC01DC7A-CB9D-4404-8887-EB30BF5BE928%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BAC01DC7A-CB9D-4404-8887-EB30BF5BE928%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BAC01DC7A-CB9D-4404-8887-EB30BF5BE928%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BAC01DC7A-CB9D-4404-8887-EB30BF5BE928%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7BCAA7F668-0681-42D3-ABA6-1EA7E17D2F4F%7D",
+      "Name": "Local Area Connection* 9",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7BCAA7F668-0681-42D3-ABA6-1EA7E17D2F4F%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BCAA7F668-0681-42D3-ABA6-1EA7E17D2F4F%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BCAA7F668-0681-42D3-ABA6-1EA7E17D2F4F%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BCAA7F668-0681-42D3-ABA6-1EA7E17D2F4F%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BCAA7F668-0681-42D3-ABA6-1EA7E17D2F4F%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B60903C0F-AF7E-4310-B0FF-C05D854A80CF%7D",
+      "Name": "vEthernet (WSL (Hyper-V firewall))",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B60903C0F-AF7E-4310-B0FF-C05D854A80CF%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0.030587375,
+          "Min": 0.030587375,
+          "Max": 0.030587375
+        },
+        {
+          "Id": "/nic/%7B60903C0F-AF7E-4310-B0FF-C05D854A80CF%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0.00035919342,
+          "Min": 0.00035919342,
+          "Max": 0.00035919342
+        },
+        {
+          "Id": "/nic/%7B60903C0F-AF7E-4310-B0FF-C05D854A80CF%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B60903C0F-AF7E-4310-B0FF-C05D854A80CF%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B60903C0F-AF7E-4310-B0FF-C05D854A80CF%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7B0468B653-B7D2-4B20-9DF5-264A0C36276D%7D",
+      "Name": "vSwitch (WSL (Hyper-V firewall))",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7B0468B653-B7D2-4B20-9DF5-264A0C36276D%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0468B653-B7D2-4B20-9DF5-264A0C36276D%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0468B653-B7D2-4B20-9DF5-264A0C36276D%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0468B653-B7D2-4B20-9DF5-264A0C36276D%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7B0468B653-B7D2-4B20-9DF5-264A0C36276D%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/nic/%7BF6D78CC4-34AA-4027-8D32-26D42D96CC76%7D",
+      "Name": "Wi-Fi",
+      "Type": "Network",
+      "Sensors": [
+        {
+          "Id": "/nic/%7BF6D78CC4-34AA-4027-8D32-26D42D96CC76%7D/data/2",
+          "Name": "Data Uploaded",
+          "Type": "Data",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BF6D78CC4-34AA-4027-8D32-26D42D96CC76%7D/data/3",
+          "Name": "Data Downloaded",
+          "Type": "Data",
+          "Index": 3,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BF6D78CC4-34AA-4027-8D32-26D42D96CC76%7D/throughput/7",
+          "Name": "Upload Speed",
+          "Type": "Throughput",
+          "Index": 7,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BF6D78CC4-34AA-4027-8D32-26D42D96CC76%7D/throughput/8",
+          "Name": "Download Speed",
+          "Type": "Throughput",
+          "Index": 8,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/nic/%7BF6D78CC4-34AA-4027-8D32-26D42D96CC76%7D/load/1",
+          "Name": "Network Utilization",
+          "Type": "Load",
+          "Index": 1,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        }
+      ],
+      "SubHardware": []
+    },
+    {
+      "Id": "/psu/corsair/0",
+      "Name": "Corsair HX1000i",
+      "Type": "Psu",
+      "Sensors": [
+        {
+          "Id": "/psu/corsair/0/temperature/0",
+          "Name": "VRM",
+          "Type": "Temperature",
+          "Index": 0,
+          "Value": 48,
+          "Min": 48,
+          "Max": 48.25
+        },
+        {
+          "Id": "/psu/corsair/0/temperature/1",
+          "Name": "Case",
+          "Type": "Temperature",
+          "Index": 1,
+          "Value": 42,
+          "Min": 42,
+          "Max": 42
+        },
+        {
+          "Id": "/psu/corsair/0/fan/2",
+          "Name": "Case",
+          "Type": "Fan",
+          "Index": 2,
+          "Value": 0,
+          "Min": 0,
+          "Max": 0
+        },
+        {
+          "Id": "/psu/corsair/0/voltage/3",
+          "Name": "Input",
+          "Type": "Voltage",
+          "Index": 3,
+          "Value": 230,
+          "Min": 230,
+          "Max": 230
+        },
+        {
+          "Id": "/psu/corsair/0/voltage/4",
+          "Name": "\u002B12V",
+          "Type": "Voltage",
+          "Index": 4,
+          "Value": 12.046875,
+          "Min": 12.03125,
+          "Max": 12.046875
+        },
+        {
+          "Id": "/psu/corsair/0/voltage/5",
+          "Name": "\u002B5V",
+          "Type": "Voltage",
+          "Index": 5,
+          "Value": 5.03125,
+          "Min": 5.03125,
+          "Max": 5.03125
+        },
+        {
+          "Id": "/psu/corsair/0/voltage/6",
+          "Name": "\u002B3.3V",
+          "Type": "Voltage",
+          "Index": 6,
+          "Value": 3.3125,
+          "Min": 3.3125,
+          "Max": 3.3125
+        },
+        {
+          "Id": "/psu/corsair/0/current/7",
+          "Name": "\u002B12V",
+          "Type": "Current",
+          "Index": 7,
+          "Value": 10,
+          "Min": 10,
+          "Max": 14.75
+        },
+        {
+          "Id": "/psu/corsair/0/current/8",
+          "Name": "\u002B5V",
+          "Type": "Current",
+          "Index": 8,
+          "Value": 5.4375,
+          "Min": 5.4375,
+          "Max": 5.4375
+        },
+        {
+          "Id": "/psu/corsair/0/current/9",
+          "Name": "\u002B3.3V",
+          "Type": "Current",
+          "Index": 9,
+          "Value": 3.125,
+          "Min": 2.6875,
+          "Max": 3.125
+        },
+        {
+          "Id": "/psu/corsair/0/power/10",
+          "Name": "\u002B12V",
+          "Type": "Power",
+          "Index": 10,
+          "Value": 132,
+          "Min": 132,
+          "Max": 174
+        },
+        {
+          "Id": "/psu/corsair/0/power/11",
+          "Name": "\u002B5V",
+          "Type": "Power",
+          "Index": 11,
+          "Value": 27,
+          "Min": 27,
+          "Max": 27
+        },
+        {
+          "Id": "/psu/corsair/0/power/12",
+          "Name": "\u002B3.3V",
+          "Type": "Power",
+          "Index": 12,
+          "Value": 10,
+          "Min": 8,
+          "Max": 10
+        },
+        {
+          "Id": "/psu/corsair/0/power/13",
+          "Name": "Total watts",
+          "Type": "Power",
+          "Index": 13,
+          "Value": 188,
+          "Min": 188,
+          "Max": 210
+        },
+        {
+          "Id": "/psu/corsair/0/power/14",
+          "Name": "Total Output",
+          "Type": "Power",
+          "Index": 14,
+          "Value": 169,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/psu/corsair/0/timespan/15",
+          "Name": "Uptime",
+          "Type": "TimeSpan",
+          "Index": 15,
+          "Value": 29616,
+          "Min": null,
+          "Max": null
+        },
+        {
+          "Id": "/psu/corsair/0/timespan/16",
+          "Name": "Total uptime",
+          "Type": "TimeSpan",
+          "Index": 16,
+          "Value": 76518820,
+          "Min": null,
+          "Max": null
+        }
+      ],
+      "SubHardware": []
+    }
+  ],
+  "Volumes": {
+    "1": [
+      {
+        "Letter": "E",
+        "Label": "2TB Projects"
+      }
+    ],
+    "2": [
+      {
+        "Letter": "C",
+        "Label": "4TB Main"
+      },
+      {
+        "Letter": "Z",
+        "Label": "Grub"
+      }
+    ],
+    "3": [
+      {
+        "Letter": "F",
+        "Label": "2TB Games"
+      }
+    ],
+    "4": [
+      {
+        "Letter": "G",
+        "Label": "2TB Projects EVO"
+      }
+    ]
+  },
+  "Timestamp": "2026-10-15T19:04:34.2941785+02:00"
+}

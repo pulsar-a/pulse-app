@@ -30,7 +30,17 @@ make start
 ```
 
 This builds Pulse and launches it, and Windows shows the admin prompt. With MinGW the
-command is `mingw32-make start`. `make build` and `make clean` are also available.
+command is `mingw32-make start`. Other targets:
+
+| Target | What it does |
+|--------|--------------|
+| `make build` | Build without launching |
+| `make test` | Run the tests (works while Pulse is open) |
+| `make snapshot` | Save one reading of all sensors, as admin, to `tests/Pulse.Tests/Fixtures/admin.json` (close Pulse first) |
+| `make icon` | Redraw the app icon from `tools/IconGen` |
+| `make clean` | Remove build output |
+
+Only one Pulse runs at a time; launching it again brings the open window to the front.
 
 To run it without `make`, use an elevated terminal:
 

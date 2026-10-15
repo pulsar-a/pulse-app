@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using LibreHardwareMonitor.Hardware;
 
 namespace Pulse.Models;
@@ -12,6 +13,7 @@ public sealed record SensorReading(
     float? Min,
     float? Max)
 {
+    [JsonIgnore]
     public bool HasValue => Value is { } v && !float.IsNaN(v);
 }
 
@@ -24,6 +26,7 @@ public sealed record HardwareReading(
     IReadOnlyList<HardwareReading> SubHardware)
 {
     /// <summary>This hardware's sensors followed by those of all sub-hardware.</summary>
+    [JsonIgnore]
     public IEnumerable<SensorReading> AllSensors =>
         Sensors.Concat(SubHardware.SelectMany(h => h.AllSensors));
 

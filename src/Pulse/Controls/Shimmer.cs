@@ -10,11 +10,23 @@ namespace Pulse.Controls;
 /// </summary>
 public sealed class Shimmer : Border
 {
-    private static readonly Color BaseColor = Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF);
-    private static readonly Color HighlightColor = Color.FromArgb(0x2A, 0xFF, 0xFF, 0xFF);
+    // Defaults match the dark theme; Themes/Styles.xaml sets them from theme tokens.
+    public static readonly DependencyProperty BaseColorProperty = DependencyProperty.Register(
+        nameof(BaseColor), typeof(Color), typeof(Shimmer),
+        new PropertyMetadata(Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF), (d, _) => ((Shimmer)d).UpdateColors()));
+
+    public static readonly DependencyProperty HighlightColorProperty = DependencyProperty.Register(
+        nameof(HighlightColor), typeof(Color), typeof(Shimmer),
+        new PropertyMetadata(Color.FromArgb(0x2A, 0xFF, 0xFF, 0xFF), (d, _) => ((Shimmer)d).UpdateColors()));
+
+    private readonly GradientStop[] _baseStops;
+    private readonly GradientStop _highlightStop;
 
     public Shimmer()
     {
+        _baseStops = [new(BaseColor, 0.0), new(BaseColor, 0.35), new(BaseColor, 0.65), new(BaseColor, 1.0)];
+        _highlightStop = new GradientStop(HighlightColor, 0.5);
+
         var sweep = new TranslateTransform(-1, 0);
         Background = new LinearGradientBrush
         {
@@ -22,14 +34,7 @@ public sealed class Shimmer : Border
             EndPoint = new Point(1, 0.5),
             MappingMode = BrushMappingMode.RelativeToBoundingBox,
             RelativeTransform = sweep,
-            GradientStops =
-            {
-                new GradientStop(BaseColor, 0.0),
-                new GradientStop(BaseColor, 0.35),
-                new GradientStop(HighlightColor, 0.5),
-                new GradientStop(BaseColor, 0.65),
-                new GradientStop(BaseColor, 1.0),
-            },
+            GradientStops = [_baseStops[0], _baseStops[1], _highlightStop, _baseStops[2], _baseStops[3]],
         };
 
         // Sliding the gradient from one width left to one width right carries the highlight band
@@ -46,5 +51,26 @@ public sealed class Shimmer : Border
                 sweep.BeginAnimation(TranslateTransform.XProperty,
                     new DoubleAnimation(-1, 1, TimeSpan.FromSeconds(1.4)) { RepeatBehavior = RepeatBehavior.Forever });
         };
+    }
+
+    public Color BaseColor
+    {
+        get => (Color)GetValue(BaseColorProperty);
+        set => SetValue(BaseColorProperty, value);
+    }
+
+    public Color HighlightColor
+    {
+        get => (Color)GetValue(HighlightColorProperty);
+        set => SetValue(HighlightColorProperty, value);
+    }
+
+    private void UpdateColors()
+    {
+        // Called from the property metadata before the constructor has created the stops.
+        if (_baseStops is null) return;
+        foreach (var stop in _baseStops)
+            stop.Color = BaseColor;
+        _highlightStop.Color = HighlightColor;
     }
 }

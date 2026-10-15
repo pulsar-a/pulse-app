@@ -18,11 +18,6 @@ public sealed class RingGauge : FrameworkElement
     private const double BandGap = 5;
     private const int TickCount = 10;
 
-    private static readonly Brush TrackBrush = Frozen(new SolidColorBrush(Color.FromArgb(0x1C, 0xFF, 0xFF, 0xFF)));
-    private static readonly Pen MinorTick = Frozen(new Pen(Frozen(new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF))), 1.2));
-    private static readonly Pen MajorTick = Frozen(new Pen(Frozen(new SolidColorBrush(Color.FromArgb(0x48, 0xFF, 0xFF, 0xFF))), 1.6));
-    private static readonly Brush KnobFill = Frozen(new SolidColorBrush(Color.FromRgb(0xF7, 0xF7, 0xF7)));
-
     public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
         nameof(Value), typeof(double), typeof(RingGauge), new PropertyMetadata(0.0, OnValueChanged));
 
@@ -45,6 +40,59 @@ public sealed class RingGauge : FrameworkElement
     public static readonly DependencyProperty ColorProperty = DependencyProperty.Register(
         nameof(Color), typeof(Color), typeof(RingGauge),
         new FrameworkPropertyMetadata(Colors.DeepSkyBlue, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    // Neutral parts of the dial. Defaults match the dark theme; Themes/Styles.xaml sets them from theme tokens.
+
+    public static readonly DependencyProperty TrackBrushProperty = DependencyProperty.Register(
+        nameof(TrackBrush), typeof(Brush), typeof(RingGauge),
+        new FrameworkPropertyMetadata(Brushes.DimGray, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty TickBrushProperty = DependencyProperty.Register(
+        nameof(TickBrush), typeof(Brush), typeof(RingGauge),
+        new FrameworkPropertyMetadata(Brushes.DimGray, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty MajorTickBrushProperty = DependencyProperty.Register(
+        nameof(MajorTickBrush), typeof(Brush), typeof(RingGauge),
+        new FrameworkPropertyMetadata(Brushes.Gray, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty KnobBrushProperty = DependencyProperty.Register(
+        nameof(KnobBrush), typeof(Brush), typeof(RingGauge),
+        new FrameworkPropertyMetadata(Brushes.WhiteSmoke, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty BandBaseColorProperty = DependencyProperty.Register(
+        nameof(BandBaseColor), typeof(Color), typeof(RingGauge),
+        new FrameworkPropertyMetadata(Color.FromRgb(0x1C, 0x1C, 0x22), FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public Brush TrackBrush
+    {
+        get => (Brush)GetValue(TrackBrushProperty);
+        set => SetValue(TrackBrushProperty, value);
+    }
+
+    public Brush TickBrush
+    {
+        get => (Brush)GetValue(TickBrushProperty);
+        set => SetValue(TickBrushProperty, value);
+    }
+
+    public Brush MajorTickBrush
+    {
+        get => (Brush)GetValue(MajorTickBrushProperty);
+        set => SetValue(MajorTickBrushProperty, value);
+    }
+
+    public Brush KnobBrush
+    {
+        get => (Brush)GetValue(KnobBrushProperty);
+        set => SetValue(KnobBrushProperty, value);
+    }
+
+    /// <summary>The range band is the accent mixed halfway toward this color.</summary>
+    public Color BandBaseColor
+    {
+        get => (Color)GetValue(BandBaseColorProperty);
+        set => SetValue(BandBaseColorProperty, value);
+    }
 
     public static readonly DependencyProperty ThicknessProperty = DependencyProperty.Register(
         nameof(Thickness), typeof(double), typeof(RingGauge),
@@ -111,6 +159,9 @@ public sealed class RingGauge : FrameworkElement
         var value = (double)GetValue(DisplayValueProperty);
         var peak = Math.Clamp((double)GetValue(PeakProperty), 0, 1);
 
+        var minorTick = Frozen(new Pen(TickBrush, 1.2));
+        var majorTick = Frozen(new Pen(MajorTickBrush, 1.6));
+
         // Dial ticks just inside the track; 0, 50 and 100% are a little longer and brighter.
         for (var i = 0; i <= TickCount; i++)
         {
@@ -118,7 +169,7 @@ public sealed class RingGauge : FrameworkElement
             var angle = StartAngle + SweepAngle * i / TickCount;
             var from = radius - t / 2 - 4;
             var to = from - (major ? 7 : 4);
-            dc.DrawLine(major ? MajorTick : MinorTick, PointOn(center, from, angle), PointOn(center, to, angle));
+            dc.DrawLine(major ? majorTick : minorTick, PointOn(center, from, angle), PointOn(center, to, angle));
         }
 
         dc.DrawGeometry(null, RoundPen(TrackBrush, t), Arc(center, radius, StartAngle, SweepAngle));
@@ -131,7 +182,7 @@ public sealed class RingGauge : FrameworkElement
             min = Math.Clamp(min, 0, 1);
             max = Math.Clamp(Math.Max(max, min + 0.004), 0, 1);
             var bandRadius = radius + t / 2 + BandGap + BandThickness / 2;
-            var band = RoundPen(Frozen(new SolidColorBrush(Mix(Color, Color.FromRgb(0x1C, 0x1C, 0x22), 0.5))), BandThickness);
+            var band = RoundPen(Frozen(new SolidColorBrush(Mix(Color, BandBaseColor, 0.5))), BandThickness);
             dc.DrawGeometry(null, band, Arc(center, bandRadius, StartAngle + SweepAngle * min, SweepAngle * (max - min)));
         }
 
@@ -157,7 +208,7 @@ public sealed class RingGauge : FrameworkElement
         dc.DrawGeometry(null, RoundPen(gradient, t), Arc(center, radius, StartAngle, sweep));
 
         // A crisp knob at the tip marks the exact reading.
-        dc.DrawEllipse(KnobFill, Frozen(new Pen(Frozen(new SolidColorBrush(Color)), 2)), tip, t / 2 + 1, t / 2 + 1);
+        dc.DrawEllipse(KnobBrush, Frozen(new Pen(Frozen(new SolidColorBrush(Color)), 2)), tip, t / 2 + 1, t / 2 + 1);
     }
 
     private static Pen RoundPen(Brush brush, double thickness) => Frozen(new Pen(brush, thickness)
@@ -193,7 +244,8 @@ public sealed class RingGauge : FrameworkElement
 
     private static T Frozen<T>(T freezable) where T : Freezable
     {
-        freezable.Freeze();
+        if (freezable.CanFreeze)
+            freezable.Freeze();
         return freezable;
     }
 }

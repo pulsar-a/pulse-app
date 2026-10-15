@@ -9,13 +9,15 @@ namespace Pulse.Services;
 public static class Log
 {
     private static readonly object Gate = new();
-    private static readonly string FilePath = Path.Combine(SettingsService.Folder, "pulse.log");
+
+    /// <summary>Tests point this at a temporary file so they don't touch the real log.</summary>
+    internal static string FilePath { get; set; } = Path.Combine(SettingsService.DefaultFolder, "pulse.log");
 
     public static void Start()
     {
         try
         {
-            Directory.CreateDirectory(SettingsService.Folder);
+            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
             File.WriteAllText(FilePath, "");
         }
         catch (IOException)

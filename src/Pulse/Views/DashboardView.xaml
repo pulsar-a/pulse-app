@@ -12,21 +12,6 @@
              d:DataContext="{d:DesignInstance vm:DashboardViewModel}">
 
     <UserControl.Resources>
-        <SolidColorBrush x:Key="FanBrush" Color="#2DD4BF" />
-        <SolidColorBrush x:Key="StorageBrush" Color="#38BDF8" />
-        <SolidColorBrush x:Key="NetworkBrush" Color="#4FA8FF" />
-        <SolidColorBrush x:Key="UploadBrush" Color="#A78BFA" />
-        <Color x:Key="NetworkColor">#4FA8FF</Color>
-        <Color x:Key="UploadColor">#A78BFA</Color>
-
-        <!-- Icon in a tinted rounded square, used in card headers. -->
-        <Style x:Key="IconChip" TargetType="Border">
-            <Setter Property="Width" Value="34" />
-            <Setter Property="Height" Value="34" />
-            <Setter Property="CornerRadius" Value="9" />
-            <Setter Property="Margin" Value="0,0,12,0" />
-        </Style>
-
         <DataTemplate x:Key="GaugeCard" DataType="{x:Type vm:GaugeCardViewModel}">
             <Border Style="{StaticResource PulseCard}">
                 <!-- The filler row keeps every card's sparkline on the same baseline. -->
@@ -62,13 +47,13 @@
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom"
                                     Margin="0,0,0,2"
                                     Visibility="{Binding MinText, Converter={x:Static views:Converters.NotNullToVisibility}}">
-                            <Border Background="#14FFFFFF" CornerRadius="6" Padding="6,1" Margin="0,0,4,0"
+                            <Border Background="{DynamicResource Pulse.SubtleFill}" CornerRadius="6" Padding="6,1" Margin="0,0,4,0"
                                     ToolTip="Lowest since Pulse started">
                                 <TextBlock FontSize="11" Style="{StaticResource Metric}" FontWeight="Normal">
                                     <Run Text="▾" Foreground="{DynamicResource TextFillColorTertiaryBrush}" /><Run Text="{Binding MinText, Mode=OneWay}" />
                                 </TextBlock>
                             </Border>
-                            <Border Background="#14FFFFFF" CornerRadius="6" Padding="6,1"
+                            <Border Background="{DynamicResource Pulse.SubtleFill}" CornerRadius="6" Padding="6,1"
                                     ToolTip="Highest since Pulse started">
                                 <TextBlock FontSize="11" Style="{StaticResource Metric}" FontWeight="Normal">
                                     <Run Text="▴" Foreground="{Binding AccentBrush}" /><Run Text="{Binding MaxText, Mode=OneWay}" />
@@ -175,8 +160,8 @@
             <Border Grid.Column="0" Style="{StaticResource PulseCard}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,14">
-                        <Border Style="{StaticResource IconChip}" Background="#29FF7A45">
-                            <ui:SymbolIcon Symbol="Temperature24" FontSize="18" Foreground="#FF7A45" />
+                        <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Cpu.Soft}">
+                            <ui:SymbolIcon Symbol="Temperature24" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Cpu}" />
                         </Border>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding CoresSubtitle}" VerticalAlignment="Center"
                                    Style="{StaticResource Secondary}" />
@@ -210,8 +195,8 @@
             <Border Grid.Column="1" Style="{StaticResource PulseCard}" DataContext="{Binding Cooling}">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,12">
-                        <Border Style="{StaticResource IconChip}" Background="#294FA8FF">
-                            <ui:SymbolIcon Symbol="Fluid24" FontSize="18" Foreground="{StaticResource NetworkBrush}" />
+                        <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Network.Soft}">
+                            <ui:SymbolIcon Symbol="Fluid24" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Network}" />
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="CPU cooling" Style="{StaticResource CardTitle}" />
@@ -233,7 +218,7 @@
                         <StackPanel Grid.Column="0" Margin="0,0,20,0">
                             <TextBlock Text="{Binding Headline}" FontSize="32" Style="{StaticResource Metric}" />
                             <TextBlock Text="{Binding HeadlineCaption}" Style="{StaticResource Secondary}" />
-                            <controls:Sparkline Values="{Binding History}" Color="{StaticResource NetworkColor}"
+                            <controls:Sparkline Values="{Binding History}" Color="{DynamicResource Pulse.Accent.Network.Color}"
                                                 Width="110" Height="40" Margin="0,10,0,0" HorizontalAlignment="Left" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -260,7 +245,7 @@
                                   Visibility="{Binding ShowPumpPicker, Converter={StaticResource BoolToVisibility}}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:PumpCandidateViewModel}">
-                                <Border Background="#0FFFFFFF" CornerRadius="8" Padding="12,6" Margin="0,0,0,6">
+                                <Border Background="{DynamicResource Pulse.QuietFill}" CornerRadius="8" Padding="12,6" Margin="0,0,0,6">
                                     <DockPanel>
                                         <ui:Button DockPanel.Dock="Right" Content="Set as pump" FontSize="12" Padding="10,4"
                                                    Command="{Binding DataContext.SetPumpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -290,8 +275,8 @@
                 <Border Grid.Column="0" Style="{StaticResource PulseCard}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,12">
-                            <Border Style="{StaticResource IconChip}" Background="#292DD4BF">
-                                <ui:SymbolIcon Symbol="WeatherSqualls24" FontSize="18" Foreground="{StaticResource FanBrush}" />
+                            <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Fans.Soft}">
+                                <ui:SymbolIcon Symbol="WeatherSqualls24" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Fans}" />
                             </Border>
                             <TextBlock Text="Fans" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
                         </DockPanel>
@@ -311,7 +296,7 @@
                                         </DockPanel>
                                         <TextBlock Text="{Binding Source}" Style="{StaticResource Caption}" Margin="0,1,0,5" />
                                         <controls:PeakBar Height="5" Orientation="Horizontal" CornerRadius="3"
-                                                          Value="{Binding Fraction}" Fill="{StaticResource FanBrush}" />
+                                                          Value="{Binding Fraction}" Fill="{DynamicResource Pulse.Accent.Fans}" />
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -322,8 +307,8 @@
                 <Border Grid.Column="1" Style="{StaticResource PulseCard}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,12">
-                            <Border Style="{StaticResource IconChip}" Background="#2938BDF8">
-                                <ui:SymbolIcon Symbol="Storage24" FontSize="18" Foreground="{StaticResource StorageBrush}" />
+                            <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Storage.Soft}">
+                                <ui:SymbolIcon Symbol="Storage24" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Storage}" />
                             </Border>
                             <TextBlock Text="Drives" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
                         </DockPanel>
@@ -337,7 +322,7 @@
                                 <DataTemplate DataType="{x:Type vm:DriveRowViewModel}">
                                     <DockPanel Margin="0,0,0,14">
                                         <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="10"
-                                                Background="#14FFFFFF" Margin="0,0,12,0" VerticalAlignment="Top">
+                                                Background="{DynamicResource Pulse.SubtleFill}" Margin="0,0,12,0" VerticalAlignment="Top">
                                             <TextBlock Text="{Binding TemperatureText}" FontSize="15"
                                                        Foreground="{Binding TemperatureBrush}"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -357,10 +342,10 @@
                                                     </ItemsControl.ItemsPanel>
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate DataType="{x:Type models:VolumeInfo}">
-                                                            <Border Background="#2238BDF8" CornerRadius="6" Padding="7,2" Margin="0,0,6,2">
+                                                            <Border Background="{DynamicResource Pulse.Accent.Storage.Soft}" CornerRadius="6" Padding="7,2" Margin="0,0,6,2">
                                                                 <TextBlock FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
-                                                                    <Run Text="{Binding Letter, Mode=OneWay}" Foreground="{StaticResource StorageBrush}"
-                                                                         FontWeight="SemiBold" /><Run Text=":" Foreground="{StaticResource StorageBrush}"
+                                                                    <Run Text="{Binding Letter, Mode=OneWay}" Foreground="{DynamicResource Pulse.Accent.Storage}"
+                                                                         FontWeight="SemiBold" /><Run Text=":" Foreground="{DynamicResource Pulse.Accent.Storage}"
                                                                          FontWeight="SemiBold" />
                                                                     <Run Text="{Binding Label, Mode=OneWay}" />
                                                                 </TextBlock>
@@ -375,7 +360,7 @@
                                             <TextBlock Text="{Binding Name}" Style="{StaticResource Caption}" Margin="0,3,0,0" />
                                             <Grid Margin="0,6,0,4">
                                                 <Border Style="{StaticResource BarTrack}" />
-                                                <Border Style="{StaticResource BarTrack}" Background="{StaticResource StorageBrush}"
+                                                <Border Style="{StaticResource BarTrack}" Background="{DynamicResource Pulse.Accent.Storage}"
                                                         RenderTransformOrigin="0,0.5">
                                                     <Border.RenderTransform>
                                                         <ScaleTransform ScaleX="{Binding UsedFraction}" />
@@ -394,8 +379,8 @@
                 <Border Grid.Column="2" Style="{StaticResource PulseCard}" DataContext="{Binding Network}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,12">
-                            <Border Style="{StaticResource IconChip}" Background="#294FA8FF">
-                                <ui:SymbolIcon Symbol="Router24" FontSize="18" Foreground="{StaticResource NetworkBrush}" />
+                            <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Network.Soft}">
+                                <ui:SymbolIcon Symbol="Router24" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Network}" />
                             </Border>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="Network" Style="{StaticResource CardTitle}" />
@@ -406,14 +391,14 @@
                         <UniformGrid Columns="2" Margin="0,4,0,10">
                             <StackPanel>
                                 <TextBlock Style="{StaticResource Secondary}">
-                                    <Run Text="↓" Foreground="{StaticResource NetworkBrush}" FontWeight="Bold" />
+                                    <Run Text="↓" Foreground="{DynamicResource Pulse.Accent.Network}" FontWeight="Bold" />
                                     <Run Text="Download" />
                                 </TextBlock>
                                 <TextBlock Text="{Binding DownText}" FontSize="22" Style="{StaticResource Metric}" />
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Style="{StaticResource Secondary}">
-                                    <Run Text="↑" Foreground="{StaticResource UploadBrush}" FontWeight="Bold" />
+                                    <Run Text="↑" Foreground="{DynamicResource Pulse.Accent.Upload}" FontWeight="Bold" />
                                     <Run Text="Upload" />
                                 </TextBlock>
                                 <TextBlock Text="{Binding UpText}" FontSize="22" Style="{StaticResource Metric}" />
@@ -421,9 +406,9 @@
                         </UniformGrid>
 
                         <Grid Height="96">
-                            <controls:Sparkline Values="{Binding DownHistory}" Color="{StaticResource NetworkColor}"
+                            <controls:Sparkline Values="{Binding DownHistory}" Color="{DynamicResource Pulse.Accent.Network.Color}"
                                                 Maximum="{Binding Scale}" />
-                            <controls:Sparkline Values="{Binding UpHistory}" Color="{StaticResource UploadColor}"
+                            <controls:Sparkline Values="{Binding UpHistory}" Color="{DynamicResource Pulse.Accent.Upload.Color}"
                                                 Maximum="{Binding Scale}" />
                         </Grid>
                         <TextBlock Text="{Binding Totals}" Style="{StaticResource Caption}" Margin="0,8,0,0" />

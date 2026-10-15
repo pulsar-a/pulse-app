@@ -16,13 +16,22 @@ public partial class MainViewModel : ObservableObject
     private HardwareSnapshot? _pending;
     private int _applyScheduled;
 
+    private readonly SettingsService _settings;
+    private readonly SensorCatalog _catalog;
+
     public MainViewModel(HardwareService hardware, SettingsService settings, Dispatcher dispatcher)
     {
         _dispatcher = dispatcher;
+        _settings = settings;
         var driverInstalled = HardwareService.IsDriverInstalled;
 
-        Dashboard = new DashboardViewModel(driverInstalled, settings);
-        Sensors = new SensorsViewModel();
+        _catalog = new SensorCatalog(settings);
+        Dashboard = new DashboardViewModel(driverInstalled, _catalog);
+        Sensors = new SensorsViewModel(_catalog);
+        Settings = new SettingsViewModel(settings, _catalog, driverInstalled);
+
+        ApplyUnits();
+        settings.Changed += ApplyUnits;
 
         ShowElevationBanner = !HardwareService.IsElevated;
         ShowDriverBanner = !driverInstalled;
@@ -37,11 +46,22 @@ public partial class MainViewModel : ObservableObject
 
     public DashboardViewModel Dashboard { get; }
     public SensorsViewModel Sensors { get; }
+    public SettingsViewModel Settings { get; }
 
     [ObservableProperty] public partial bool IsDashboardSelected { get; set; } = true;
     [ObservableProperty] public partial bool IsSensorsSelected { get; set; }
+    [ObservableProperty] public partial bool IsSettingsSelected { get; set; }
 
     partial void OnIsSensorsSelectedChanged(bool value) => Sensors.IsActive = value;
+
+    partial void OnIsSettingsSelectedChanged(bool value)
+    {
+        if (value)
+            Settings.Refresh();
+    }
+
+    /// <summary>Formatting reads the unit globally; numbers pick it up on the next update (within a second).</summary>
+    private void ApplyUnits() => SensorFormat.TemperatureUnit = _settings.Current.Units.Temperature;
 
     [ObservableProperty] public partial string MachineName { get; set; } = "Pulse";
     [ObservableProperty] public partial string StatusText { get; set; } = "Detecting hardware…";
@@ -86,6 +106,7 @@ public partial class MainViewModel : ObservableObject
         MachineName = board?.Name ?? Environment.MachineName;
         StatusText = $"Live · updated {snapshot.Timestamp:HH:mm:ss}";
 
+        _catalog.Update(snapshot);
         Dashboard.Apply(snapshot);
         Sensors.Apply(snapshot);
         IsLoading = false;

@@ -1,0 +1,109 @@
+<UserControl x:Class="Pulse.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:Pulse.ViewModels"
+             xmlns:views="clr-namespace:Pulse.Views"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:SettingsViewModel}">
+
+    <UserControl.Resources>
+        <!-- A labelled row inside a settings card: label and hint on the left, control on the right. -->
+        <Style x:Key="SettingLabel" TargetType="TextBlock" BasedOn="{StaticResource Secondary}">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,0,24,24">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Left" MinWidth="560">
+
+            <!-- Units -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="Units" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="Temperature" Style="{StaticResource SettingLabel}" />
+                    <TextBlock Text="Used everywhere in Pulse, including gauges and the sensor list."
+                               Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <RadioButton Content="Celsius (°C)" GroupName="TemperatureUnit" Margin="0,0,24,0"
+                                     IsChecked="{Binding IsCelsius}" />
+                        <RadioButton Content="Fahrenheit (°F)" GroupName="TemperatureUnit"
+                                     IsChecked="{Binding IsFahrenheit}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Sensors -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="Sensors" Style="{StaticResource SectionTitle}" />
+
+                    <DockPanel Margin="0,0,0,18">
+                        <ui:Button DockPanel.Dock="Right" Content="Detect again" VerticalAlignment="Center"
+                                   Command="{Binding ResetPumpCommand}"
+                                   Visibility="{Binding HasPumpChoice, Converter={StaticResource BoolToVisibility}}" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="CPU pump header" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="{Binding PumpText}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <TextBlock Text="Renamed sensors" Style="{StaticResource SettingLabel}" Margin="0,0,0,6" />
+                    <TextBlock Text="Rename any sensor on the All sensors page: double-click its name, or right-click it and choose Rename."
+                               Style="{StaticResource Caption}" TextWrapping="Wrap"
+                               Visibility="{Binding HasRenamedSensors, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
+                    <ItemsControl ItemsSource="{Binding RenamedSensors}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:RenamedSensorItem}">
+                                <Border BorderBrush="{DynamicResource Pulse.Divider}" BorderThickness="0,1,0,0" Padding="0,8">
+                                    <DockPanel>
+                                        <ui:Button DockPanel.Dock="Right" Content="Reset" Appearance="Transparent"
+                                                   Command="{Binding ResetCommand}" VerticalAlignment="Center" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            <TextBlock Text="{Binding Details}" Style="{StaticResource Caption}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- About -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="About" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Style="{StaticResource SettingLabel}">
+                        <Run Text="Pulse" /> <Run Text="{Binding Version, Mode=OneWay}" />
+                    </TextBlock>
+                    <TextBlock Text="{Binding AdminText}" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding DriverText}" Style="{StaticResource Caption}" />
+
+                    <DockPanel Margin="0,16,0,0">
+                        <ui:Button DockPanel.Dock="Right" Content="Open log folder" VerticalAlignment="Center"
+                                   Command="{Binding OpenLogFolderCommand}">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="FolderOpen20" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Diagnostic log" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="{Binding LogPath}" Style="{StaticResource Caption}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Text="Settings file" Style="{StaticResource SettingLabel}" />
+                        <TextBlock Text="{Binding SettingsPath}" Style="{StaticResource Caption}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

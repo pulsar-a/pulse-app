@@ -1,0 +1,68 @@
+<!--
+    Pulse color tokens, dark theme.
+    Every color in the app comes from here: views use {DynamicResource Pulse.*}, and C# reads
+    accents through Controls/Palette.cs. A light theme is a second file with the same keys.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Brand -->
+    <Color x:Key="Pulse.Brand.Color">#FF3B5C</Color>
+    <SolidColorBrush x:Key="Pulse.Brand" Color="{StaticResource Pulse.Brand.Color}" />
+    <SolidColorBrush x:Key="Pulse.Live" Color="#3DDC97" />
+
+    <!-- Surfaces -->
+    <SolidColorBrush x:Key="Pulse.CardBackground" Color="#0DFFFFFF" />
+    <SolidColorBrush x:Key="Pulse.CardBorder" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.SubtleFill" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.QuietFill" Color="#0FFFFFFF" />
+    <SolidColorBrush x:Key="Pulse.Divider" Color="#0FFFFFFF" />
+    <SolidColorBrush x:Key="Pulse.RowHover" Color="#0AFFFFFF" />
+    <SolidColorBrush x:Key="Pulse.HeaderHover" Color="#17FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.PillHover" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.PillSelected" Color="#26FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.Track" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.SplashBackground" Color="#F20F1013" />
+
+    <!-- Category accents: a solid color for marks and text, and a soft tint for icon chips -->
+    <Color x:Key="Pulse.Accent.Cpu.Color">#FF7A45</Color>
+    <Color x:Key="Pulse.Accent.Gpu.Color">#3DDC97</Color>
+    <Color x:Key="Pulse.Accent.Memory.Color">#A78BFA</Color>
+    <Color x:Key="Pulse.Accent.Power.Color">#FFC048</Color>
+    <Color x:Key="Pulse.Accent.Network.Color">#4FA8FF</Color>
+    <Color x:Key="Pulse.Accent.Upload.Color">#A78BFA</Color>
+    <Color x:Key="Pulse.Accent.Storage.Color">#38BDF8</Color>
+    <Color x:Key="Pulse.Accent.Fans.Color">#2DD4BF</Color>
+
+    <SolidColorBrush x:Key="Pulse.Accent.Cpu" Color="{StaticResource Pulse.Accent.Cpu.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Network" Color="{StaticResource Pulse.Accent.Network.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Upload" Color="{StaticResource Pulse.Accent.Upload.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Storage" Color="{StaticResource Pulse.Accent.Storage.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Fans" Color="{StaticResource Pulse.Accent.Fans.Color}" />
+
+    <SolidColorBrush x:Key="Pulse.Accent.Cpu.Soft" Color="#29FF7A45" />
+    <SolidColorBrush x:Key="Pulse.Accent.Network.Soft" Color="#294FA8FF" />
+    <SolidColorBrush x:Key="Pulse.Accent.Storage.Soft" Color="#2938BDF8" />
+    <SolidColorBrush x:Key="Pulse.Accent.Fans.Soft" Color="#292DD4BF" />
+
+    <!-- Status -->
+    <SolidColorBrush x:Key="Pulse.Warning" Color="#FFC048" />
+    <SolidColorBrush x:Key="Pulse.Warning.Background" Color="#29FFC048" />
+    <SolidColorBrush x:Key="Pulse.Warning.Border" Color="#55FFC048" />
+    <SolidColorBrush x:Key="Pulse.Info" Color="#4FA8FF" />
+    <SolidColorBrush x:Key="Pulse.Info.Background" Color="#1F4FA8FF" />
+    <SolidColorBrush x:Key="Pulse.Info.Border" Color="#554FA8FF" />
+    <SolidColorBrush x:Key="Pulse.Danger" Color="#EF4444" />
+
+    <!-- Instruments: gauges, bars and placeholders -->
+    <SolidColorBrush x:Key="Pulse.Gauge.Track" Color="#1CFFFFFF" />
+    <SolidColorBrush x:Key="Pulse.Gauge.Tick" Color="#22FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.Gauge.TickMajor" Color="#48FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.Gauge.Knob" Color="#F7F7F7" />
+    <!-- The range band is the accent mixed toward this color, so it reads as a muted, opaque shade. -->
+    <Color x:Key="Pulse.Gauge.BandBase">#1C1C22</Color>
+    <SolidColorBrush x:Key="Pulse.Bar.Cap" Color="#E6FFFFFF" />
+    <Color x:Key="Pulse.Shimmer.Base">#12FFFFFF</Color>
+    <Color x:Key="Pulse.Shimmer.Highlight">#2AFFFFFF</Color>
+
+</ResourceDictionary>

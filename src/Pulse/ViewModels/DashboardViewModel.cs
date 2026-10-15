@@ -20,37 +20,27 @@ public partial class DashboardViewModel : ObservableObject
 
     private readonly bool _driverInstalled;
     private readonly bool _isElevated = HardwareService.IsElevated;
-    private readonly SettingsService _settings;
+    private readonly SensorCatalog _catalog;
 
-    public DashboardViewModel(bool driverInstalled, SettingsService settings)
+    public DashboardViewModel(bool driverInstalled, SensorCatalog catalog)
     {
         _driverInstalled = driverInstalled;
-        _settings = settings;
+        _catalog = catalog;
         Cards = [Cpu, Gpu, Memory, Power];
     }
 
-    private string? PumpSensorId => _settings.Current.PumpSensorId;
+    private string? PumpSensorId => _catalog.RoleSensor(SensorRoles.Pump);
 
     /// <summary>Remembers which fan header the pump is on; the next tick moves it into the cooling card.</summary>
     [RelayCommand]
-    private void SetPump(string sensorId)
-    {
-        _settings.Current.PumpSensorId = sensorId;
-        _settings.Save();
-        Log.Write($"Pump set to {sensorId}");
-    }
+    private void SetPump(string sensorId) => _catalog.SetRole(SensorRoles.Pump, sensorId);
 
     /// <summary>
-    /// Shows the header picker again. Stores an empty id rather than null, meaning "the user chose",
+    /// Shows the header picker again. The role is cleared rather than forgotten, meaning "the user chose",
     /// so a lone header isn't automatically re-picked straight away.
     /// </summary>
     [RelayCommand]
-    private void ClearPump()
-    {
-        _settings.Current.PumpSensorId = "";
-        _settings.Save();
-        Log.Write("Pump selection cleared");
-    }
+    private void ClearPump() => _catalog.ClearRole(SensorRoles.Pump);
 
     public GaugeCardViewModel Cpu { get; } = new("Processor", SymbolRegular.DeveloperBoard24, Palette.Cpu);
     public GaugeCardViewModel Gpu { get; } = new("Graphics", SymbolRegular.DesktopPulse24, Palette.Gpu);
@@ -108,7 +98,7 @@ public partial class DashboardViewModel : ObservableObject
         Cpu.Device = cpu.Name;
         if (temp is { } t)
         {
-            Cpu.SetGauge("temperature", t, 100, v => $"{v:0}°");
+            Cpu.SetGauge("temperature", t, 100, v => SensorFormat.Degrees(v));
             Cpu.GaugeCaption = "package";
             Cpu.HistoryMax = 100;
             Cpu.HistoryLabel = "Temperature, last minute";
@@ -144,8 +134,8 @@ public partial class DashboardViewModel : ObservableObject
         var vramTotal = gpu.Value(SensorType.SmallData, "GPU Memory Total");
 
         Gpu.Device = gpu.Name;
-        Gpu.SetGauge("temperature", temp, 100, v => $"{v:0}°");
-        Gpu.GaugeCaption = hotSpot is { } h ? $"hot spot {h:0}°" : "core";
+        Gpu.SetGauge("temperature", temp, 100, v => SensorFormat.Degrees(v));
+        Gpu.GaugeCaption = hotSpot is { } h ? $"hot spot {SensorFormat.Degrees(h)}" : "core";
         Gpu.HistoryMax = 100;
         Gpu.HistoryLabel = "Load, last minute";
         Gpu.PushHistory(load);
@@ -264,13 +254,13 @@ public partial class DashboardViewModel : ObservableObject
         if (temps.Any(s => s.HasValue))
         {
             showingTemps = true;
-            tiles = temps.Select(s => (ShortCoreLabel(s.Name), s.Name, s.Value)).ToList();
+            tiles = temps.Select(s => (ShortCoreLabel(s.Name), _catalog.DisplayName(s), s.Value)).ToList();
             var pCores = temps.Count(s => s.Name.StartsWith("P-Core"));
             var eCores = temps.Count(s => s.Name.StartsWith("E-Core"));
             var hottest = temps.Where(s => s.HasValue).MaxBy(s => s.Value)!;
             CoresTitle = "Core temperatures";
             CoresSubtitle = (pCores > 0 && eCores > 0 ? $"{pCores} P-cores, {eCores} E-cores · " : $"{temps.Count} cores · ")
-                            + $"hottest {hottest.Name} at {hottest.Value:0} °C";
+                            + $"hottest {_catalog.DisplayName(hottest)} at {SensorFormat.WholeTemperature(hottest.Value!.Value)}";
         }
         else
         {
@@ -309,10 +299,10 @@ public partial class DashboardViewModel : ObservableObject
 
             if (showingTemps)
             {
-                tile.ValueText = $"{v:0}";
+                tile.ValueText = $"{SensorFormat.ToDisplayTemperature(v):0}";
                 tile.Fraction = Math.Clamp((v - 20) / 80.0, 0.04, 1);
                 tile.Fill = Palette.Temperature(v);
-                tile.ToolTip = $"{name}: {v:0.0} °C";
+                tile.ToolTip = $"{name}: {SensorFormat.Format(SensorType.Temperature, v)}";
             }
             else
             {
@@ -351,7 +341,7 @@ public partial class DashboardViewModel : ObservableObject
             {
                 // Pumps get their own spot in the cooling card.
                 if (sensor.Type != SensorType.Fan || !sensor.HasValue
-                    || sensor.Id == PumpSensorId || ContainsAny(sensor.Name, PumpWords))
+                    || sensor.Id == PumpSensorId || NameMatches(sensor, PumpWords))
                     continue;
 
                 // Super I/O chips report every fan header; hide the ones that have never spun.
@@ -360,7 +350,7 @@ public partial class DashboardViewModel : ObservableObject
                 if (!alwaysShow && (sensor.Max ?? 0) <= 0)
                     continue;
 
-                fans.Add((sensor.Id, sensor.Name, owner.Name, sensor.Value!.Value));
+                fans.Add((sensor.Id, _catalog.DisplayName(sensor), owner.Name, sensor.Value!.Value));
             }
         }
 
@@ -402,7 +392,7 @@ public partial class DashboardViewModel : ObservableObject
             row.SetVolumes(DiskNumber(drive.Id) is { } disk && snapshot.Volumes.TryGetValue(disk, out var volumes)
                 ? volumes
                 : []);
-            row.TemperatureText = temp is { } t ? $"{t:0}°" : SensorFormat.Empty;
+            row.TemperatureText = temp is { } t ? SensorFormat.Degrees(t) : SensorFormat.Empty;
             row.TemperatureBrush = temp is { } tc ? Palette.Temperature(tc) : Palette.Heat(0);
             row.UsedFraction = (used ?? 0) / 100.0;
 
@@ -440,7 +430,7 @@ public partial class DashboardViewModel : ObservableObject
                 // stopped pump is exactly what they'd want to notice.
                 if (sensor.Type == SensorType.Fan && sensor.Id == PumpSensorId)
                 {
-                    pumps.Insert(0, sensor with { Name = "Pump" });
+                    pumps.Insert(0, sensor);
                     if (!sources.Contains(owner.Name))
                         sources.Add(owner.Name);
                     continue;
@@ -454,8 +444,8 @@ public partial class DashboardViewModel : ObservableObject
                 var isCooler = owner.Type == HardwareType.Cooler;
                 var target = sensor.Type switch
                 {
-                    SensorType.Fan when isCooler || ContainsAny(sensor.Name, PumpWords) => pumps,
-                    SensorType.Temperature when isCooler || ContainsAny(sensor.Name, CoolantWords) => coolant,
+                    SensorType.Fan when isCooler || NameMatches(sensor, PumpWords) => pumps,
+                    SensorType.Temperature when isCooler || NameMatches(sensor, CoolantWords) => coolant,
                     SensorType.Flow => flows,
                     _ => null,
                 };
@@ -481,7 +471,7 @@ public partial class DashboardViewModel : ObservableObject
         if (pumps.Count == 0 && PumpSensorId is null && candidates.Count == 1)
         {
             SetPump(candidates[0].Id);
-            pumps.Add(candidates[0] with { Name = "Pump" });
+            pumps.Add(candidates[0]);
             sources.Add(candidateOwners[0]);
             candidates.Clear();
         }
@@ -522,32 +512,32 @@ public partial class DashboardViewModel : ObservableObject
         Cooling.Source = string.Join(" · ", sources);
         if (coolant.Count > 0)
         {
-            Cooling.Headline = $"{coolant[0].Value:0.0}°";
-            Cooling.HeadlineCaption = coolant[0].Name.ToLowerInvariant();
+            Cooling.Headline = SensorFormat.Degrees(coolant[0].Value!.Value, "0.0");
+            Cooling.HeadlineCaption = Label(coolant[0]);
             Cooling.PushHistory(coolant[0].Value!.Value);
         }
         else if (pumps.Count > 0)
         {
             Cooling.Headline = $"{pumps[0].Value:N0}";
-            Cooling.HeadlineCaption = $"{pumps[0].Name.ToLowerInvariant()}, rpm";
+            Cooling.HeadlineCaption = $"{Label(pumps[0])} · rpm";
             Cooling.PushHistory(pumps[0].Value!.Value);
         }
         else
         {
             Cooling.Headline = SensorFormat.Format(SensorType.Flow, flows[0].Value);
-            Cooling.HeadlineCaption = flows[0].Name.ToLowerInvariant();
+            Cooling.HeadlineCaption = Label(flows[0]);
             Cooling.PushHistory(flows[0].Value!.Value);
         }
 
         var rows = new List<(string, string)>();
-        rows.AddRange(pumps.Select(s => (s.Name, SensorFormat.Format(s.Type, s.Value))));
-        rows.AddRange(coolant.Select(s => (s.Name, SensorFormat.Format(s.Type, s.Value))));
-        rows.AddRange(flows.Select(s => (s.Name, SensorFormat.Format(s.Type, s.Value))));
+        rows.AddRange(pumps.Select(s => (Label(s), SensorFormat.Format(s.Type, s.Value))));
+        rows.AddRange(coolant.Select(s => (Label(s), SensorFormat.Format(s.Type, s.Value))));
+        rows.AddRange(flows.Select(s => (Label(s), SensorFormat.Format(s.Type, s.Value))));
 
         var waterIn = coolant.FirstOrDefault(s => s.Name.Contains("In", StringComparison.OrdinalIgnoreCase));
         var waterOut = coolant.FirstOrDefault(s => s.Name.Contains("Out", StringComparison.OrdinalIgnoreCase));
         if (waterIn is not null && waterOut is not null)
-            rows.Add(("Loop delta", $"{waterOut.Value - waterIn.Value:0.0} °C"));
+            rows.Add(("Loop delta", SensorFormat.TemperatureDelta(waterOut.Value!.Value - waterIn.Value!.Value)));
 
         if (cpu?.Value(SensorType.Temperature, "CPU Package", "Core Max") is { } cpuTemp)
             rows.Add(("CPU package", SensorFormat.Format(SensorType.Temperature, cpuTemp)));
@@ -566,11 +556,19 @@ public partial class DashboardViewModel : ObservableObject
 
         for (var i = 0; i < candidates.Count; i++)
         {
-            Cooling.Candidates[i].Name = candidates[i].Name;
+            Cooling.Candidates[i].Name = _catalog.DisplayName(candidates[i]);
             Cooling.Candidates[i].SpeedText = $"{candidates[i].Value:N0} rpm";
         }
         Cooling.ShowPumpPicker = candidates.Count > 0;
     }
+
+    /// <summary>The pump shows as "Pump" unless the user renamed it; other sensors by their display name.</summary>
+    private string Label(SensorReading sensor) =>
+        sensor.Id == PumpSensorId ? _catalog.DisplayName(sensor.Id, "Pump") : _catalog.DisplayName(sensor);
+
+    /// <summary>Matches the original name or the user's name, so renaming a header "... pump" also counts.</summary>
+    private bool NameMatches(SensorReading sensor, string[] words) =>
+        ContainsAny(sensor.Name, words) || ContainsAny(_catalog.DisplayName(sensor), words);
 
     private static bool ContainsAny(string text, string[] words) =>
         words.Any(w => text.Contains(w, StringComparison.OrdinalIgnoreCase));

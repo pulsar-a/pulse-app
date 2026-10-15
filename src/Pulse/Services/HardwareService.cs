@@ -43,20 +43,36 @@ public sealed class HardwareService : IDisposable
 
     public void Start() => _loop ??= Task.Run(() => RunAsync(_cts.Token));
 
+    /// <summary>An LHM computer with every hardware group Pulse reads turned on. Call Open() before use.</summary>
+    internal static Computer CreateComputer() => new()
+    {
+        IsCpuEnabled = true,
+        IsGpuEnabled = true,
+        IsMemoryEnabled = true,
+        IsMotherboardEnabled = true,
+        IsControllerEnabled = true,
+        IsStorageEnabled = true,
+        IsNetworkEnabled = true,
+        IsPsuEnabled = true,
+        IsBatteryEnabled = true,
+    };
+
+    /// <summary>Updates every sensor, then copies them into an immutable snapshot.</summary>
+    internal static HardwareSnapshot TakeSnapshot(
+        Computer computer, IReadOnlyDictionary<int, IReadOnlyList<VolumeInfo>> volumes)
+    {
+        foreach (var hardware in computer.Hardware)
+            Update(hardware);
+
+        return new HardwareSnapshot(
+            computer.Hardware.Where(IsInteresting).Select(Capture).ToList(),
+            volumes,
+            DateTime.Now);
+    }
+
     private async Task RunAsync(CancellationToken ct)
     {
-        var computer = new Computer
-        {
-            IsCpuEnabled = true,
-            IsGpuEnabled = true,
-            IsMemoryEnabled = true,
-            IsMotherboardEnabled = true,
-            IsControllerEnabled = true,
-            IsStorageEnabled = true,
-            IsNetworkEnabled = true,
-            IsPsuEnabled = true,
-            IsBatteryEnabled = true,
-        };
+        var computer = CreateComputer();
 
         try
         {
@@ -86,14 +102,7 @@ public sealed class HardwareService : IDisposable
                         computer.Hardware.Where(h => h.HardwareType == HardwareType.Storage).Select(h => h.Identifier)));
                 }
 
-                foreach (var hardware in computer.Hardware)
-                    Update(hardware);
-
-                var snapshot = new HardwareSnapshot(
-                    computer.Hardware.Where(IsInteresting).Select(Capture).ToList(),
-                    volumes,
-                    DateTime.Now);
-                SnapshotReady?.Invoke(snapshot);
+                SnapshotReady?.Invoke(TakeSnapshot(computer, volumes));
 
                 await Task.Delay(Interval, ct);
             }
@@ -137,7 +146,7 @@ public sealed class HardwareService : IDisposable
     /// Lettered volumes per Windows disk number. LHM names storage hardware after that same
     /// number (/nvme/2, /ssd/0), which is how the dashboard matches them up.
     /// </summary>
-    private static IReadOnlyDictionary<int, IReadOnlyList<VolumeInfo>> QueryVolumes()
+    internal static IReadOnlyDictionary<int, IReadOnlyList<VolumeInfo>> QueryVolumes()
     {
         try
         {

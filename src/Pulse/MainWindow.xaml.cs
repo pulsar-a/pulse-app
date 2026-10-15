@@ -34,6 +34,7 @@ public partial class MainWindow : FluentWindow
 
         DashboardPage.IsVisibleChanged += (_, e) => { if (e.NewValue is true) PlayEntrance(DashboardPage); };
         SensorsPage.IsVisibleChanged += (_, e) => { if (e.NewValue is true) PlayEntrance(SensorsPage); };
+        SettingsPage.IsVisibleChanged += (_, e) => { if (e.NewValue is true) PlayEntrance(SettingsPage); };
     }
 
     private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

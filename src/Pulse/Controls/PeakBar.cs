@@ -11,8 +11,26 @@ namespace Pulse.Controls;
 /// </summary>
 public sealed class PeakBar : FrameworkElement
 {
-    private static readonly Brush TrackBrush = Frozen(new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)));
-    private static readonly Brush CapBrush = Frozen(new SolidColorBrush(Color.FromArgb(0xE6, 0xFF, 0xFF, 0xFF)));
+    // Defaults match the dark theme; Themes/Styles.xaml sets them from theme tokens.
+    public static readonly DependencyProperty TrackBrushProperty = DependencyProperty.Register(
+        nameof(TrackBrush), typeof(Brush), typeof(PeakBar),
+        new FrameworkPropertyMetadata(Brushes.DimGray, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty CapBrushProperty = DependencyProperty.Register(
+        nameof(CapBrush), typeof(Brush), typeof(PeakBar),
+        new FrameworkPropertyMetadata(Brushes.WhiteSmoke, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public Brush TrackBrush
+    {
+        get => (Brush)GetValue(TrackBrushProperty);
+        set => SetValue(TrackBrushProperty, value);
+    }
+
+    public Brush CapBrush
+    {
+        get => (Brush)GetValue(CapBrushProperty);
+        set => SetValue(CapBrushProperty, value);
+    }
 
     public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
         nameof(Value), typeof(double), typeof(PeakBar), new PropertyMetadata(0.0, OnValueChanged));
@@ -112,7 +130,8 @@ public sealed class PeakBar : FrameworkElement
 
     private static T Frozen<T>(T freezable) where T : Freezable
     {
-        freezable.Freeze();
+        if (freezable.CanFreeze)
+            freezable.Freeze();
         return freezable;
     }
 }

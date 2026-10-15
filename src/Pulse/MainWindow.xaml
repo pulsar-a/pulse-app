@@ -9,6 +9,7 @@
                  mc:Ignorable="d"
                  d:DataContext="{d:DesignInstance vm:MainViewModel}"
                  Title="Pulse"
+                 Icon="pack://application:,,,/Resources/Pulse.ico"
                  Width="1360" Height="920"
                  MinWidth="1120" MinHeight="680"
                  WindowStartupLocation="CenterScreen"
@@ -24,7 +25,11 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Pulse" />
+        <ui:TitleBar Grid.Row="0" Title="Pulse">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Resources/Pulse-64.png" Width="16" Height="16" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
 
         <!-- Header: machine name, live status, page switcher -->
         <Grid Grid.Row="1" Margin="30,2,30,10">
@@ -33,19 +38,19 @@
                            Style="{StaticResource Metric}" />
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Grid Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center">
-                        <Ellipse x:Name="LiveHalo" Fill="#3DDC97" Opacity="0.35" RenderTransformOrigin="0.5,0.5">
+                        <Ellipse x:Name="LiveHalo" Fill="{DynamicResource Pulse.Live}" Opacity="0.35" RenderTransformOrigin="0.5,0.5">
                             <Ellipse.RenderTransform>
                                 <ScaleTransform />
                             </Ellipse.RenderTransform>
                         </Ellipse>
-                        <Ellipse Width="6" Height="6" Fill="#3DDC97" />
+                        <Ellipse Width="6" Height="6" Fill="{DynamicResource Pulse.Live}" />
                     </Grid>
                     <TextBlock Text="{Binding StatusText}" Style="{StaticResource Secondary}" />
                 </StackPanel>
             </StackPanel>
 
             <Border HorizontalAlignment="Right" VerticalAlignment="Center"
-                    Background="#0FFFFFFF" CornerRadius="20" Padding="4">
+                    Background="{DynamicResource Pulse.QuietFill}" CornerRadius="20" Padding="4">
                 <StackPanel Orientation="Horizontal">
                     <RadioButton Style="{StaticResource NavPill}" GroupName="Pages"
                                  IsChecked="{Binding IsDashboardSelected}">
@@ -61,19 +66,24 @@
                             <TextBlock Text="All sensors" />
                         </StackPanel>
                     </RadioButton>
+                    <RadioButton Style="{StaticResource NavPill}" GroupName="Pages"
+                                 IsChecked="{Binding IsSettingsSelected}" ToolTip="Settings"
+                                 AutomationProperties.Name="Settings">
+                        <ui:SymbolIcon Symbol="Settings24" FontSize="16" />
+                    </RadioButton>
                 </StackPanel>
             </Border>
         </Grid>
 
         <!-- Banners -->
         <StackPanel Grid.Row="2" Margin="30,0,30,4">
-            <Border Background="#29FFC048" BorderBrush="#55FFC048" BorderThickness="1"
+            <Border Background="{DynamicResource Pulse.Warning.Background}" BorderBrush="{DynamicResource Pulse.Warning.Border}" BorderThickness="1"
                     CornerRadius="10" Padding="14,10" Margin="0,0,0,8"
                     Visibility="{Binding ShowElevationBanner, Converter={StaticResource BoolToVisibility}}">
                 <DockPanel>
                     <ui:Button DockPanel.Dock="Right" Appearance="Transparent" Content="Dismiss"
                                Command="{Binding DismissElevationBannerCommand}" />
-                    <ui:SymbolIcon Symbol="ShieldKeyhole24" FontSize="20" Foreground="#FFC048" Margin="0,0,12,0" />
+                    <ui:SymbolIcon Symbol="ShieldKeyhole24" FontSize="20" Foreground="{DynamicResource Pulse.Warning}" Margin="0,0,12,0" />
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Pulse isn't running as administrator" Style="{StaticResource CardTitle}" />
                         <TextBlock Style="{StaticResource Secondary}" TextWrapping="Wrap"
@@ -82,7 +92,7 @@
                 </DockPanel>
             </Border>
 
-            <Border Background="#1F4FA8FF" BorderBrush="#554FA8FF" BorderThickness="1"
+            <Border Background="{DynamicResource Pulse.Info.Background}" BorderBrush="{DynamicResource Pulse.Info.Border}" BorderThickness="1"
                     CornerRadius="10" Padding="14,10" Margin="0,0,0,8"
                     Visibility="{Binding ShowDriverBanner, Converter={StaticResource BoolToVisibility}}">
                 <DockPanel>
@@ -92,7 +102,7 @@
                         <ui:Button Appearance="Transparent" Content="Dismiss"
                                    Command="{Binding DismissDriverBannerCommand}" />
                     </StackPanel>
-                    <ui:SymbolIcon Symbol="Info24" FontSize="20" Foreground="#4FA8FF" Margin="0,0,12,0" />
+                    <ui:SymbolIcon Symbol="Info24" FontSize="20" Foreground="{DynamicResource Pulse.Info}" Margin="0,0,12,0" />
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="The PawnIO driver isn't installed" Style="{StaticResource CardTitle}" />
                         <TextBlock Style="{StaticResource Secondary}" TextWrapping="Wrap"
@@ -101,7 +111,7 @@
                 </DockPanel>
             </Border>
 
-            <TextBlock Text="{Binding ErrorText}" Foreground="#EF4444" Margin="0,0,0,8"
+            <TextBlock Text="{Binding ErrorText}" Foreground="{DynamicResource Pulse.Danger}" Margin="0,0,0,8"
                        Visibility="{Binding ErrorText, Converter={x:Static views:Converters.NotNullToVisibility}}" />
         </StackPanel>
 
@@ -112,10 +122,12 @@
                                  Visibility="{Binding DataContext.IsDashboardSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
             <views:SensorsView x:Name="SensorsPage" DataContext="{Binding Sensors}"
                                Visibility="{Binding DataContext.IsSensorsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
+            <views:SettingsView x:Name="SettingsPage" DataContext="{Binding Settings}"
+                                Visibility="{Binding DataContext.IsSettingsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
         </Grid>
 
         <!-- Launch splash: a red heartbeat trace that keeps beating until the first readings arrive. -->
-        <Grid x:Name="Splash" Grid.Row="1" Grid.RowSpan="3" Background="#F20F1013">
+        <Grid x:Name="Splash" Grid.Row="1" Grid.RowSpan="3" Background="{DynamicResource Pulse.SplashBackground}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,60">
                 <Grid x:Name="SplashLogo" Width="240" Height="100" RenderTransformOrigin="0.5,0.5">
                     <Grid.RenderTransform>
@@ -123,14 +135,14 @@
                     </Grid.RenderTransform>
 
                     <!-- Rings that ripple out from the spike -->
-                    <Ellipse x:Name="Ring1" Width="70" Height="70" Stroke="#FF3B5C" StrokeThickness="2"
+                    <Ellipse x:Name="Ring1" Width="70" Height="70" Stroke="{DynamicResource Pulse.Brand}" StrokeThickness="2"
                              Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"
                              RenderTransformOrigin="0.5,0.5" Margin="-12,0,0,0">
                         <Ellipse.RenderTransform>
                             <ScaleTransform />
                         </Ellipse.RenderTransform>
                     </Ellipse>
-                    <Ellipse x:Name="Ring2" Width="70" Height="70" Stroke="#FF3B5C" StrokeThickness="1.5"
+                    <Ellipse x:Name="Ring2" Width="70" Height="70" Stroke="{DynamicResource Pulse.Brand}" StrokeThickness="1.5"
                              Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"
                              RenderTransformOrigin="0.5,0.5" Margin="-12,0,0,0">
                         <Ellipse.RenderTransform>
@@ -143,14 +155,14 @@
                         <Canvas.Clip>
                             <RectangleGeometry x:Name="TraceClip" Rect="0,0,0,100" />
                         </Canvas.Clip>
-                        <Path Stroke="#FF3B5C" StrokeThickness="10" Opacity="0.22"
+                        <Path Stroke="{DynamicResource Pulse.Brand}" StrokeThickness="10" Opacity="0.22"
                               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Data="M4,55 L66,55 L76,46 L86,55 L98,55 L108,16 L120,88 L131,55 L146,55 L158,42 L170,55 L236,55" />
-                        <Path Stroke="#FF3B5C" StrokeThickness="3.2"
+                        <Path Stroke="{DynamicResource Pulse.Brand}" StrokeThickness="3.2"
                               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Data="M4,55 L66,55 L76,46 L86,55 L98,55 L108,16 L120,88 L131,55 L146,55 L158,42 L170,55 L236,55">
                             <Path.Effect>
-                                <DropShadowEffect Color="#FF3B5C" ShadowDepth="0" BlurRadius="18" Opacity="0.9" />
+                                <DropShadowEffect Color="{StaticResource Pulse.Brand.Color}" ShadowDepth="0" BlurRadius="18" Opacity="0.9" />
                             </Path.Effect>
                         </Path>
                     </Canvas>

@@ -1,19 +1,17 @@
+<!-- Shared styles. Colors come from the theme tokens (Themes/Dark.xaml); never put hex values here. -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Pulse.Controls">
 
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
     <FontFamily x:Key="DisplayFont">Segoe UI Variable Display, Segoe UI</FontFamily>
     <FontFamily x:Key="TextFont">Segoe UI Variable Text, Segoe UI</FontFamily>
 
-    <SolidColorBrush x:Key="TrackBrush" Color="#14FFFFFF" />
-    <SolidColorBrush x:Key="CardBrush" Color="#0DFFFFFF" />
-    <SolidColorBrush x:Key="CardBorderBrush" Color="#14FFFFFF" />
-
     <!-- Translucent card that lets the Mica backdrop show through. -->
     <Style x:Key="PulseCard" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource CardBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+        <Setter Property="Background" Value="{DynamicResource Pulse.CardBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Pulse.CardBorder}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="14" />
         <Setter Property="Padding" Value="18" />
@@ -47,6 +45,21 @@
         <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
     </Style>
 
+    <!-- Section heading on the Settings page. -->
+    <Style x:Key="SectionTitle" TargetType="TextBlock" BasedOn="{StaticResource CardTitle}">
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+
+    <!-- Rounded square behind an icon, used in card and list headers. -->
+    <Style x:Key="IconChip" TargetType="Border">
+        <Setter Property="Width" Value="34" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="CornerRadius" Value="9" />
+        <Setter Property="Margin" Value="0,0,12,0" />
+        <Setter Property="Background" Value="{DynamicResource Pulse.SubtleFill}" />
+    </Style>
+
     <!-- Pill-shaped page switcher. -->
     <Style x:Key="NavPill" TargetType="RadioButton">
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -61,10 +74,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Pill" Property="Background" Value="#14FFFFFF" />
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Pulse.PillHover}" />
                         </Trigger>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Pill" Property="Background" Value="#26FFFFFF" />
+                            <Setter TargetName="Pill" Property="Background" Value="{DynamicResource Pulse.PillSelected}" />
                             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -75,9 +88,28 @@
 
     <!-- Thin horizontal bar; the fill is scaled with a ScaleTransform bound to a 0..1 fraction. -->
     <Style x:Key="BarTrack" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource TrackBrush}" />
+        <Setter Property="Background" Value="{DynamicResource Pulse.Track}" />
         <Setter Property="CornerRadius" Value="3" />
         <Setter Property="Height" Value="5" />
+    </Style>
+
+    <!-- Instruments pick up their neutral colors from the theme. -->
+    <Style TargetType="controls:RingGauge">
+        <Setter Property="TrackBrush" Value="{DynamicResource Pulse.Gauge.Track}" />
+        <Setter Property="TickBrush" Value="{DynamicResource Pulse.Gauge.Tick}" />
+        <Setter Property="MajorTickBrush" Value="{DynamicResource Pulse.Gauge.TickMajor}" />
+        <Setter Property="KnobBrush" Value="{DynamicResource Pulse.Gauge.Knob}" />
+        <Setter Property="BandBaseColor" Value="{DynamicResource Pulse.Gauge.BandBase}" />
+    </Style>
+
+    <Style TargetType="controls:PeakBar">
+        <Setter Property="TrackBrush" Value="{DynamicResource Pulse.Track}" />
+        <Setter Property="CapBrush" Value="{DynamicResource Pulse.Bar.Cap}" />
+    </Style>
+
+    <Style TargetType="controls:Shimmer">
+        <Setter Property="BaseColor" Value="{DynamicResource Pulse.Shimmer.Base}" />
+        <Setter Property="HighlightColor" Value="{DynamicResource Pulse.Shimmer.Highlight}" />
     </Style>
 
 </ResourceDictionary>

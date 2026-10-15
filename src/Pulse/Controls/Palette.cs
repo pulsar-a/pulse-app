@@ -1,17 +1,25 @@
+using System.Windows;
 using System.Windows.Media;
 
 namespace Pulse.Controls;
 
-/// <summary>Category accents and the temperature/load heat scale used across the app.</summary>
+/// <summary>
+/// Category accents and the temperature/load heat scale used across the app.
+/// Accents come from the theme tokens (Themes/Dark.xaml); the fallbacks are only used when no
+/// application is running, as in tests.
+/// </summary>
 public static class Palette
 {
-    public static readonly Color Cpu = Color.FromRgb(0xFF, 0x7A, 0x45);
-    public static readonly Color Gpu = Color.FromRgb(0x3D, 0xDC, 0x97);
-    public static readonly Color Memory = Color.FromRgb(0xA7, 0x8B, 0xFA);
-    public static readonly Color Power = Color.FromRgb(0xFF, 0xC0, 0x48);
-    public static readonly Color Network = Color.FromRgb(0x4F, 0xA8, 0xFF);
-    public static readonly Color Storage = Color.FromRgb(0x38, 0xBD, 0xF8);
-    public static readonly Color Fans = Color.FromRgb(0x2D, 0xD4, 0xBF);
+    public static Color Cpu => Accent("Cpu", Color.FromRgb(0xFF, 0x7A, 0x45));
+    public static Color Gpu => Accent("Gpu", Color.FromRgb(0x3D, 0xDC, 0x97));
+    public static Color Memory => Accent("Memory", Color.FromRgb(0xA7, 0x8B, 0xFA));
+    public static Color Power => Accent("Power", Color.FromRgb(0xFF, 0xC0, 0x48));
+    public static Color Network => Accent("Network", Color.FromRgb(0x4F, 0xA8, 0xFF));
+    public static Color Storage => Accent("Storage", Color.FromRgb(0x38, 0xBD, 0xF8));
+    public static Color Fans => Accent("Fans", Color.FromRgb(0x2D, 0xD4, 0xBF));
+
+    private static Color Accent(string name, Color fallback) =>
+        Application.Current?.TryFindResource($"Pulse.Accent.{name}.Color") is Color color ? color : fallback;
 
     private static readonly (double Stop, Color Color)[] HeatStops =
     [

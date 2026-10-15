@@ -12,6 +12,8 @@ public static class Converters
     public static readonly IValueConverter InverseBoolToVisibility = new Lambda(v =>
         v is true ? Visibility.Collapsed : Visibility.Visible);
 
+    public static readonly IValueConverter IsNotNull = new Lambda(v => v is not null);
+
     private sealed class Lambda(Func<object?, object> convert) : IValueConverter
     {
         public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => convert(value);

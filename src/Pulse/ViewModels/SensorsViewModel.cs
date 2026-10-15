@@ -22,11 +22,15 @@ public partial class SensorsViewModel : ObservableObject
     private readonly List<HardwareGroupViewModel> _groups = [];
     private readonly HashSet<string> _expandedGroups = [];
     private readonly DispatcherTimer _filterDebounce;
+    private readonly SensorCatalog _catalog;
     private HardwareSnapshot? _latest;
     private string _layoutKey = "";
 
-    public SensorsViewModel()
+    public SensorsViewModel(SensorCatalog catalog)
     {
+        _catalog = catalog;
+        _catalog.NamesChanged += OnNamesChanged;
+
         // Rebuild the list once typing pauses, not on every keystroke.
         _filterDebounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
         _filterDebounce.Tick += (_, _) =>
@@ -54,6 +58,22 @@ public partial class SensorsViewModel : ObservableObject
     {
         _filterDebounce.Stop();
         _filterDebounce.Start();
+    }
+
+    /// <summary>A rename shows up in every row at once, and search re-runs against the new names.</summary>
+    private void OnNamesChanged()
+    {
+        foreach (var row in _rows.Values)
+            row.RefreshName();
+        if (Filter.Trim().Length > 0)
+            RefreshItems();
+    }
+
+    /// <summary>Applies a pending search right away instead of waiting for the typing pause.</summary>
+    internal void FlushFilter()
+    {
+        _filterDebounce.Stop();
+        RefreshItems();
     }
 
     partial void OnIsActiveChanged(bool value)
@@ -119,7 +139,7 @@ public partial class SensorsViewModel : ObservableObject
                 .OrderBy(g => SensorFormat.TypeOrder(g.First().Type))
                 .Select(g =>
                 {
-                    var rows = g.Select(s => _rows[s.Id] = new SensorRowViewModel(s.Name, s.Type)).ToList();
+                    var rows = g.Select(s => _rows[s.Id] = new SensorRowViewModel(s.Id, s.Name, s.Type, _catalog)).ToList();
                     return new SensorTypeGroupViewModel(g.Key, rows);
                 })
                 .ToList();
@@ -160,7 +180,7 @@ public partial class SensorsViewModel : ObservableObject
                     var typeMatches = groupMatches || type.Title.Contains(filter, StringComparison.OrdinalIgnoreCase);
                     var rows = typeMatches
                         ? type.Rows
-                        : type.Rows.Where(r => r.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+                        : type.Rows.Where(r => r.Matches(filter)).ToList();
                     return (Type: type, Rows: rows);
                 })
                 .Where(t => t.Rows.Count > 0)
@@ -300,17 +320,46 @@ public sealed class SensorTypeGroupViewModel(string title, IReadOnlyList<SensorR
     public IReadOnlyList<SensorRowViewModel> Rows { get; } = rows;
 }
 
-public partial class SensorRowViewModel(string name, SensorType type) : ObservableObject
+public partial class SensorRowViewModel : ObservableObject
 {
-    private static readonly Brush DefaultBrush = MakeDefault();
+    private readonly SensorCatalog _catalog;
 
-    public string Name { get; } = name;
-    public SensorType Type { get; } = type;
+    public SensorRowViewModel(string id, string originalName, SensorType type, SensorCatalog catalog)
+    {
+        Id = id;
+        OriginalName = originalName;
+        Type = type;
+        _catalog = catalog;
+        RefreshName();
+    }
+
+    public string Id { get; }
+    public string OriginalName { get; }
+    public SensorType Type { get; }
+
+    /// <summary>What the row shows: the user's name if they renamed it, otherwise the original.</summary>
+    [ObservableProperty] public partial string Name { get; set; } = "";
+    [ObservableProperty] public partial bool IsRenamed { get; set; }
 
     [ObservableProperty] public partial string ValueText { get; set; } = SensorFormat.Empty;
     [ObservableProperty] public partial string MinText { get; set; } = SensorFormat.Empty;
     [ObservableProperty] public partial string MaxText { get; set; } = SensorFormat.Empty;
-    [ObservableProperty] public partial Brush ValueBrush { get; set; } = DefaultBrush;
+
+    /// <summary>Heat color for temperatures; null means "use the normal text color".</summary>
+    [ObservableProperty] public partial Brush? ValueBrush { get; set; }
+
+    [ObservableProperty] public partial bool IsEditing { get; set; }
+    [ObservableProperty] public partial string EditText { get; set; } = "";
+
+    public bool Matches(string filter) =>
+        Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+        || OriginalName.Contains(filter, StringComparison.OrdinalIgnoreCase);
+
+    public void RefreshName()
+    {
+        Name = _catalog.DisplayName(Id, OriginalName);
+        IsRenamed = _catalog.IsRenamed(Id);
+    }
 
     public void Update(SensorReading reading)
     {
@@ -319,15 +368,31 @@ public partial class SensorRowViewModel(string name, SensorType type) : Observab
         MaxText = SensorFormat.Format(Type, reading.Max);
 
         // Color temperatures by how hot they are; distances to TjMax count down, so leave those neutral.
-        ValueBrush = Type == SensorType.Temperature && reading.HasValue && !Name.Contains("Distance")
+        ValueBrush = Type == SensorType.Temperature && reading.HasValue && !OriginalName.Contains("Distance")
             ? Palette.Temperature(reading.Value!.Value)
-            : DefaultBrush;
+            : null;
     }
 
-    private static Brush MakeDefault()
+    [RelayCommand]
+    private void BeginRename()
     {
-        var brush = new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2));
-        brush.Freeze();
-        return brush;
+        EditText = Name;
+        IsEditing = true;
     }
+
+    [RelayCommand]
+    private void CommitRename()
+    {
+        if (!IsEditing)
+            return;
+        IsEditing = false;
+        if (EditText.Trim() != Name)
+            _catalog.Rename(Id, EditText);
+    }
+
+    [RelayCommand]
+    private void CancelRename() => IsEditing = false;
+
+    [RelayCommand]
+    private void ResetName() => _catalog.ResetName(Id);
 }

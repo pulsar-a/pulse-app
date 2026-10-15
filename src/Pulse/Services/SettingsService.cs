@@ -1,50 +1,175 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Pulse.Services;
+
+public enum TemperatureUnit
+{
+    Celsius,
+    Fahrenheit,
+}
 
 /// <summary>User choices that LHM can't detect, saved to %LOCALAPPDATA%\Pulse\settings.json.</summary>
 public sealed class Settings
 {
-    /// <summary>LHM identifier of the fan header the CPU pump is plugged into, e.g. "/lpc/nct6798d/0/fan/1".</summary>
-    public string? PumpSensorId { get; set; }
+    public const int CurrentSchemaVersion = 2;
+
+    public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+    public UnitSettings Units { get; set; } = new();
+    public SensorSettings Sensors { get; set; } = new();
+
+    /// <summary>Version 1 stored the pump header here; <see cref="SettingsService.Load"/> moves it into roles.</summary>
+    [JsonPropertyName("PumpSensorId")]
+    public string? LegacyPumpSensorId { get; set; }
 }
 
-public sealed class SettingsService
+public sealed class UnitSettings
 {
-    private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
+    public TemperatureUnit Temperature { get; set; } = TemperatureUnit.Celsius;
+}
 
-    public static string Folder { get; } =
+public sealed class SensorSettings
+{
+    /// <summary>Custom display names: LHM sensor identifier → name.</summary>
+    public Dictionary<string, string> Names { get; set; } = new();
+
+    /// <summary>
+    /// Roles the user (or Pulse) assigned to sensors, for example <see cref="SensorRoles.Pump"/>.
+    /// A missing role means "never chosen"; an empty id means "the user cleared it".
+    /// </summary>
+    public Dictionary<string, string> Roles { get; set; } = new();
+}
+
+public static class SensorRoles
+{
+    public const string Pump = "Pump";
+}
+
+/// <summary>
+/// Loads and saves <see cref="Settings"/>. Changes go through <see cref="Update"/>, which raises
+/// <see cref="Changed"/> right away and writes the file shortly after (debounced, atomically).
+/// </summary>
+public sealed class SettingsService : IDisposable
+{
+    private static readonly TimeSpan SaveDelay = TimeSpan.FromMilliseconds(500);
+
+    private static readonly JsonSerializerOptions Json = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter() },
+    };
+
+    public static string DefaultFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pulse");
 
-    private static string FilePath => Path.Combine(Folder, "settings.json");
+    private readonly string _folder;
+    private readonly object _gate = new();
+    private readonly Timer _saveTimer;
+    private bool _dirty;
+
+    /// <param name="folder">Where settings.json lives; tests pass a temporary folder.</param>
+    public SettingsService(string? folder = null)
+    {
+        _folder = folder ?? DefaultFolder;
+        _saveTimer = new Timer(_ => Flush());
+    }
+
+    public string FilePath => Path.Combine(_folder, "settings.json");
 
     public Settings Current { get; private set; } = new();
+
+    /// <summary>Raised on the calling thread after every <see cref="Update"/>.</summary>
+    public event Action? Changed;
 
     public void Load()
     {
         try
         {
             if (File.Exists(FilePath))
-                Current = JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? new Settings();
+                Current = JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath), Json) ?? new Settings();
         }
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
         {
             Log.Write($"Couldn't read settings, using defaults: {ex.Message}");
             Current = new Settings();
         }
+
+        if (Migrate(Current))
+            ScheduleSave();
     }
 
-    public void Save()
+    /// <summary>Applies a change, notifies listeners, and saves soon after.</summary>
+    public void Update(Action<Settings> change)
     {
+        lock (_gate)
+            change(Current);
+        Changed?.Invoke();
+        ScheduleSave();
+    }
+
+    /// <summary>Writes pending changes now. Called on exit so nothing is lost.</summary>
+    public void Flush()
+    {
+        string json;
+        lock (_gate)
+        {
+            if (!_dirty)
+                return;
+            _dirty = false;
+            json = JsonSerializer.Serialize(Current, Json);
+        }
+
         try
         {
-            Directory.CreateDirectory(Folder);
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(Current, Json));
+            Directory.CreateDirectory(_folder);
+            // Write a temporary file and swap it in, so a crash mid-write never leaves a broken file.
+            var temp = FilePath + ".tmp";
+            File.WriteAllText(temp, json);
+            File.Move(temp, FilePath, overwrite: true);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Log.Write($"Couldn't save settings: {ex.Message}");
         }
+    }
+
+    private void ScheduleSave()
+    {
+        lock (_gate)
+            _dirty = true;
+        _saveTimer.Change(SaveDelay, Timeout.InfiniteTimeSpan);
+    }
+
+    /// <summary>Upgrades older settings in place; returns true if anything changed.</summary>
+    internal static bool Migrate(Settings settings)
+    {
+        var changed = false;
+        settings.Units ??= new UnitSettings();
+        settings.Sensors ??= new SensorSettings();
+        settings.Sensors.Names ??= new Dictionary<string, string>();
+        settings.Sensors.Roles ??= new Dictionary<string, string>();
+
+        if (settings.LegacyPumpSensorId is { } pump)
+        {
+            settings.Sensors.Roles.TryAdd(SensorRoles.Pump, pump);
+            settings.LegacyPumpSensorId = null;
+            changed = true;
+        }
+
+        if (settings.SchemaVersion < Settings.CurrentSchemaVersion)
+        {
+            settings.SchemaVersion = Settings.CurrentSchemaVersion;
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    public void Dispose()
+    {
+        _saveTimer.Dispose();
+        Flush();
     }
 }
