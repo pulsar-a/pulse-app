@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using Pulse.Services;
+using Pulse.Services.History;
 using Pulse.ViewModels;
 using Pulse.Views;
 using Wpf.Ui.Appearance;
@@ -14,6 +15,7 @@ public partial class App : Application
     private SettingsService? _settings;
     private SingleInstance? _instance;
     private TrayIcon? _tray;
+    private HistoryRecorder? _history;
     private bool _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -70,6 +72,10 @@ public partial class App : Application
                 _tray.SetAlarm(alerts.IsCriticalActive);
         };
         viewModel.AttachAlerts(alerts);
+
+        // History: every minute of every sensor, on disk (Settings → History).
+        _history = new HistoryRecorder(stream, settings);
+        viewModel.Settings.AttachHistory(_history);
 
         // --tray (from the start-with-Windows task) or "Start minimized": stay in the tray until asked.
         var startHidden = arguments.StartInTray || settings.Current.Startup.StartMinimized;
@@ -157,6 +163,8 @@ public partial class App : Application
         // Remove the tray icon first, so it doesn't linger in the notification area.
         _tray?.Dispose();
         _hardware?.Dispose();
+        // After polling stops, so the minute in progress is complete when it's written.
+        _history?.Dispose();
         _settings?.Dispose();
         _instance?.Dispose();
         base.OnExit(e);

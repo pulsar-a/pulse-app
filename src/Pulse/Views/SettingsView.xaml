@@ -181,6 +181,63 @@
                 </StackPanel>
             </Border>
 
+            <!-- History -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="History" Style="{StaticResource SectionTitle}" />
+
+                    <DockPanel Margin="0,0,0,16">
+                        <ComboBox DockPanel.Dock="Right" MinWidth="150" VerticalAlignment="Center"
+                                  ItemsSource="{Binding RetentionChoices}" SelectedItem="{Binding SelectedRetention}"
+                                  DisplayMemberPath="Label" AutomationProperties.Name="Keep history" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Keep history" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap">
+                                <Run Text="Every sensor's lowest, average and highest value, each minute: about 8 MB a day." />
+                                <Run Text="{Binding HistorySizeText, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DockPanel Margin="0,0,0,8">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ComboBox MinWidth="150" Margin="0,0,8,0" ItemsSource="{Binding ExportRanges}"
+                                      SelectedItem="{Binding SelectedExportRange}" DisplayMemberPath="Label"
+                                      AutomationProperties.Name="Export range" />
+                            <ui:Button Content="Export CSV…" Command="{Binding ExportHistoryCommand}">
+                                <ui:Button.Icon>
+                                    <ui:SymbolIcon Symbol="ArrowDownload20" />
+                                </ui:Button.Icon>
+                            </ui:Button>
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Export" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="A spreadsheet with one row per minute and one column per sensor."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DockPanel>
+                        <ui:Button DockPanel.Dock="Right" Appearance="Transparent" Command="{Binding DeleteHistoryCommand}"
+                                   AutomationProperties.Name="Delete history">
+                            <ui:Button.Style>
+                                <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                                    <Setter Property="Content" Value="Delete history" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ConfirmingDelete}" Value="True">
+                                            <Setter Property="Content" Value="Click again to delete" />
+                                            <Setter Property="Foreground" Value="{DynamicResource Pulse.Danger}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ui:Button.Style>
+                        </ui:Button>
+                        <TextBlock Text="{Binding HistoryStatus}" Style="{StaticResource Caption}" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Units -->
             <Border Style="{StaticResource PulseCard}">
                 <StackPanel>

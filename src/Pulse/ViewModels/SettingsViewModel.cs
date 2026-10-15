@@ -4,6 +4,7 @@ using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pulse.Services;
+using Pulse.Services.History;
 
 namespace Pulse.ViewModels;
 
@@ -183,6 +184,110 @@ public partial class SettingsViewModel : ObservableObject
         AlertRules.Remove(rule);
     }
 
+    // History
+
+    private HistoryRecorder? _recorder;
+
+    public void AttachHistory(HistoryRecorder recorder)
+    {
+        _recorder = recorder;
+        RefreshHistorySize();
+    }
+
+    public IReadOnlyList<HistoryChoice> RetentionChoices { get; } = HistorySettings.RetentionChoices
+        .Select(d => new HistoryChoice(d, d switch { 0 => "Off", 1 => "1 day", _ => $"{d} days" }))
+        .ToList();
+
+    public HistoryChoice SelectedRetention
+    {
+        get => RetentionChoices.FirstOrDefault(c => c.Days == _settings.Current.History.RetentionDays) ?? RetentionChoices[2];
+        set
+        {
+            if (value is null || value.Days == _settings.Current.History.RetentionDays) return;
+            _settings.Update(s => s.History.RetentionDays = value.Days);
+            OnPropertyChanged();
+        }
+    }
+
+    public IReadOnlyList<HistoryChoice> ExportRanges { get; } =
+    [
+        new(0, "Last hour"), new(1, "Last 24 hours"), new(7, "Last 7 days"), new(30, "Last 30 days"),
+    ];
+
+    [ObservableProperty] public partial HistoryChoice SelectedExportRange { get; set; } = new(1, "Last 24 hours");
+    [ObservableProperty] public partial string HistorySizeText { get; set; } = "";
+    [ObservableProperty] public partial string HistoryStatus { get; set; } = "";
+    [ObservableProperty] public partial bool IsExporting { get; set; }
+
+    /// <summary>"Delete history" asks for a second click within a few seconds before deleting.</summary>
+    [ObservableProperty] public partial bool ConfirmingDelete { get; set; }
+
+    private void RefreshHistorySize()
+    {
+        var bytes = _recorder?.SizeBytes ?? 0;
+        HistorySizeText = bytes switch
+        {
+            0 => "Nothing recorded yet.",
+            < 1024 * 1024 => $"{bytes / 1024.0:0} KB on disk",
+            _ => $"{bytes / 1024.0 / 1024.0:0.0} MB on disk",
+        };
+    }
+
+    [RelayCommand]
+    private async Task ExportHistoryAsync()
+    {
+        if (_recorder is null) return;
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export sensor history",
+            Filter = "CSV file (*.csv)|*.csv",
+            FileName = $"Pulse history {DateTime.Now:yyyy-MM-dd HHmm}.csv",
+        };
+        if (dialog.ShowDialog() != true)
+            return;
+
+        var to = DateTime.Now;
+        var from = SelectedExportRange.Days == 0 ? to.AddHours(-1) : to.AddDays(-SelectedExportRange.Days);
+        IsExporting = true;
+        HistoryStatus = "Exporting…";
+        try
+        {
+            var rows = await HistoryExport.WriteCsvAsync(_recorder.DatabasePath, dialog.FileName, from, to,
+                s => _catalog.DisplayName(s.Id, s.Name));
+            HistoryStatus = rows > 0
+                ? $"Exported {rows:N0} minutes to {System.IO.Path.GetFileName(dialog.FileName)}."
+                : "No history in that range yet; the file has only headers.";
+            Log.Write($"History exported: {rows} rows to {dialog.FileName}");
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            HistoryStatus = $"Couldn't export: {ex.Message}";
+            Log.Write($"History export failed: {ex}");
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteHistoryAsync()
+    {
+        if (_recorder is null) return;
+        if (!ConfirmingDelete)
+        {
+            ConfirmingDelete = true;
+            await Task.Delay(TimeSpan.FromSeconds(4));
+            ConfirmingDelete = false;
+            return;
+        }
+
+        ConfirmingDelete = false;
+        await _recorder.ClearAsync();
+        HistoryStatus = "History deleted.";
+        RefreshHistorySize();
+    }
+
     // Units
 
     public bool IsCelsius
@@ -219,6 +324,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         RefreshTrayChoices();
         RefreshAlertRules();
+        RefreshHistorySize();
         _ = LoadStartWithWindowsAsync();
 
         RenamedSensors.Clear();
@@ -260,6 +366,11 @@ public partial class SettingsViewModel : ObservableObject
 }
 
 public sealed record RenamedSensorItem(string Name, string Details, IRelayCommand ResetCommand);
+
+public sealed record HistoryChoice(int Days, string Label)
+{
+    public override string ToString() => Label;
+}
 
 public sealed record IntervalChoice(double Seconds, string Label)
 {

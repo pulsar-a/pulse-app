@@ -21,6 +21,7 @@ public sealed class Settings
     public UnitSettings Units { get; set; } = new();
     public SensorSettings Sensors { get; set; } = new();
     public AlertSettings Alerts { get; set; } = new();
+    public HistorySettings History { get; set; } = new();
 
     /// <summary>Version 1 stored the pump header here; <see cref="SettingsService.Load"/> moves it into roles.</summary>
     [JsonPropertyName("PumpSensorId")]
@@ -58,6 +59,14 @@ public sealed class StartupSettings
 
     /// <summary>Whether the "Pulse is still running" notice has been shown after the first close to tray.</summary>
     public bool CloseNoticeShown { get; set; }
+}
+
+public sealed class HistorySettings
+{
+    public static readonly int[] RetentionChoices = [0, 1, 7, 30];
+
+    /// <summary>Days of history kept on disk; 0 turns recording off.</summary>
+    public int RetentionDays { get; set; } = 7;
 }
 
 public sealed class UnitSettings
@@ -189,6 +198,7 @@ public sealed class SettingsService : IDisposable
         settings.Sensors.Names ??= new Dictionary<string, string>();
         settings.Sensors.Roles ??= new Dictionary<string, string>();
         settings.Alerts ??= new AlertSettings();
+        settings.History ??= new HistorySettings();
         settings.Alerts.Rules ??= [];
         if (AlertDefaults.AddMissing(settings.Alerts.Rules))
             changed = true;
