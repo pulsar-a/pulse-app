@@ -23,6 +23,8 @@
     <SolidColorBrush x:Key="Pulse.PillSelected" Color="#26FFFFFF" />
     <SolidColorBrush x:Key="Pulse.Track" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="Pulse.SplashBackground" Color="#F20F1013" />
+    <!-- Popups sit outside the window, so they can't show Mica: they need an opaque surface. -->
+    <SolidColorBrush x:Key="Pulse.PopupBackground" Color="#FF202228" />
 
     <!-- Category accents: a solid color for marks and text, and a soft tint for icon chips -->
     <Color x:Key="Pulse.Accent.Cpu.Color">#FF7A45</Color>

@@ -31,7 +31,7 @@ public partial class MainViewModel : ObservableObject
 
         _catalog = new SensorCatalog(settings);
         Dashboard = new DashboardViewModel(driverInstalled, _catalog, stream);
-        Sensors = new SensorsViewModel(_catalog, id => settings.Update(s => s.Startup.TraySensorId = id));
+        Sensors = new SensorsViewModel(_catalog, id => settings.Update(s => s.Startup.TraySensorId = id), CreateAlert);
         Settings = new SettingsViewModel(settings, _catalog, driverInstalled, stream);
 
         ApplySettings();
@@ -75,6 +75,47 @@ public partial class MainViewModel : ObservableObject
     public SensorsViewModel Sensors { get; }
     public SensorCatalog Catalog => _catalog;
     public SettingsViewModel Settings { get; }
+
+    /// <summary>Alerts and the bell in the header. Created after the tray icon, which it falls back to for notifications.</summary>
+    [ObservableProperty] public partial AlertCenter? Alerts { get; private set; }
+
+    public void AttachAlerts(AlertCenter alerts)
+    {
+        Alerts = alerts;
+        Settings.AttachAlerts(alerts);
+    }
+
+    /// <summary>The bell's "Alert settings" link.</summary>
+    [RelayCommand]
+    private void OpenAlertSettings() => IsSettingsSelected = true;
+
+    /// <summary>
+    /// All sensors → "Alert when above…": a new rule with a starting threshold a bit above the current
+    /// reading, then Settings opens so it can be adjusted.
+    /// </summary>
+    private void CreateAlert(string sensorId)
+    {
+        if (_catalog.Find(sensorId) is not { } info)
+            return;
+
+        var current = _stream.Latest?.Hardware.SelectMany(h => h.AllSensors).FirstOrDefault(s => s.Id == sensorId)?.Value ?? 0;
+        var threshold = info.Type == LibreHardwareMonitor.Hardware.SensorType.Temperature
+            ? Math.Ceiling(current + 10)
+            : Math.Ceiling(Math.Max(current * 1.2, current + 1));
+
+        _settings.Update(s => s.Alerts.Rules.Add(new AlertRule
+        {
+            Name = $"{info.DisplayName} too high",
+            Target = AlertTarget.Sensor,
+            SensorId = sensorId,
+            Condition = AlertCondition.Above,
+            Threshold = threshold,
+            HoldSeconds = 10,
+        }));
+        Log.Write($"Alert rule added for {sensorId} above {threshold}");
+        IsSettingsSelected = true;
+        Settings.Refresh();
+    }
 
     [ObservableProperty] public partial bool IsDashboardSelected { get; set; } = true;
     [ObservableProperty] public partial bool IsSensorsSelected { get; set; }

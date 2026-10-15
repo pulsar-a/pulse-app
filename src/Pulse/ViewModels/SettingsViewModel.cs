@@ -151,6 +151,38 @@ public partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedTrayChoice));
     }
 
+    // Alerts
+
+    /// <summary>Set once the alert center exists; the "Send a test notification" button uses it.</summary>
+    [ObservableProperty] public partial AlertCenter? Alerts { get; private set; }
+
+    public void AttachAlerts(AlertCenter alerts) => Alerts = alerts;
+
+    public ObservableCollection<AlertRuleViewModel> AlertRules { get; } = [];
+
+    public bool PlaySoundForCritical
+    {
+        get => _settings.Current.Alerts.PlaySoundForCritical;
+        set
+        {
+            _settings.Update(s => s.Alerts.PlaySoundForCritical = value);
+            OnPropertyChanged();
+        }
+    }
+
+    private void RefreshAlertRules()
+    {
+        AlertRules.Clear();
+        foreach (var rule in _settings.Current.Alerts.Rules)
+            AlertRules.Add(new AlertRuleViewModel(rule, _settings, _catalog, DeleteRule));
+    }
+
+    private void DeleteRule(AlertRuleViewModel rule)
+    {
+        _settings.Update(s => s.Alerts.Rules.Remove(rule.Rule));
+        AlertRules.Remove(rule);
+    }
+
     // Units
 
     public bool IsCelsius
@@ -186,6 +218,7 @@ public partial class SettingsViewModel : ObservableObject
     public void Refresh()
     {
         RefreshTrayChoices();
+        RefreshAlertRules();
         _ = LoadStartWithWindowsAsync();
 
         RenamedSensors.Clear();

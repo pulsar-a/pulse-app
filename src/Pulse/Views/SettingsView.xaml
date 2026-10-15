@@ -94,6 +94,93 @@
                 </StackPanel>
             </Border>
 
+            <!-- Alerts -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,4">
+                        <ui:Button DockPanel.Dock="Right" Content="Send a test notification" VerticalAlignment="Top"
+                                   Command="{Binding Alerts.SendTestCommand}">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="Alert20" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <TextBlock Text="Alerts" Style="{StaticResource SectionTitle}" />
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,0,0,14"
+                               Text="Pulse notifies you when a reading stays past its limit for the time given, even while it's in the tray. Add your own from the All sensors page: right-click a sensor and choose Alert when above." />
+
+                    <ItemsControl ItemsSource="{Binding AlertRules}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:AlertRuleViewModel}">
+                                <Border BorderBrush="{DynamicResource Pulse.Divider}" BorderThickness="0,1,0,0" Padding="0,12">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <ui:ToggleSwitch Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,2,14,0"
+                                                         IsChecked="{Binding Enabled}" AutomationProperties.Name="{Binding Name}" />
+
+                                        <StackPanel Grid.Column="1">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}" Style="{StaticResource SettingLabel}" />
+                                                <Border Background="{DynamicResource Pulse.Danger}" CornerRadius="4" Padding="5,0" Margin="8,1,0,0"
+                                                        VerticalAlignment="Center"
+                                                        Visibility="{Binding IsCritical, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="Critical" FontSize="10" FontWeight="SemiBold" Foreground="White" />
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding SensorText}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                                        </StackPanel>
+
+                                        <ui:Button Grid.Column="2" Appearance="Transparent" Padding="8,4" ToolTip="Delete this alert"
+                                                   VerticalAlignment="Top" Command="{Binding DeleteCommand}"
+                                                   Visibility="{Binding CanDelete, Converter={StaticResource BoolToVisibility}}"
+                                                   AutomationProperties.Name="Delete alert">
+                                            <ui:SymbolIcon Symbol="Delete20" />
+                                        </ui:Button>
+
+                                        <!-- "Above [95] °C for [10] seconds" -->
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,8,0,0"
+                                                    IsEnabled="{Binding Enabled}">
+                                            <TextBlock Text="{Binding ConditionText}" Style="{StaticResource Secondary}" FontSize="13"
+                                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <ui:NumberBox Width="120" Value="{Binding Threshold, UpdateSourceTrigger=PropertyChanged}"
+                                                          SpinButtonPlacementMode="Compact" MaxDecimalPlaces="1" SmallChange="1"
+                                                          AutomationProperties.Name="Threshold" />
+                                            <TextBlock Text="{Binding UnitText}" Style="{StaticResource Secondary}" FontSize="13"
+                                                       VerticalAlignment="Center" Margin="8,0,16,0" />
+                                            <TextBlock Text="for" Style="{StaticResource Secondary}" FontSize="13"
+                                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <ui:NumberBox Width="100" Value="{Binding HoldSeconds, UpdateSourceTrigger=PropertyChanged}"
+                                                          SpinButtonPlacementMode="Compact" MaxDecimalPlaces="0" SmallChange="1" Minimum="0"
+                                                          AutomationProperties.Name="Seconds" />
+                                            <TextBlock Text="seconds" Style="{StaticResource Secondary}" FontSize="13"
+                                                       VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <DockPanel Margin="0,8,0,0">
+                        <ui:ToggleSwitch DockPanel.Dock="Right" VerticalAlignment="Center"
+                                         IsChecked="{Binding PlaySoundForCritical}" AutomationProperties.Name="Alarm sound" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Alarm sound for critical alerts" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="Critical alerts stay on screen until you dismiss them." Style="{StaticResource Caption}" />
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Units -->
             <Border Style="{StaticResource PulseCard}">
                 <StackPanel>

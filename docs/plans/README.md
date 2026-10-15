@@ -15,7 +15,7 @@ pipeline) come first, even though they're less visible than tray icons or charts
 | 1 ✅ | [Foundations](01-foundations.md) | 0 | Settings page, °C/°F, sensor renaming, theme tokens, app icon |
 | 2 ✅ | [Polling pipeline and performance](02-polling-and-performance.md) | 1 | Smart polling, in-memory history, faster startup, idle when hidden |
 | 3 ✅ | [Tray icon and start with Windows](03-tray-and-startup.md) | 1, 2 | Live tray temperature, minimize to tray, no-UAC autostart |
-| 4 | [Alerts](04-alerts.md) | 1, 2, 3 | Notifications for high temperatures and pump failure |
+| 4 ✅ | [Alerts](04-alerts.md) | 1, 2, 3 | Notifications for high temperatures and pump failure |
 | 5 | [History storage](05-history-storage.md) | 2 | Readings saved to SQLite, CSV export |
 | 6 | [Sensor details](06-sensor-details.md) | 1, 2, 5 | Click any sensor for a large chart and stats |
 | 7 | [Customizable dashboard](07-customizable-dashboard.md) | 1, 6 | Pin sensors, reorder and hide cards |

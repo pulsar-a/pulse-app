@@ -86,6 +86,33 @@
         </Setter>
     </Style>
 
+    <!-- Round icon button in the header (the alerts bell). -->
+    <Style x:Key="RoundIconButton" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Circle" Background="{DynamicResource Pulse.QuietFill}" CornerRadius="20">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Circle" Property="Background" Value="{DynamicResource Pulse.PillHover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Circle" Property="Background" Value="{DynamicResource Pulse.PillSelected}" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Thin horizontal bar; the fill is scaled with a ScaleTransform bound to a 0..1 fraction. -->
     <Style x:Key="BarTrack" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource Pulse.Track}" />

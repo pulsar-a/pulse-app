@@ -60,6 +60,17 @@ public partial class App : Application
 
         _tray = new TrayIcon(settings, viewModel.Catalog, stream, Dispatcher, ToggleWindow, BringToFront, ExitPulse);
 
+        // Alerts: toasts (falling back to the tray balloon); clicking one opens Pulse; a critical alert turns the tray red.
+        var notifier = new Notifier((title, message) => _tray.ShowNotification(title, message));
+        notifier.OpenRequested += () => Dispatcher.BeginInvoke(BringToFront);
+        var alerts = new AlertCenter(settings, viewModel.Catalog, stream, notifier, Dispatcher);
+        alerts.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(AlertCenter.IsCriticalActive))
+                _tray.SetAlarm(alerts.IsCriticalActive);
+        };
+        viewModel.AttachAlerts(alerts);
+
         // --tray (from the start-with-Windows task) or "Start minimized": stay in the tray until asked.
         var startHidden = arguments.StartInTray || settings.Current.Startup.StartMinimized;
         if (startHidden && _tray.IsVisible)

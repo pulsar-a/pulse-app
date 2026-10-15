@@ -54,6 +54,19 @@ public partial class MainWindow : FluentWindow
         };
     }
 
+    /// <summary>Opening the bell marks its alerts as read.</summary>
+    private void BellButton_Checked(object sender, RoutedEventArgs e) =>
+        _viewModel.Alerts?.MarkReadCommand.Execute(null);
+
+    /// <summary>The popup closes itself on an outside click; keep the bell button in step.</summary>
+    private void BellPopup_Closed(object? sender, EventArgs e) => BellButton.IsChecked = false;
+
+    private void AlertSettings_Click(object sender, RoutedEventArgs e)
+    {
+        BellButton.IsChecked = false;
+        _viewModel.OpenAlertSettingsCommand.Execute(null);
+    }
+
     private void UpdateActivity() =>
         _viewModel.IsWindowActive = IsVisible && WindowState != WindowState.Minimized;
 

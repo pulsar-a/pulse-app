@@ -20,6 +20,7 @@ public sealed class Settings
     public StartupSettings Startup { get; set; } = new();
     public UnitSettings Units { get; set; } = new();
     public SensorSettings Sensors { get; set; } = new();
+    public AlertSettings Alerts { get; set; } = new();
 
     /// <summary>Version 1 stored the pump header here; <see cref="SettingsService.Load"/> moves it into roles.</summary>
     [JsonPropertyName("PumpSensorId")]
@@ -187,6 +188,10 @@ public sealed class SettingsService : IDisposable
         settings.Sensors ??= new SensorSettings();
         settings.Sensors.Names ??= new Dictionary<string, string>();
         settings.Sensors.Roles ??= new Dictionary<string, string>();
+        settings.Alerts ??= new AlertSettings();
+        settings.Alerts.Rules ??= [];
+        if (AlertDefaults.AddMissing(settings.Alerts.Rules))
+            changed = true;
 
         if (settings.LegacyPumpSensorId is { } pump)
         {

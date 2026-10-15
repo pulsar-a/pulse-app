@@ -1,7 +1,7 @@
 PROJECT := src/Pulse/Pulse.csproj
 TESTS   := tests/Pulse.Tests/Pulse.Tests.csproj
 CONFIG  ?= Debug
-EXE     ?= src/Pulse/bin/$(CONFIG)/net10.0-windows/win-x64/Pulse.exe
+EXE     ?= src/Pulse/bin/$(CONFIG)/net10.0-windows10.0.19041.0/win-x64/Pulse.exe
 FIXTURE ?= $(CURDIR)/tests/Pulse.Tests/Fixtures/admin.json
 
 .PHONY: start build test snapshot icon publish clean

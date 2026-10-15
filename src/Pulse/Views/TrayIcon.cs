@@ -33,6 +33,7 @@ public sealed class TrayIcon : IDisposable
     private HardwareSnapshot? _pending;
     private int _updateScheduled;
     private string _renderedKey = "";
+    private bool _alarm;
     private System.Drawing.Icon? _currentIcon;
 
     public TrayIcon(
@@ -72,6 +73,17 @@ public sealed class TrayIcon : IDisposable
 
     public bool IsVisible => _settings.Current.Startup.ShowTrayIcon;
 
+    /// <summary>A critical alert is active: the icon turns red until it clears.</summary>
+    public void SetAlarm(bool alarm)
+    {
+        if (_alarm == alarm)
+            return;
+        _alarm = alarm;
+        _renderedKey = "";
+        if (_stream.Latest is { } latest)
+            Update(latest);
+    }
+
     public void ShowNotification(string title, string message) =>
         _icon.ShowNotification(title, message);
 
@@ -110,13 +122,13 @@ public sealed class TrayIcon : IDisposable
         if (reading is null)
             return;
 
-        var color = ColorFor(reading);
-        var key = $"{reading.Text}|{color}";
+        var color = _alarm ? Colors.White : ColorFor(reading);
+        var key = $"{reading.Text}|{color}|{_alarm}";
         if (key == _renderedKey)
             return;
         _renderedKey = key;
 
-        var icon = ToIcon(Render(reading.Text, color, SmallIconSize()));
+        var icon = ToIcon(Render(reading.Text, color, SmallIconSize(), _alarm));
         _icon.UpdateIcon(icon);
         _currentIcon?.Dispose();
         _currentIcon = icon;
@@ -163,7 +175,7 @@ public sealed class TrayIcon : IDisposable
     };
 
     /// <summary>Draws the number on a dark rounded square, at the exact pixel size Windows uses for tray icons.</summary>
-    private static BitmapSource Render(string text, Color color, int size)
+    private static BitmapSource Render(string text, Color color, int size, bool alarm)
     {
         var visual = new DrawingVisual();
         TextOptions.SetTextFormattingMode(visual, TextFormattingMode.Display);
@@ -172,7 +184,8 @@ public sealed class TrayIcon : IDisposable
         using (var dc = visual.RenderOpen())
         {
             var radius = size / 5.0;
-            dc.DrawRoundedRectangle(new SolidColorBrush(Color.FromArgb(0xF0, 0x16, 0x18, 0x1E)), null,
+            var background = alarm ? Color.FromRgb(0xE5, 0x48, 0x4D) : Color.FromArgb(0xF0, 0x16, 0x18, 0x1E);
+            dc.DrawRoundedRectangle(new SolidColorBrush(background), null,
                 new Rect(0, 0, size, size), radius, radius);
 
             // Largest font that fits: two digits fill the square, three get a little smaller.
