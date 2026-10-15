@@ -38,6 +38,11 @@ To run it without `make`, use an elevated terminal:
 dotnet run --project src/Pulse
 ```
 
+## Roadmap
+
+The development plan lives in [docs/plans](docs/plans/README.md). It's split into steps that can be
+built one at a time, ordered so each step builds on the previous ones instead of reworking them.
+
 ## Project layout
 
 ```
