@@ -32,6 +32,25 @@ public partial class SettingsViewModel : ObservableObject
         Refresh();
     }
 
+    // General
+
+    public IReadOnlyList<IntervalChoice> IntervalChoices { get; } = GeneralSettings.UpdateIntervalChoices
+        .Select(s => new IntervalChoice(s, s < 1 ? $"{s * 1000:0} ms" : s == 1 ? "1 second" : $"{s:0} seconds"))
+        .ToList();
+
+    public IntervalChoice SelectedInterval
+    {
+        get => IntervalChoices.FirstOrDefault(c => c.Seconds == _settings.Current.General.UpdateIntervalSeconds)
+               ?? IntervalChoices.First(c => c.Seconds == 1);
+        set
+        {
+            if (value is null || value.Seconds == _settings.Current.General.UpdateIntervalSeconds)
+                return;
+            _settings.Update(s => s.General.UpdateIntervalSeconds = value.Seconds);
+            OnPropertyChanged();
+        }
+    }
+
     // Units
 
     public bool IsCelsius
@@ -105,3 +124,8 @@ public partial class SettingsViewModel : ObservableObject
 }
 
 public sealed record RenamedSensorItem(string Name, string Details, IRelayCommand ResetCommand);
+
+public sealed record IntervalChoice(double Seconds, string Label)
+{
+    public override string ToString() => Label;
+}

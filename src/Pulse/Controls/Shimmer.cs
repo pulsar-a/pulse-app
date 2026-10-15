@@ -40,7 +40,7 @@ public sealed class Shimmer : Border
         // Sliding the gradient from one width left to one width right carries the highlight band
         // from off the left edge to off the right edge; outside the gradient the base color pads it.
         Loaded += (_, _) => sweep.BeginAnimation(TranslateTransform.XProperty,
-            new DoubleAnimation(-1, 1, TimeSpan.FromSeconds(1.4)) { RepeatBehavior = RepeatBehavior.Forever });
+            Sweep());
         Unloaded += (_, _) => sweep.BeginAnimation(TranslateTransform.XProperty, null);
         IsVisibleChanged += (_, e) =>
         {
@@ -49,8 +49,15 @@ public sealed class Shimmer : Border
                 sweep.BeginAnimation(TranslateTransform.XProperty, null);
             else if (IsLoaded)
                 sweep.BeginAnimation(TranslateTransform.XProperty,
-                    new DoubleAnimation(-1, 1, TimeSpan.FromSeconds(1.4)) { RepeatBehavior = RepeatBehavior.Forever });
+                    Sweep());
         };
+    }
+
+    private static DoubleAnimation Sweep()
+    {
+        var sweep = new DoubleAnimation(-1, 1, TimeSpan.FromSeconds(1.4)) { RepeatBehavior = RepeatBehavior.Forever };
+        Timeline.SetDesiredFrameRate(sweep, Motion.InstrumentFrameRate);
+        return sweep;
     }
 
     public Color BaseColor

@@ -16,12 +16,24 @@ public sealed class Settings
     public const int CurrentSchemaVersion = 2;
 
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
+    public GeneralSettings General { get; set; } = new();
     public UnitSettings Units { get; set; } = new();
     public SensorSettings Sensors { get; set; } = new();
 
     /// <summary>Version 1 stored the pump header here; <see cref="SettingsService.Load"/> moves it into roles.</summary>
     [JsonPropertyName("PumpSensorId")]
     public string? LegacyPumpSensorId { get; set; }
+}
+
+public sealed class GeneralSettings
+{
+    public static readonly double[] UpdateIntervalChoices = [0.5, 1, 2, 5];
+
+    /// <summary>Seconds between sensor readings; one of <see cref="UpdateIntervalChoices"/>.</summary>
+    public double UpdateIntervalSeconds { get; set; } = 1;
+
+    public TimeSpan UpdateInterval =>
+        TimeSpan.FromSeconds(UpdateIntervalChoices.Contains(UpdateIntervalSeconds) ? UpdateIntervalSeconds : 1);
 }
 
 public sealed class UnitSettings
@@ -146,6 +158,7 @@ public sealed class SettingsService : IDisposable
     internal static bool Migrate(Settings settings)
     {
         var changed = false;
+        settings.General ??= new GeneralSettings();
         settings.Units ??= new UnitSettings();
         settings.Sensors ??= new SensorSettings();
         settings.Sensors.Names ??= new Dictionary<string, string>();

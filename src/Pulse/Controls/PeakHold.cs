@@ -10,7 +10,7 @@ namespace Pulse.Controls;
 internal sealed class PeakHold(UIElement target, DependencyProperty peakProperty)
 {
     public static readonly TimeSpan Hold = TimeSpan.FromSeconds(1.6);
-    private static readonly TimeSpan Rise = TimeSpan.FromMilliseconds(700);
+    private static readonly TimeSpan Rise = TimeSpan.FromMilliseconds(450);
     private static readonly TimeSpan Fall = TimeSpan.FromMilliseconds(650);
 
     private double _peak;
@@ -25,19 +25,13 @@ internal sealed class PeakHold(UIElement target, DependencyProperty peakProperty
             // New high: the marker rides up with the bar and starts a fresh hold.
             _peak = value;
             _heldUntil = now + Hold;
-            target.BeginAnimation(peakProperty, new DoubleAnimation(value, Rise)
-            {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-            });
+            target.BeginAnimation(peakProperty, Motion.Instrument(value, Rise, new CubicEase { EasingMode = EasingMode.EaseOut }));
             return;
         }
 
         var holdLeft = _heldUntil - now;
-        var fall = new DoubleAnimation(value, Fall)
-        {
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn },
-            BeginTime = holdLeft > TimeSpan.Zero ? holdLeft : TimeSpan.Zero,
-        };
+        var fall = Motion.Instrument(value, Fall, new QuadraticEase { EasingMode = EasingMode.EaseIn });
+        fall.BeginTime = holdLeft > TimeSpan.Zero ? holdLeft : TimeSpan.Zero;
         target.BeginAnimation(peakProperty, fall);
 
         // Once the hold is over, the peak tracks the value until it rises again.

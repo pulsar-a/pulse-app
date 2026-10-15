@@ -25,7 +25,7 @@ public class DashboardViewModelTests : PulseTest
     }
 
     private DashboardViewModel NewDashboard(out SettingsService settings, bool driverInstalled = true) =>
-        new(driverInstalled, NewCatalog(out settings));
+        new(driverInstalled, NewCatalog(out settings), new SensorStream());
 
     private static string? Pump(SettingsService settings) =>
         settings.Current.Sensors.Roles.GetValueOrDefault(SensorRoles.Pump);

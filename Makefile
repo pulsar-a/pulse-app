@@ -4,7 +4,7 @@ CONFIG  ?= Debug
 EXE     ?= src/Pulse/bin/$(CONFIG)/net10.0-windows/win-x64/Pulse.exe
 FIXTURE ?= $(CURDIR)/tests/Pulse.Tests/Fixtures/admin.json
 
-.PHONY: start build test snapshot icon clean
+.PHONY: start build test snapshot icon publish clean
 
 # Build, then launch through the Windows shell so the admin (UAC) prompt appears.
 # `dotnet run` can't do that from a non-elevated terminal and fails with error 740.
@@ -21,6 +21,11 @@ test:
 # Capture a real snapshot as admin into the test fixtures (asks for admin rights; close Pulse first).
 snapshot: build
 	powershell -NoProfile -Command "$$p = Start-Process -FilePath '$(EXE)' -ArgumentList '--dump-snapshot','$(FIXTURE)' -Verb RunAs -Wait -PassThru; if ($$p.ExitCode -eq 2) { Write-Error 'Pulse is running. Close it first.'; exit 2 } elseif ($$p.ExitCode -ne 0) { Write-Error 'Snapshot failed; see the .error.txt next to the fixture.'; exit 1 } else { Write-Host 'Saved $(FIXTURE)' }"
+
+# Release build with ReadyToRun (precompiled, so startup does less work) in artifacts/publish.
+# Needs the .NET 10 runtime on the target machine.
+publish:
+	dotnet publish $(PROJECT) -c Release -r win-x64 --self-contained false -p:PublishReadyToRun=true -o artifacts/publish --nologo
 
 # Redraw the app icon (src/Pulse/Resources/Pulse.ico and PNGs) from tools/IconGen.
 icon:

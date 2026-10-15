@@ -20,6 +20,23 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,0,24,24">
         <StackPanel MaxWidth="820" HorizontalAlignment="Left" MinWidth="560">
 
+            <!-- General -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="General" Style="{StaticResource SectionTitle}" />
+                    <DockPanel>
+                        <ComboBox DockPanel.Dock="Right" MinWidth="150" VerticalAlignment="Center"
+                                  ItemsSource="{Binding IntervalChoices}" SelectedItem="{Binding SelectedInterval}"
+                                  DisplayMemberPath="Label" AutomationProperties.Name="Update interval" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Update every" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="How often sensors are read. Faster feels livelier; slower uses a little less power. Drives are read every 5 seconds regardless, and everything slows down while Pulse is minimized."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Units -->
             <Border Style="{StaticResource PulseCard}">
                 <StackPanel>

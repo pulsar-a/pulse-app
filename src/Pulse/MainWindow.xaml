@@ -38,7 +38,7 @@
                            Style="{StaticResource Metric}" />
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                     <Grid Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center">
-                        <Ellipse x:Name="LiveHalo" Fill="{DynamicResource Pulse.Live}" Opacity="0.35" RenderTransformOrigin="0.5,0.5">
+                        <Ellipse x:Name="LiveHalo" Fill="{DynamicResource Pulse.Live}" Opacity="0" RenderTransformOrigin="0.5,0.5">
                             <Ellipse.RenderTransform>
                                 <ScaleTransform />
                             </Ellipse.RenderTransform>
@@ -120,9 +120,10 @@
         <Grid Grid.Row="3">
             <views:DashboardView x:Name="DashboardPage" DataContext="{Binding Dashboard}"
                                  Visibility="{Binding DataContext.IsDashboardSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
-            <views:SensorsView x:Name="SensorsPage" DataContext="{Binding Sensors}"
+            <!-- Created on first visit (see MainWindow.xaml.cs), so startup only builds the dashboard. -->
+            <ContentControl x:Name="SensorsPage" Focusable="False" IsTabStop="False"
                                Visibility="{Binding DataContext.IsSensorsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
-            <views:SettingsView x:Name="SettingsPage" DataContext="{Binding Settings}"
+            <ContentControl x:Name="SettingsPage" Focusable="False" IsTabStop="False"
                                 Visibility="{Binding DataContext.IsSettingsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
         </Grid>
 
@@ -226,20 +227,4 @@
         </Grid>
     </Grid>
 
-    <ui:FluentWindow.Triggers>
-        <EventTrigger RoutedEvent="Loaded">
-            <BeginStoryboard>
-                <Storyboard RepeatBehavior="Forever">
-                    <DoubleAnimation Storyboard.TargetName="LiveHalo"
-                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                     From="0.6" To="1.6" Duration="0:0:1.4" />
-                    <DoubleAnimation Storyboard.TargetName="LiveHalo"
-                                     Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                     From="0.6" To="1.6" Duration="0:0:1.4" />
-                    <DoubleAnimation Storyboard.TargetName="LiveHalo" Storyboard.TargetProperty="Opacity"
-                                     From="0.6" To="0" Duration="0:0:1.4" />
-                </Storyboard>
-            </BeginStoryboard>
-        </EventTrigger>
-    </ui:FluentWindow.Triggers>
 </ui:FluentWindow>

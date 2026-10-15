@@ -21,12 +21,39 @@ public partial class DashboardViewModel : ObservableObject
     private readonly bool _driverInstalled;
     private readonly bool _isElevated = HardwareService.IsElevated;
     private readonly SensorCatalog _catalog;
+    private readonly SensorStream _stream;
 
-    public DashboardViewModel(bool driverInstalled, SensorCatalog catalog)
+    public DashboardViewModel(bool driverInstalled, SensorCatalog catalog, SensorStream stream)
     {
         _driverInstalled = driverInstalled;
         _catalog = catalog;
+        _stream = stream;
         Cards = [Cpu, Gpu, Memory, Power];
+    }
+
+    /// <summary>The polling interval; sparklines show a minute's worth of samples at this rate.</summary>
+    public TimeSpan SampleInterval { get; set; } = TimeSpan.FromSeconds(1);
+
+    private int HistorySamples => Math.Clamp((int)Math.Round(60 / SampleInterval.TotalSeconds), 12, 600);
+
+    /// <summary>The last minute of a sensor from the stream (empty if there's no such sensor).</summary>
+    private double[] History(SensorReading? sensor) =>
+        sensor is null ? [] : _stream.Recent(sensor.Id, HistorySamples);
+
+    /// <summary>Element-wise sum of two series, for derived readings like CPU + GPU power. A gap in both stays a gap.</summary>
+    private static double[] Sum(double[] a, double[] b)
+    {
+        var length = Math.Max(a.Length, b.Length);
+        var result = new double[length];
+        for (var i = 0; i < length; i++)
+        {
+            // Align the ends: both series end at the latest sample.
+            var x = i - (length - a.Length) is var ia && ia >= 0 ? a[ia] : double.NaN;
+            var y = i - (length - b.Length) is var ib && ib >= 0 ? b[ib] : double.NaN;
+            result[i] = double.IsNaN(x) && double.IsNaN(y) ? double.NaN
+                : (double.IsNaN(x) ? 0 : x) + (double.IsNaN(y) ? 0 : y);
+        }
+        return result;
     }
 
     private string? PumpSensorId => _catalog.RoleSensor(SensorRoles.Pump);
@@ -84,8 +111,10 @@ public partial class DashboardViewModel : ObservableObject
     {
         if (cpu is null) return;
 
-        var temp = cpu.Value(SensorType.Temperature, "CPU Package", "Core Max", "Core Average", "Core (Tctl/Tdie)");
-        var load = cpu.Value(SensorType.Load, "CPU Total");
+        var tempSensor = cpu.First(SensorType.Temperature, "CPU Package", "Core Max", "Core Average", "Core (Tctl/Tdie)");
+        var loadSensor = cpu.First(SensorType.Load, "CPU Total");
+        var temp = tempSensor?.Value;
+        var load = loadSensor?.Value;
         var power = CpuPower(cpu);
 
         // On hybrid CPUs the P-cores set the headline clock; otherwise use any core.
@@ -102,7 +131,7 @@ public partial class DashboardViewModel : ObservableObject
             Cpu.GaugeCaption = "package";
             Cpu.HistoryMax = 100;
             Cpu.HistoryLabel = "Temperature, last minute";
-            Cpu.PushHistory(t);
+            Cpu.SetHistory(History(tempSensor), HistorySamples);
         }
         else
         {
@@ -110,7 +139,7 @@ public partial class DashboardViewModel : ObservableObject
             Cpu.GaugeCaption = "load";
             Cpu.HistoryMax = 100;
             Cpu.HistoryLabel = "Load, last minute";
-            Cpu.PushHistory(load);
+            Cpu.SetHistory(History(loadSensor), HistorySamples);
         }
 
         Cpu.SetRows(
@@ -127,7 +156,8 @@ public partial class DashboardViewModel : ObservableObject
         var temp = gpu.Value(SensorType.Temperature, "GPU Core");
         var hotSpot = gpu.Value(SensorType.Temperature, "GPU Hot Spot");
         var memJunction = gpu.Value(SensorType.Temperature, "GPU Memory Junction");
-        var load = gpu.Value(SensorType.Load, "GPU Core");
+        var loadSensor = gpu.First(SensorType.Load, "GPU Core");
+        var load = loadSensor?.Value;
         var power = gpu.Value(SensorType.Power, "GPU Package", "GPU Power", "GPU Core");
         var clock = gpu.Value(SensorType.Clock, "GPU Core");
         var vramUsed = gpu.Value(SensorType.SmallData, "GPU Memory Used", "D3D Dedicated Memory Used");
@@ -138,7 +168,7 @@ public partial class DashboardViewModel : ObservableObject
         Gpu.GaugeCaption = hotSpot is { } h ? $"hot spot {SensorFormat.Degrees(h)}" : "core";
         Gpu.HistoryMax = 100;
         Gpu.HistoryLabel = "Load, last minute";
-        Gpu.PushHistory(load);
+        Gpu.SetHistory(History(loadSensor), HistorySamples);
 
         var vram = vramUsed is { } u && vramTotal is { } total
             ? $"{u / 1024:0.0} / {total / 1024:0} GB"
@@ -164,7 +194,8 @@ public partial class DashboardViewModel : ObservableObject
         if (ram is null) return;
         var virt = memory.FirstOrDefault(h => h.Id == "/vram" || h.Name.Contains("Virtual"));
 
-        var load = ram.Value(SensorType.Load, "Memory");
+        var loadSensor = ram.First(SensorType.Load, "Memory");
+        var load = loadSensor?.Value;
         var used = ram.Value(SensorType.Data, "Memory Used");
         var available = ram.Value(SensorType.Data, "Memory Available");
         var total = used + available;
@@ -187,7 +218,7 @@ public partial class DashboardViewModel : ObservableObject
         Memory.GaugeCaption = used is { } u && total is { } t ? $"{u:0.0} / {t:0} GB" : "used";
         Memory.HistoryMax = 100;
         Memory.HistoryLabel = "Usage, last minute";
-        Memory.PushHistory(load);
+        Memory.SetHistory(History(loadSensor), HistorySamples);
 
         var rows = new List<(string, string)>
         {
@@ -203,12 +234,14 @@ public partial class DashboardViewModel : ObservableObject
     private void UpdatePower(HardwareSnapshot snapshot, HardwareReading? cpu, HardwareReading? gpu)
     {
         var cpuPower = cpu is null ? null : CpuPower(cpu);
-        var gpuPower = gpu?.Value(SensorType.Power, "GPU Package", "GPU Power", "GPU Core");
+        var gpuPowerSensor = gpu?.First(SensorType.Power, "GPU Package", "GPU Power", "GPU Core");
+        var gpuPower = gpuPowerSensor?.Value;
         var psu = snapshot.OfType(HardwareType.Psu).FirstOrDefault();
 
         if (psu is not null)
         {
-            var total = psu.Value(SensorType.Power, "Total watts", "Total Output");
+            var totalSensor = psu.First(SensorType.Power, "Total watts", "Total Output");
+            var total = totalSensor?.Value;
             var output = psu.Value(SensorType.Power, "Total Output");
             var capacity = PsuCapacity.Match(psu.Name) is { Success: true } m ? float.Parse(m.Value) : 1000f;
             var psuTemp = psu.AllSensors.Where(s => s.Type == SensorType.Temperature && s.HasValue)
@@ -219,7 +252,7 @@ public partial class DashboardViewModel : ObservableObject
             Power.GaugeCaption = $"of {capacity:0} W";
             Power.HistoryMax = double.NaN;
             Power.HistoryLabel = "System draw, last minute";
-            Power.PushHistory(total);
+            Power.SetHistory(History(totalSensor), HistorySamples);
             Power.SetRows(
                 ("CPU package", SensorFormat.Format(SensorType.Power, cpuPower)),
                 ("Graphics card", SensorFormat.Format(SensorType.Power, gpuPower)),
@@ -234,7 +267,8 @@ public partial class DashboardViewModel : ObservableObject
         Power.GaugeCaption = "CPU + GPU";
         Power.HistoryMax = double.NaN;
         Power.HistoryLabel = "Draw, last minute";
-        Power.PushHistory(sum);
+        var cpuPowerSensor = cpu?.First(SensorType.Power, "CPU Package", "Package");
+        Power.SetHistory(Sum(History(cpuPowerSensor), History(gpuPowerSensor)), HistorySamples);
         Power.SetRows(
             ("CPU package", SensorFormat.Format(SensorType.Power, cpuPower)),
             ("Graphics card", SensorFormat.Format(SensorType.Power, gpuPower)));
@@ -514,19 +548,19 @@ public partial class DashboardViewModel : ObservableObject
         {
             Cooling.Headline = SensorFormat.Degrees(coolant[0].Value!.Value, "0.0");
             Cooling.HeadlineCaption = Label(coolant[0]);
-            Cooling.PushHistory(coolant[0].Value!.Value);
+            Cooling.SetHistory(History(coolant[0]), HistorySamples);
         }
         else if (pumps.Count > 0)
         {
             Cooling.Headline = $"{pumps[0].Value:N0}";
             Cooling.HeadlineCaption = $"{Label(pumps[0])} · rpm";
-            Cooling.PushHistory(pumps[0].Value!.Value);
+            Cooling.SetHistory(History(pumps[0]), HistorySamples);
         }
         else
         {
             Cooling.Headline = SensorFormat.Format(SensorType.Flow, flows[0].Value);
             Cooling.HeadlineCaption = Label(flows[0]);
-            Cooling.PushHistory(flows[0].Value!.Value);
+            Cooling.SetHistory(History(flows[0]), HistorySamples);
         }
 
         var rows = new List<(string, string)>();
@@ -573,8 +607,6 @@ public partial class DashboardViewModel : ObservableObject
     private static bool ContainsAny(string text, string[] words) =>
         words.Any(w => text.Contains(w, StringComparison.OrdinalIgnoreCase));
 
-    private string? _adapterId;
-
     private void UpdateNetwork(HardwareSnapshot snapshot)
     {
         // Follow the adapter that has moved the most data; it's almost always the one in use.
@@ -582,22 +614,16 @@ public partial class DashboardViewModel : ObservableObject
             .MaxBy(n => (n.Value(SensorType.Data, "Data Downloaded") ?? 0) + (n.Value(SensorType.Data, "Data Uploaded") ?? 0));
         if (adapter is null) return;
 
-        if (adapter.Id != _adapterId)
-        {
-            _adapterId = adapter.Id;
-            Network.Reset();
-        }
-
-        var down = adapter.Value(SensorType.Throughput, "Download Speed") ?? 0;
-        var up = adapter.Value(SensorType.Throughput, "Upload Speed") ?? 0;
+        var downSensor = adapter.First(SensorType.Throughput, "Download Speed");
+        var upSensor = adapter.First(SensorType.Throughput, "Upload Speed");
         var downloaded = adapter.Value(SensorType.Data, "Data Downloaded");
         var uploaded = adapter.Value(SensorType.Data, "Data Uploaded");
 
         Network.Adapter = adapter.Name;
-        Network.DownText = SensorFormat.Rate(down);
-        Network.UpText = SensorFormat.Rate(up);
+        Network.DownText = SensorFormat.Rate(downSensor?.Value ?? 0);
+        Network.UpText = SensorFormat.Rate(upSensor?.Value ?? 0);
         Network.Totals = $"{SensorFormat.Format(SensorType.Data, downloaded)} received · {SensorFormat.Format(SensorType.Data, uploaded)} sent";
-        Network.Push(down, up);
+        Network.SetHistory(History(downSensor), History(upSensor), HistorySamples);
     }
 
     private static IEnumerable<(HardwareReading Owner, SensorReading Sensor)> WithOwners(HardwareReading hardware) =>

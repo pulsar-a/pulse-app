@@ -10,8 +10,6 @@ public partial class GaugeCardViewModel : ObservableObject
 {
     public const int HistoryLength = 60;
 
-    private readonly Queue<double> _history = new();
-
     public GaugeCardViewModel(string title, SymbolRegular icon, Color accent)
     {
         Title = title;
@@ -80,21 +78,14 @@ public partial class GaugeCardViewModel : ObservableObject
         MaxText = format(_max);
     }
 
-    public void PushHistory(double? value)
-    {
-        if (value is not { } v || double.IsNaN(v))
-            return;
+    /// <summary>Samples the sparkline spans (one minute at the current update interval).</summary>
+    [ObservableProperty] public partial int HistoryCapacity { get; set; } = HistoryLength;
 
-        _history.Enqueue(v);
-        while (_history.Count > HistoryLength)
-            _history.Dequeue();
-        History = _history.ToArray();
-    }
-
-    public void ClearHistory()
+    /// <summary>Recent samples from the sensor stream, oldest first; NaN marks a gap.</summary>
+    public void SetHistory(double[] values, int capacity)
     {
-        _history.Clear();
-        History = null;
+        HistoryCapacity = capacity;
+        History = values;
     }
 
     /// <summary>Updates rows in place so the UI doesn't rebuild them every tick.</summary>

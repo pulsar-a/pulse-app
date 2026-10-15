@@ -140,10 +140,8 @@ public sealed class RingGauge : FrameworkElement
         var target = (double)e.NewValue;
         target = double.IsNaN(target) ? 0 : Math.Clamp(target, 0, 1);
 
-        gauge.BeginAnimation(DisplayValueProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(700))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        });
+        gauge.BeginAnimation(DisplayValueProperty,
+            Motion.Instrument(target, TimeSpan.FromMilliseconds(450), new CubicEase { EasingMode = EasingMode.EaseOut }));
         gauge._peak.Update(target);
     }
 

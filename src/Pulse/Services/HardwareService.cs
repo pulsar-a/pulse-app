@@ -11,16 +11,34 @@ namespace Pulse.Services;
 /// </summary>
 public sealed class HardwareService : IDisposable
 {
+    private static readonly TimeSpan VolumeRefresh = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan RescanSpacing = TimeSpan.FromSeconds(5);
+
     private readonly CancellationTokenSource _cts = new();
+    private readonly SensorStream _stream;
+    private readonly PollSchedule _schedule = new();
+    private readonly object _scheduleGate = new();
     private Task? _loop;
 
-    /// <summary>Raised on a background thread after every polling tick.</summary>
-    public event Action<HardwareSnapshot>? SnapshotReady;
+    /// <param name="stream">Every snapshot is published here; consumers subscribe to the stream.</param>
+    public HardwareService(SensorStream stream) => _stream = stream;
 
     /// <summary>Raised on a background thread if opening or polling the hardware fails.</summary>
     public event Action<Exception>? Failed;
 
-    public TimeSpan Interval { get; set; } = TimeSpan.FromSeconds(1);
+    /// <summary>The user's update interval. Takes effect on the next tick.</summary>
+    public TimeSpan Interval
+    {
+        get { lock (_scheduleGate) return _schedule.Interval; }
+        set { lock (_scheduleGate) _schedule.Interval = value; }
+    }
+
+    /// <summary>True while the window is minimized or hidden: polling slows down to save power.</summary>
+    public bool IsIdle
+    {
+        get { lock (_scheduleGate) return _schedule.IsIdle; }
+        set { lock (_scheduleGate) _schedule.IsIdle = value; }
+    }
 
     public static bool IsElevated
     {
@@ -57,12 +75,21 @@ public sealed class HardwareService : IDisposable
         IsBatteryEnabled = true,
     };
 
-    /// <summary>Updates every sensor, then copies them into an immutable snapshot.</summary>
+    /// <summary>
+    /// Updates the hardware (all of it, or only what <paramref name="shouldUpdate"/> says is due),
+    /// then copies every sensor into an immutable snapshot. Hardware that wasn't updated keeps its
+    /// previous readings.
+    /// </summary>
     internal static HardwareSnapshot TakeSnapshot(
-        Computer computer, IReadOnlyDictionary<int, IReadOnlyList<VolumeInfo>> volumes)
+        Computer computer,
+        IReadOnlyDictionary<int, IReadOnlyList<VolumeInfo>> volumes,
+        Func<IHardware, bool>? shouldUpdate = null)
     {
         foreach (var hardware in computer.Hardware)
-            Update(hardware);
+        {
+            if (shouldUpdate is null || shouldUpdate(hardware))
+                Update(hardware);
+        }
 
         return new HardwareSnapshot(
             computer.Hardware.Where(IsInteresting).Select(Capture).ToList(),
@@ -82,29 +109,54 @@ public sealed class HardwareService : IDisposable
             var expectedDrives = CountFixedDrives();
             Log.Write($"Windows reports {expectedDrives} internal fixed drive(s); LHM found {CountStorage(computer)}");
             var storageRescans = 0;
+            var started = DateTime.UtcNow;
+            var nextRescan = started + RescanSpacing;
+            var nextVolumeRefresh = started;
             IReadOnlyDictionary<int, IReadOnlyList<VolumeInfo>> volumes = new Dictionary<int, IReadOnlyList<VolumeInfo>>();
 
-            for (var tick = 0; !ct.IsCancellationRequested; tick++)
+            while (!ct.IsCancellationRequested)
             {
+                var now = DateTime.UtcNow;
+
                 // Drive letters rarely change, so a WMI query every half minute is plenty.
-                if (tick % 30 == 0)
+                if (now >= nextVolumeRefresh)
+                {
                     volumes = QueryVolumes();
+                    nextVolumeRefresh = now + VolumeRefresh;
+                }
 
                 // LHM looks for drives only once, in Open(). When another tool (ASUS Armoury Crate, for one)
                 // is talking to the disk controller at that moment, SATA drives can be missed for the
                 // whole session. If Windows reports more fixed drives than LHM found, look again a few times.
-                if (tick % 5 == 4 && storageRescans < MaxStorageRescans && CountStorage(computer) < expectedDrives)
+                if (now >= nextRescan && storageRescans < MaxStorageRescans && CountStorage(computer) < expectedDrives)
                 {
                     storageRescans++;
+                    nextRescan = now + RescanSpacing;
                     computer.IsStorageEnabled = false;
                     computer.IsStorageEnabled = true;
                     Log.Write($"Drive re-scan {storageRescans}: " + string.Join(", ",
                         computer.Hardware.Where(h => h.HardwareType == HardwareType.Storage).Select(h => h.Identifier)));
                 }
 
-                SnapshotReady?.Invoke(TakeSnapshot(computer, volumes));
+                TimeSpan delay;
+                HardwareSnapshot snapshot;
+                lock (_scheduleGate)
+                {
+                    snapshot = TakeSnapshot(computer, volumes, hardware =>
+                    {
+                        var id = hardware.Identifier.ToString();
+                        if (!_schedule.IsDue(id, hardware.HardwareType, now))
+                            return false;
+                        _schedule.MarkRead(id, now);
+                        return true;
+                    });
+                    delay = _schedule.TickInterval;
+                }
+                _stream.Publish(snapshot);
 
-                await Task.Delay(Interval, ct);
+                // Keep a steady rhythm: subtract the time this tick took from the wait.
+                var elapsed = DateTime.UtcNow - now;
+                await Task.Delay(delay > elapsed ? delay - elapsed : TimeSpan.Zero, ct);
             }
         }
         catch (OperationCanceledException)

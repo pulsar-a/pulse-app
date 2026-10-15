@@ -59,8 +59,6 @@ public partial class PumpCandidateViewModel : ObservableObject
 /// <summary>Pump, coolant and flow readings gathered from every source that reports them.</summary>
 public partial class CoolingViewModel : ObservableObject
 {
-    private readonly Queue<double> _history = new();
-
     public System.Collections.ObjectModel.ObservableCollection<StatRow> Rows { get; } = [];
 
     [ObservableProperty] public partial bool HasData { get; set; }
@@ -70,6 +68,7 @@ public partial class CoolingViewModel : ObservableObject
     [ObservableProperty] public partial string EmptyTitle { get; set; } = "";
     [ObservableProperty] public partial string EmptyText { get; set; } = "";
     [ObservableProperty] public partial IReadOnlyList<double>? History { get; set; }
+    [ObservableProperty] public partial int HistoryCapacity { get; set; } = GaugeCardViewModel.HistoryLength;
 
     /// <summary>Spinning motherboard fan headers the user can pick as the pump.</summary>
     public System.Collections.ObjectModel.ObservableCollection<PumpCandidateViewModel> Candidates { get; } = [];
@@ -79,12 +78,11 @@ public partial class CoolingViewModel : ObservableObject
     /// <summary>True when the pump reading comes from a header the user picked, so they can undo it.</summary>
     [ObservableProperty] public partial bool CanChangePump { get; set; }
 
-    public void PushHistory(double value)
+    /// <summary>Recent samples of the headline reading from the sensor stream; NaN marks a gap.</summary>
+    public void SetHistory(double[] values, int capacity)
     {
-        _history.Enqueue(value);
-        while (_history.Count > GaugeCardViewModel.HistoryLength)
-            _history.Dequeue();
-        History = _history.ToArray();
+        HistoryCapacity = capacity;
+        History = values;
     }
 
     public void SetRows(IReadOnlyList<(string Label, string Value)> rows)
@@ -108,9 +106,6 @@ public partial class CoolingViewModel : ObservableObject
 
 public partial class NetworkViewModel : ObservableObject
 {
-    private readonly Queue<double> _down = new();
-    private readonly Queue<double> _up = new();
-
     [ObservableProperty] public partial string Adapter { get; set; } = "No active adapter";
     [ObservableProperty] public partial string DownText { get; set; } = "—";
     [ObservableProperty] public partial string UpText { get; set; } = "—";
@@ -121,26 +116,15 @@ public partial class NetworkViewModel : ObservableObject
     /// <summary>Shared scale so the download and upload lines are comparable.</summary>
     [ObservableProperty] public partial double Scale { get; set; } = 1;
 
-    public void Push(double down, double up)
-    {
-        Enqueue(_down, down);
-        Enqueue(_up, up);
-        DownHistory = _down.ToArray();
-        UpHistory = _up.ToArray();
-        Scale = Math.Max(Math.Max(_down.Max(), _up.Max()) * 1.15, 1024);
-    }
+    [ObservableProperty] public partial int HistoryCapacity { get; set; } = GaugeCardViewModel.HistoryLength;
 
-    public void Reset()
+    /// <summary>Recent download and upload rates from the sensor stream; NaN marks a gap.</summary>
+    public void SetHistory(double[] down, double[] up, int capacity)
     {
-        _down.Clear();
-        _up.Clear();
-        DownHistory = UpHistory = null;
-    }
-
-    private static void Enqueue(Queue<double> queue, double value)
-    {
-        queue.Enqueue(value);
-        while (queue.Count > GaugeCardViewModel.HistoryLength)
-            queue.Dequeue();
+        HistoryCapacity = capacity;
+        DownHistory = down;
+        UpHistory = up;
+        var peak = down.Concat(up).Where(v => !double.IsNaN(v)).DefaultIfEmpty(0).Max();
+        Scale = Math.Max(peak * 1.15, 1024);
     }
 }

@@ -89,10 +89,8 @@ public sealed class PeakBar : FrameworkElement
         var target = (double)e.NewValue;
         target = double.IsNaN(target) ? 0 : Math.Clamp(target, 0, 1);
 
-        bar.BeginAnimation(DisplayValueProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(700))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-        });
+        bar.BeginAnimation(DisplayValueProperty,
+            Motion.Instrument(target, TimeSpan.FromMilliseconds(450), new CubicEase { EasingMode = EasingMode.EaseOut }));
         bar._peak.Update(target);
     }
 

@@ -76,7 +76,7 @@
 
                     <Grid Grid.Row="4" Height="54" Margin="0,14,0,0">
                         <controls:Sparkline Values="{Binding History}" Color="{Binding Accent}"
-                                            Maximum="{Binding HistoryMax}" />
+                                            Maximum="{Binding HistoryMax}" Capacity="{Binding HistoryCapacity}" />
                         <TextBlock Text="{Binding HistoryLabel}" Style="{StaticResource Caption}"
                                    VerticalAlignment="Top" />
                     </Grid>
@@ -218,7 +218,7 @@
                         <StackPanel Grid.Column="0" Margin="0,0,20,0">
                             <TextBlock Text="{Binding Headline}" FontSize="32" Style="{StaticResource Metric}" />
                             <TextBlock Text="{Binding HeadlineCaption}" Style="{StaticResource Secondary}" />
-                            <controls:Sparkline Values="{Binding History}" Color="{DynamicResource Pulse.Accent.Network.Color}"
+                            <controls:Sparkline Values="{Binding History}" Color="{DynamicResource Pulse.Accent.Network.Color}" Capacity="{Binding HistoryCapacity}"
                                                 Width="110" Height="40" Margin="0,10,0,0" HorizontalAlignment="Left" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -407,9 +407,9 @@
 
                         <Grid Height="96">
                             <controls:Sparkline Values="{Binding DownHistory}" Color="{DynamicResource Pulse.Accent.Network.Color}"
-                                                Maximum="{Binding Scale}" />
+                                                Maximum="{Binding Scale}" Capacity="{Binding HistoryCapacity}" />
                             <controls:Sparkline Values="{Binding UpHistory}" Color="{DynamicResource Pulse.Accent.Upload.Color}"
-                                                Maximum="{Binding Scale}" />
+                                                Maximum="{Binding Scale}" Capacity="{Binding HistoryCapacity}" />
                         </Grid>
                         <TextBlock Text="{Binding Totals}" Style="{StaticResource Caption}" Margin="0,8,0,0" />
                     </StackPanel>

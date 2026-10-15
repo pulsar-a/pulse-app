@@ -59,34 +59,43 @@ public sealed class Sparkline : FrameworkElement
         if (values is null || values.Count < 2 || ActualWidth <= 0 || ActualHeight <= 0)
             return;
 
-        var max = double.IsNaN(Maximum) ? values.Max() * 1.15 : Maximum;
+        var observed = values.Where(v => !double.IsNaN(v)).DefaultIfEmpty(0).Max();
+        var max = double.IsNaN(Maximum) ? observed * 1.15 : Maximum;
         if (max <= 0) max = 1;
 
         var height = ActualHeight - 2;
         var step = ActualWidth / Math.Max(Capacity - 1, 1);
-        var points = new Point[values.Count];
-        for (var i = 0; i < values.Count; i++)
-        {
-            var x = ActualWidth - (values.Count - 1 - i) * step;
-            var y = 1 + height - Math.Clamp(values[i] / max, 0, 1) * height;
-            points[i] = new Point(x, y);
-        }
 
+        // NaN marks a gap (the sensor had no reading), so draw each unbroken run separately.
         var line = new StreamGeometry();
-        using (var ctx = line.Open())
+        var area = new StreamGeometry();
+        using (var lineCtx = line.Open())
+        using (var areaCtx = area.Open())
         {
-            ctx.BeginFigure(points[0], false, false);
-            ctx.PolyLineTo(points[1..], true, true);
+            var run = new List<Point>();
+            for (var i = 0; i <= values.Count; i++)
+            {
+                if (i < values.Count && !double.IsNaN(values[i]))
+                {
+                    var x = ActualWidth - (values.Count - 1 - i) * step;
+                    var y = 1 + height - Math.Clamp(values[i] / max, 0, 1) * height;
+                    run.Add(new Point(x, y));
+                    continue;
+                }
+
+                if (run.Count >= 2)
+                {
+                    lineCtx.BeginFigure(run[0], false, false);
+                    lineCtx.PolyLineTo(run.Skip(1).ToList(), true, true);
+
+                    areaCtx.BeginFigure(new Point(run[0].X, ActualHeight), true, true);
+                    areaCtx.PolyLineTo(run, false, true);
+                    areaCtx.LineTo(new Point(run[^1].X, ActualHeight), false, true);
+                }
+                run.Clear();
+            }
         }
         line.Freeze();
-
-        var area = new StreamGeometry();
-        using (var ctx = area.Open())
-        {
-            ctx.BeginFigure(new Point(points[0].X, ActualHeight), true, true);
-            ctx.PolyLineTo(points, false, true);
-            ctx.LineTo(new Point(points[^1].X, ActualHeight), false, true);
-        }
         area.Freeze();
 
         var fill = new LinearGradientBrush(

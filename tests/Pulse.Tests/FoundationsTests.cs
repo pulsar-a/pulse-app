@@ -33,7 +33,7 @@ public class UnitTests : PulseTest
     public void Dashboard_shows_Fahrenheit_but_keeps_the_dial_scale()
     {
         SensorFormat.TemperatureUnit = TemperatureUnit.Fahrenheit;
-        var dashboard = new DashboardViewModel(true, NewCatalog(out _));
+        var dashboard = new DashboardViewModel(true, NewCatalog(out _), new SensorStream());
 
         dashboard.Apply(Of(Hardware("/intelcpu/0", "CPU", HardwareType.Cpu,
             Sensor("/intelcpu/0/temperature/0", "CPU Package", SensorType.Temperature, 72))));
@@ -145,7 +145,7 @@ public class SensorCatalogTests : PulseTest
         catalog.Rename("/lpc/nct6798d/0/fan/0", "Front intake");
         catalog.Rename("/lpc/nct6798d/0/fan/1", "D5 pump");
 
-        var dashboard = new DashboardViewModel(true, catalog);
+        var dashboard = new DashboardViewModel(true, catalog, new SensorStream());
         dashboard.Apply(Board);
 
         Assert.Equal("Front intake", Assert.Single(dashboard.Fans).Name);

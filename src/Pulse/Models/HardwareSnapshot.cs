@@ -33,15 +33,18 @@ public sealed record HardwareReading(
     public SensorReading? Find(SensorType type, string name) =>
         AllSensors.FirstOrDefault(s => s.Type == type && s.Name == name);
 
-    public float? Value(SensorType type, params string[] names)
+    /// <summary>The first of the named sensors that has a reading.</summary>
+    public SensorReading? First(SensorType type, params string[] names)
     {
         foreach (var name in names)
         {
             if (Find(type, name) is { HasValue: true } s)
-                return s.Value;
+                return s;
         }
         return null;
     }
+
+    public float? Value(SensorType type, params string[] names) => First(type, names)?.Value;
 }
 
 /// <summary>A lettered volume (partition) on a physical disk, as Explorer shows it.</summary>

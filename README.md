@@ -37,6 +37,7 @@ command is `mingw32-make start`. Other targets:
 | `make build` | Build without launching |
 | `make test` | Run the tests (works while Pulse is open) |
 | `make snapshot` | Save one reading of all sensors, as admin, to `tests/Pulse.Tests/Fixtures/admin.json` (close Pulse first) |
+| `make publish` | Release build with ReadyToRun in `artifacts/publish` |
 | `make icon` | Redraw the app icon from `tools/IconGen` |
 | `make clean` | Remove build output |
 

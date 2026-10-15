@@ -47,8 +47,9 @@ public partial class App : Application
         var settings = _settings = new SettingsService();
         settings.Load();
 
-        _hardware = new HardwareService();
-        var viewModel = new MainViewModel(_hardware, settings, Dispatcher);
+        var stream = new SensorStream();
+        _hardware = new HardwareService(stream);
+        var viewModel = new MainViewModel(_hardware, stream, settings, Dispatcher);
         MainWindow = new MainWindow(viewModel);
         MainWindow.Show();
 
