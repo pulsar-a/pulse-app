@@ -1,0 +1,436 @@
+<UserControl x:Class="Pulse.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:Pulse.ViewModels"
+             xmlns:controls="clr-namespace:Pulse.Controls"
+             xmlns:views="clr-namespace:Pulse.Views"
+             xmlns:models="clr-namespace:Pulse.Models"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:DashboardViewModel}">
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="FanBrush" Color="#2DD4BF" />
+        <SolidColorBrush x:Key="StorageBrush" Color="#38BDF8" />
+        <SolidColorBrush x:Key="NetworkBrush" Color="#4FA8FF" />
+        <SolidColorBrush x:Key="UploadBrush" Color="#A78BFA" />
+        <Color x:Key="NetworkColor">#4FA8FF</Color>
+        <Color x:Key="UploadColor">#A78BFA</Color>
+
+        <!-- Icon in a tinted rounded square, used in card headers. -->
+        <Style x:Key="IconChip" TargetType="Border">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="CornerRadius" Value="9" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+        </Style>
+
+        <DataTemplate x:Key="GaugeCard" DataType="{x:Type vm:GaugeCardViewModel}">
+            <Border Style="{StaticResource PulseCard}">
+                <!-- The filler row keeps every card's sparkline on the same baseline. -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0">
+                        <Border Style="{StaticResource IconChip}" Background="{Binding AccentSoftBrush}">
+                            <ui:SymbolIcon Symbol="{Binding Icon}" FontSize="18" Foreground="{Binding AccentBrush}" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="{Binding Device}" Style="{StaticResource Secondary}" ToolTip="{Binding Device}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid Grid.Row="1" Width="176" Height="176" Margin="0,14,0,0" HorizontalAlignment="Center">
+                        <controls:RingGauge Value="{Binding Gauge}" Color="{Binding Accent}" Thickness="11"
+                                            RangeMin="{Binding GaugeMin}" RangeMax="{Binding GaugeMax}" />
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding GaugeText}" FontSize="34" HorizontalAlignment="Center"
+                                       Style="{StaticResource Metric}" />
+                            <TextBlock Text="{Binding GaugeCaption}" HorizontalAlignment="Center"
+                                       Style="{StaticResource Secondary}" />
+                        </StackPanel>
+
+                        <!-- Session min and max, tucked into the open bottom of the dial. -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                    Margin="0,0,0,2"
+                                    Visibility="{Binding MinText, Converter={x:Static views:Converters.NotNullToVisibility}}">
+                            <Border Background="#14FFFFFF" CornerRadius="6" Padding="6,1" Margin="0,0,4,0"
+                                    ToolTip="Lowest since Pulse started">
+                                <TextBlock FontSize="11" Style="{StaticResource Metric}" FontWeight="Normal">
+                                    <Run Text="▾" Foreground="{DynamicResource TextFillColorTertiaryBrush}" /><Run Text="{Binding MinText, Mode=OneWay}" />
+                                </TextBlock>
+                            </Border>
+                            <Border Background="#14FFFFFF" CornerRadius="6" Padding="6,1"
+                                    ToolTip="Highest since Pulse started">
+                                <TextBlock FontSize="11" Style="{StaticResource Metric}" FontWeight="Normal">
+                                    <Run Text="▴" Foreground="{Binding AccentBrush}" /><Run Text="{Binding MaxText, Mode=OneWay}" />
+                                </TextBlock>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <ItemsControl Grid.Row="2" ItemsSource="{Binding Rows}" Margin="0,4,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:StatRow}">
+                                <DockPanel Margin="0,3">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" FontSize="13"
+                                               Style="{StaticResource Metric}" />
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Secondary}" FontSize="13" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid Grid.Row="4" Height="54" Margin="0,14,0,0">
+                        <controls:Sparkline Values="{Binding History}" Color="{Binding Accent}"
+                                            Maximum="{Binding HistoryMax}" />
+                        <TextBlock Text="{Binding HistoryLabel}" Style="{StaticResource Caption}"
+                                   VerticalAlignment="Top" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+    <!-- Skeleton cards while the first readings come in. -->
+    <ScrollViewer VerticalScrollBarVisibility="Disabled" Padding="24,0,24,24"
+                  Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+        <StackPanel>
+            <UniformGrid Columns="4">
+                <Border Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
+                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
+                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
+                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <controls:Shimmer Height="34" Width="150" CornerRadius="9" HorizontalAlignment="Left" />
+                        <controls:Shimmer Width="164" Height="164" CornerRadius="82" Margin="0,16,0,16" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,10" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,40,0" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <controls:Shimmer Height="34" Width="220" CornerRadius="9" HorizontalAlignment="Left" Margin="0,0,0,14" />
+                    <controls:Shimmer Height="88" CornerRadius="8" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,0,24,24"
+                  Visibility="{Binding IsLoading, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
+        <StackPanel>
+
+            <!-- Headline gauges -->
+            <ItemsControl ItemsSource="{Binding Cards}" ItemTemplate="{StaticResource GaugeCard}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="4" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <!-- Per-core strip and CPU cooling -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,14">
+                        <Border Style="{StaticResource IconChip}" Background="#29FF7A45">
+                            <ui:SymbolIcon Symbol="Temperature24" FontSize="18" Foreground="#FF7A45" />
+                        </Border>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding CoresSubtitle}" VerticalAlignment="Center"
+                                   Style="{StaticResource Secondary}" />
+                        <TextBlock Text="{Binding CoresTitle}" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
+                    </DockPanel>
+
+                    <ItemsControl ItemsSource="{Binding Cores}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="1" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:CoreTileViewModel}">
+                                <StackPanel Margin="2,0" ToolTip="{Binding ToolTip}">
+                                    <Grid Height="88">
+                                        <controls:PeakBar Value="{Binding Fraction}" Fill="{Binding Fill}" CornerRadius="6" />
+                                        <TextBlock Text="{Binding ValueText}" FontSize="12" Margin="0,6,0,0"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Top"
+                                                   Style="{StaticResource Metric}" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding Label}" HorizontalAlignment="Center" Margin="0,5,0,0"
+                                               Style="{StaticResource Caption}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource PulseCard}" DataContext="{Binding Cooling}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <Border Style="{StaticResource IconChip}" Background="#294FA8FF">
+                            <ui:SymbolIcon Symbol="Fluid24" FontSize="18" Foreground="{StaticResource NetworkBrush}" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="CPU cooling" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="{Binding Source}" Style="{StaticResource Secondary}" ToolTip="{Binding Source}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Nothing to show: explain why instead of an empty card. -->
+                    <StackPanel Visibility="{Binding HasData, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
+                        <TextBlock Text="{Binding EmptyTitle}" Style="{StaticResource CardTitle}" FontSize="13" Margin="0,0,0,4" />
+                        <TextBlock Text="{Binding EmptyText}" Style="{StaticResource Secondary}" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Grid Visibility="{Binding HasData, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                            <TextBlock Text="{Binding Headline}" FontSize="32" Style="{StaticResource Metric}" />
+                            <TextBlock Text="{Binding HeadlineCaption}" Style="{StaticResource Secondary}" />
+                            <controls:Sparkline Values="{Binding History}" Color="{StaticResource NetworkColor}"
+                                                Width="110" Height="40" Margin="0,10,0,0" HorizontalAlignment="Left" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <ItemsControl ItemsSource="{Binding Rows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:StatRow}">
+                                        <DockPanel Margin="0,3">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" FontSize="13"
+                                                       Style="{StaticResource Metric}" />
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Secondary}" FontSize="13" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ui:Button Content="Change pump header" Appearance="Transparent" FontSize="12"
+                                       Padding="8,4" Margin="-8,6,0,0" HorizontalAlignment="Left"
+                                       Command="{Binding DataContext.ClearPumpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       Visibility="{Binding CanChangePump, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Pick which generic fan header is the pump. -->
+                    <ItemsControl ItemsSource="{Binding Candidates}" Margin="0,12,0,0"
+                                  Visibility="{Binding ShowPumpPicker, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:PumpCandidateViewModel}">
+                                <Border Background="#0FFFFFFF" CornerRadius="8" Padding="12,6" Margin="0,0,0,6">
+                                    <DockPanel>
+                                        <ui:Button DockPanel.Dock="Right" Content="Set as pump" FontSize="12" Padding="10,4"
+                                                   Command="{Binding DataContext.SetPumpCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                   CommandParameter="{Binding Id}" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            <TextBlock Text="{Binding SpeedText}" Style="{StaticResource Caption}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+            </Grid>
+
+            <!-- Fans, drives, network -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1.25*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <Border Style="{StaticResource IconChip}" Background="#292DD4BF">
+                                <ui:SymbolIcon Symbol="WeatherSqualls24" FontSize="18" Foreground="{StaticResource FanBrush}" />
+                            </Border>
+                            <TextBlock Text="Fans" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
+                        </DockPanel>
+
+                        <TextBlock Text="{Binding FansEmptyText}" Style="{StaticResource Secondary}" TextWrapping="Wrap"
+                                   Visibility="{Binding HasFans, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
+
+                        <ItemsControl ItemsSource="{Binding Fans}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:FanRowViewModel}">
+                                    <StackPanel Margin="0,0,0,12">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding SpeedText}" FontSize="13"
+                                                       Style="{StaticResource Metric}" />
+                                            <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}"
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding Source}" Style="{StaticResource Caption}" Margin="0,1,0,5" />
+                                        <controls:PeakBar Height="5" Orientation="Horizontal" CornerRadius="3"
+                                                          Value="{Binding Fraction}" Fill="{StaticResource FanBrush}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource PulseCard}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <Border Style="{StaticResource IconChip}" Background="#2938BDF8">
+                                <ui:SymbolIcon Symbol="Storage24" FontSize="18" Foreground="{StaticResource StorageBrush}" />
+                            </Border>
+                            <TextBlock Text="Drives" VerticalAlignment="Center" Style="{StaticResource CardTitle}" />
+                        </DockPanel>
+
+                        <TextBlock Text="Drive sensors need admin rights. Restart Pulse as administrator to see them."
+                                   Style="{StaticResource Secondary}" TextWrapping="Wrap"
+                                   Visibility="{Binding HasDrives, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
+
+                        <ItemsControl ItemsSource="{Binding Drives}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:DriveRowViewModel}">
+                                    <DockPanel Margin="0,0,0,14">
+                                        <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="10"
+                                                Background="#14FFFFFF" Margin="0,0,12,0" VerticalAlignment="Top">
+                                            <TextBlock Text="{Binding TemperatureText}" FontSize="15"
+                                                       Foreground="{Binding TemperatureBrush}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Style="{StaticResource Metric}" />
+                                        </Border>
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Details}"
+                                                           VerticalAlignment="Center" Style="{StaticResource Secondary}" />
+                                                <!-- Volume tags, e.g. "C: 4TB Main" -->
+                                                <ItemsControl ItemsSource="{Binding Volumes}" Margin="0,0,10,0"
+                                                              Visibility="{Binding HasVolumes, Converter={StaticResource BoolToVisibility}}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate DataType="{x:Type models:VolumeInfo}">
+                                                            <Border Background="#2238BDF8" CornerRadius="6" Padding="7,2" Margin="0,0,6,2">
+                                                                <TextBlock FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                                                    <Run Text="{Binding Letter, Mode=OneWay}" Foreground="{StaticResource StorageBrush}"
+                                                                         FontWeight="SemiBold" /><Run Text=":" Foreground="{StaticResource StorageBrush}"
+                                                                         FontWeight="SemiBold" />
+                                                                    <Run Text="{Binding Label, Mode=OneWay}" />
+                                                                </TextBlock>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="No drive letter" FontSize="13" Style="{StaticResource Secondary}"
+                                                           VerticalAlignment="Center"
+                                                           Visibility="{Binding HasVolumes, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Caption}" Margin="0,3,0,0" />
+                                            <Grid Margin="0,6,0,4">
+                                                <Border Style="{StaticResource BarTrack}" />
+                                                <Border Style="{StaticResource BarTrack}" Background="{StaticResource StorageBrush}"
+                                                        RenderTransformOrigin="0,0.5">
+                                                    <Border.RenderTransform>
+                                                        <ScaleTransform ScaleX="{Binding UsedFraction}" />
+                                                    </Border.RenderTransform>
+                                                </Border>
+                                            </Grid>
+                                            <TextBlock Text="{Binding Activity}" Style="{StaticResource Caption}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource PulseCard}" DataContext="{Binding Network}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <Border Style="{StaticResource IconChip}" Background="#294FA8FF">
+                                <ui:SymbolIcon Symbol="Router24" FontSize="18" Foreground="{StaticResource NetworkBrush}" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Network" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding Adapter}" Style="{StaticResource Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <UniformGrid Columns="2" Margin="0,4,0,10">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Secondary}">
+                                    <Run Text="↓" Foreground="{StaticResource NetworkBrush}" FontWeight="Bold" />
+                                    <Run Text="Download" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding DownText}" FontSize="22" Style="{StaticResource Metric}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Secondary}">
+                                    <Run Text="↑" Foreground="{StaticResource UploadBrush}" FontWeight="Bold" />
+                                    <Run Text="Upload" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding UpText}" FontSize="22" Style="{StaticResource Metric}" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <Grid Height="96">
+                            <controls:Sparkline Values="{Binding DownHistory}" Color="{StaticResource NetworkColor}"
+                                                Maximum="{Binding Scale}" />
+                            <controls:Sparkline Values="{Binding UpHistory}" Color="{StaticResource UploadColor}"
+                                                Maximum="{Binding Scale}" />
+                        </Grid>
+                        <TextBlock Text="{Binding Totals}" Style="{StaticResource Caption}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+    </Grid>
+</UserControl>
