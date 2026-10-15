@@ -40,15 +40,39 @@ public sealed class HistoryStore(SensorStream stream, string databasePath)
         if (points.Count <= maxPoints || maxPoints <= 0 || to <= from)
             return points;
 
-        var bucketTicks = (to - from).Ticks / (double)maxPoints;
+        // Buckets are fixed to the clock (every 6 s, every minute...), not counted from `from`. The chart
+        // re-queries as time moves on; with fixed buckets only the newest point changes, instead of every
+        // bucket regrouping each second and the whole line shimmering.
+        var bucket = BucketSize(to - from, maxPoints).Ticks;
         return points
-            .GroupBy(p => Math.Clamp((int)((p.Time - from).Ticks / bucketTicks), 0, maxPoints - 1))
+            .GroupBy(p => p.Time.Ticks / bucket)
             .OrderBy(g => g.Key)
             .Select(g => new HistoryPoint(
-                from.AddTicks((long)(g.Key * bucketTicks)),
+                new DateTime(g.Key * bucket, g.First().Time.Kind),
                 g.Min(p => p.Min),
                 g.Average(p => p.Avg),
                 g.Max(p => p.Max)))
             .ToList();
+    }
+
+    private static readonly TimeSpan[] BucketSizes =
+    [
+        TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(6),
+        TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(1),
+        TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(15),
+        TimeSpan.FromMinutes(20), TimeSpan.FromMinutes(30), TimeSpan.FromHours(1), TimeSpan.FromHours(2),
+        TimeSpan.FromHours(3), TimeSpan.FromHours(6), TimeSpan.FromHours(12), TimeSpan.FromDays(1),
+    ];
+
+    /// <summary>The smallest round bucket that fits <paramref name="span"/> into at most <paramref name="maxPoints"/> buckets.</summary>
+    public static TimeSpan BucketSize(TimeSpan span, int maxPoints)
+    {
+        var smallest = span.Ticks / (double)maxPoints;
+        foreach (var size in BucketSizes)
+        {
+            if (size.Ticks >= smallest)
+                return size;
+        }
+        return TimeSpan.FromTicks((long)Math.Ceiling(smallest));
     }
 }

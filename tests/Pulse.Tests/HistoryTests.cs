@@ -179,6 +179,36 @@ public class HistoryTests : PulseTest
     }
 
     [Fact]
+    public void Downsampled_buckets_stay_put_as_the_window_slides()
+    {
+        // A noisy hour at one reading a second, queried twice, three seconds apart, as the live chart does.
+        var rng = new Random(7);
+        var points = Enumerable.Range(0, 3605)
+            .Select(i => rng.Next(100, 600))
+            .Select((v, i) => new HistoryPoint(T0.AddSeconds(i), v, v, v))
+            .ToList();
+
+        var to1 = T0.AddSeconds(3601.4);
+        var to2 = to1.AddSeconds(3);
+        var first = HistoryStore.Downsample(points.Where(p => p.Time >= to1.AddHours(-1) && p.Time <= to1).ToList(), to1.AddHours(-1), to1, 600);
+        var second = HistoryStore.Downsample(points.Where(p => p.Time >= to2.AddHours(-1) && p.Time <= to2).ToList(), to2.AddHours(-1), to2, 600);
+
+        // Every full bucket the two queries share is identical; only the edges differ.
+        var shared = first.Skip(1).SkipLast(1).Where(a => second.Any(b => b.Time == a.Time)).ToList();
+        Assert.True(shared.Count > 590);
+        Assert.All(shared, a => Assert.Equal(a, second.Single(b => b.Time == a.Time)));
+        Assert.All(first, p => Assert.Equal(0, p.Time.Ticks % TimeSpan.FromSeconds(6).Ticks));
+    }
+
+    [Theory]
+    [InlineData(300, 1)]          // 5 minutes
+    [InlineData(3600, 6)]         // an hour
+    [InlineData(86400, 300)]      // a day: 144 s would do, rounded up to 5 minutes
+    [InlineData(604800, 1200)]    // a week: ~17 min, rounded up to 20 minutes
+    public void Bucket_sizes_are_round(int spanSeconds, int bucketSeconds) =>
+        Assert.Equal(TimeSpan.FromSeconds(bucketSeconds), HistoryStore.BucketSize(TimeSpan.FromSeconds(spanSeconds), 600));
+
+    [Fact]
     public void Csv_export_has_a_column_per_sensor_with_units_in_the_users_choice()
     {
         SensorFormat.TemperatureUnit = TemperatureUnit.Fahrenheit;

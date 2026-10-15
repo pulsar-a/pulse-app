@@ -23,6 +23,9 @@ public sealed class HardwareService : IDisposable
     /// <param name="stream">Every snapshot is published here; consumers subscribe to the stream.</param>
     public HardwareService(SensorStream stream) => _stream = stream;
 
+    /// <summary>Keeps last good values through dropped readings (a PSU shared with iCUE, for one).</summary>
+    private readonly ReadingHold _hold = new();
+
     /// <summary>Raised on a background thread if opening or polling the hardware fails.</summary>
     public event Action<Exception>? Failed;
 
@@ -152,7 +155,7 @@ public sealed class HardwareService : IDisposable
                     });
                     delay = _schedule.TickInterval;
                 }
-                _stream.Publish(snapshot);
+                _stream.Publish(_hold.Apply(snapshot));
 
                 // Keep a steady rhythm: subtract the time this tick took from the wait.
                 var elapsed = DateTime.UtcNow - now;
