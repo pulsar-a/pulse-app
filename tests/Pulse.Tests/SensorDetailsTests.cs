@@ -81,6 +81,26 @@ public class SensorDetailsTests : PulseTest
     }
 
     [Fact]
+    public void Minute_history_followed_by_live_seconds_stays_one_line()
+    {
+        // 40 minutes from disk, then more per-second live points than that: the seconds set the usual
+        // spacing, but one-minute steps are still normal history, not holes.
+        var disk = Enumerable.Range(0, 40).Select(m => Point(m, 50));
+        var live = Enumerable.Range(1, 200).Select(s => new HistoryPoint(T0.AddMinutes(39).AddSeconds(s), 60, 60, 60));
+
+        Assert.Single(ChartMath.Runs(disk.Concat(live).ToList()));
+    }
+
+    [Fact]
+    public void A_restart_still_breaks_the_line_between_disk_and_live_data()
+    {
+        var disk = Enumerable.Range(0, 30).Select(m => Point(m, 50));
+        var live = Enumerable.Range(1, 200).Select(s => new HistoryPoint(T0.AddMinutes(43).AddSeconds(s), 60, 60, 60));
+
+        Assert.Equal(2, ChartMath.Runs(disk.Concat(live).ToList()).Count);
+    }
+
+    [Fact]
     public void Evenly_spaced_points_are_one_run() =>
         Assert.Single(ChartMath.Runs(Enumerable.Range(0, 60).Select(m => Point(m, 50)).ToList()));
 

@@ -237,9 +237,16 @@ public static class ChartMath
         span <= TimeSpan.FromHours(1) ? "HH:mm:ss" : span <= TimeSpan.FromDays(1) ? "HH:mm" : "ddd d MMM, HH:mm";
 
     /// <summary>
+    /// History from disk has one point a minute while the live stream has one a second, and a chart often
+    /// shows both. Once the per-second points outnumber the rest, the usual spacing is a second, so without
+    /// this floor every minute of disk history would count as a hole and be drawn as a lone dot.
+    /// </summary>
+    private static readonly TimeSpan MinimumHole = TimeSpan.FromMinutes(3);
+
+    /// <summary>
     /// Splits a series where the data has a hole (Pulse wasn't running, or the sensor was gone), so the
     /// line breaks instead of drawing a misleading straight segment across it. A hole is a gap more than
-    /// five times the usual spacing between points.
+    /// five times the usual spacing between points, and longer than <see cref="MinimumHole"/>.
     /// </summary>
     public static List<List<HistoryPoint>> Runs(IReadOnlyList<HistoryPoint> points)
     {
@@ -248,10 +255,11 @@ public static class ChartMath
 
         var gaps = points.Zip(points.Skip(1), (a, b) => (b.Time - a.Time).Ticks).Order().ToList();
         var typical = gaps.Count > 0 ? gaps[gaps.Count / 2] : 0;
+        var hole = Math.Max(typical * 5, MinimumHole.Ticks);
         var current = new List<HistoryPoint> { points[0] };
         for (var i = 1; i < points.Count; i++)
         {
-            if (typical > 0 && (points[i].Time - points[i - 1].Time).Ticks > typical * 5)
+            if ((points[i].Time - points[i - 1].Time).Ticks > hole)
             {
                 runs.Add(current);
                 current = [];

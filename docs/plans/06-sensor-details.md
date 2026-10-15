@@ -58,7 +58,8 @@ so it comes first.
 - Gridlines on round values (1, 2, 2.5, 5 × 10ⁿ) and time labels on round times (every minute, 10 minutes,
   hour, day...), spaced to the panel's width.
 - The line **breaks where there's no data** (Pulse wasn't running or the sensor was gone) instead of
-  drawing a straight line across the hole.
+  drawing a straight line across the hole. A hole is a gap of more than 3 minutes (and well above the
+  usual spacing), so minute-by-minute history from disk next to per-second live data stays one line.
 - Hover: a crosshair and a tooltip with the time, average, and min–max for that point (and the compared
   sensor's value).
 - At most 600 points per series, downsampled by `HistoryStore` with spikes kept.
@@ -73,7 +74,7 @@ so it comes first.
   Enter or a click to open, Esc to close. Each result shows its current value.
 
 ## Tests
-139 passing (27 new): nice axis steps and ranges, time labels (5 minutes, an hour, a week), lines
+141 passing (29 new): nice axis steps and ranges, time labels (5 minutes, an hour, a week), lines
 breaking at gaps, range stats including time above the limit and its wording, CSV export in °C and °F,
 axis labels following the unit, alert limits from the built-in and disabled rules, search matching and
 ranking, the catalog's full sensor list, and dashboard cards knowing which sensor they show.
