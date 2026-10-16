@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Pulse.Services;
 using Pulse.Services.Processes;
 
 namespace Pulse.ViewModels;
@@ -186,18 +187,57 @@ public partial class ProcessRowViewModel(string key) : ObservableObject
     [ObservableProperty] public partial double CpuFraction { get; private set; }
     [ObservableProperty] public partial bool CanEnd { get; private set; }
 
-    public void Update(AppUsage app, AppInfo? info)
+    /// <param name="info">The program's description and icon.</param>
+    /// <param name="single">Shown as one process of its program: the detail line names its PID.</param>
+    public void Update(AppUsage app, AppInfo? info, bool single = false)
     {
         App = app;
         Name = info?.DisplayName ?? app.ImageName;
         var count = ProcessFormat.Count(app.Count);
-        Detail = count.Length == 0 ? app.ImageName : $"{app.ImageName} · {count}";
+        Detail = single ? $"{app.ImageName} · PID {app.Members[0].Pid}"
+            : count.Length == 0 ? app.ImageName
+            : $"{app.ImageName} · {count}";
         Icon = info?.Icon;
         CpuText = ProcessFormat.Percent(app.Cpu);
         GpuText = ProcessFormat.Percent(app.Gpu);
         MemoryText = ProcessFormat.Memory(app.Memory);
         CpuFraction = Math.Clamp(app.Cpu / 100, 0, 1);
         CanEnd = app.CanEnd;
+    }
+}
+
+/// <summary>A section heading on the Processes page (Apps, Background processes, Windows processes), with its totals.</summary>
+public partial class ProcessSectionViewModel : ObservableObject
+{
+    public ProcessSectionViewModel(ProcessKind kind, Action<ProcessSectionViewModel> toggle)
+    {
+        Kind = kind;
+        Title = kind switch
+        {
+            ProcessKind.App => "Apps",
+            ProcessKind.Background => "Background processes",
+            _ => "Windows processes",
+        };
+        // On the section itself, not a page command with a parameter: the list recycles its row controls.
+        ToggleCommand = new RelayCommand(() => toggle(this));
+    }
+
+    public ProcessKind Kind { get; }
+    public string Title { get; }
+    public IRelayCommand ToggleCommand { get; }
+
+    [ObservableProperty] public partial bool IsExpanded { get; set; } = true;
+    [ObservableProperty] public partial int Count { get; private set; }
+    [ObservableProperty] public partial string CpuText { get; private set; } = "";
+    [ObservableProperty] public partial string GpuText { get; private set; } = "";
+    [ObservableProperty] public partial string MemoryText { get; private set; } = "";
+
+    public void Update(IReadOnlyList<AppUsage> rows, bool hasGpu)
+    {
+        Count = rows.Count;
+        CpuText = ProcessFormat.Percent(Math.Min(100, rows.Sum(r => r.Cpu)));
+        GpuText = hasGpu ? ProcessFormat.Percent(Math.Min(100, rows.Sum(r => r.Gpu ?? 0))) : "";
+        MemoryText = ProcessFormat.Memory(rows.Sum(r => r.Memory));
     }
 }
 
@@ -212,23 +252,44 @@ public enum ProcessSort
 /// <summary>
 /// The Processes page: every program with its CPU, GPU and memory use, sortable and searchable, with
 /// End task for the user's own programs (after a confirmation).
+///
+/// Two switches, saved in settings: <see cref="GroupByType"/> splits the list into Task Manager's sections
+/// (each can be folded away), and <see cref="CombinePrograms"/> adds up a program's processes into one row
+/// (off: every process on its own, and End task ends just that one).
 /// </summary>
 public partial class ProcessesViewModel : ObservableObject
 {
+    private static readonly ProcessKind[] SectionOrder = [ProcessKind.App, ProcessKind.Background, ProcessKind.Windows];
+
+    private readonly SettingsService _settings;
     private readonly Func<string, AppInfo?> _info;
     private readonly Func<AppUsage, int> _end;
     private readonly Dictionary<string, ProcessRowViewModel> _rows = new();
+    private readonly Dictionary<ProcessKind, ProcessSectionViewModel> _sections = new();
     private ProcessList? _latest;
 
     /// <param name="info">A program's description and icon, once known.</param>
     /// <param name="end">Ends a program's processes; returns how many Windows refused.</param>
-    public ProcessesViewModel(Func<string, AppInfo?> info, Func<AppUsage, int> end)
+    public ProcessesViewModel(SettingsService settings, Func<string, AppInfo?> info, Func<AppUsage, int> end)
     {
+        _settings = settings;
         _info = info;
         _end = end;
+        var saved = settings.Current.Processes;
+        GroupByType = saved.GroupByType;
+        CombinePrograms = saved.CombinePrograms;
+        foreach (var kind in SectionOrder)
+            _sections[kind] = new ProcessSectionViewModel(kind, ToggleSection) { IsExpanded = !saved.Collapsed.Contains(kind) };
     }
 
-    public ObservableCollection<ProcessRowViewModel> Rows { get; } = [];
+    /// <summary>Section headings and rows, in display order.</summary>
+    public ObservableCollection<object> Items { get; } = [];
+
+    /// <summary>Just the rows, in display order.</summary>
+    public IReadOnlyList<ProcessRowViewModel> Rows => Items.OfType<ProcessRowViewModel>().ToList();
+
+    /// <summary>Just the section headings shown.</summary>
+    public IReadOnlyList<ProcessSectionViewModel> Sections => Items.OfType<ProcessSectionViewModel>().ToList();
 
     /// <summary>Asks the user before ending a program; set by the view. Without it nothing is ever ended.</summary>
     public Func<ProcessRowViewModel, Task<bool>>? Confirm { get; set; }
@@ -255,6 +316,12 @@ public partial class ProcessesViewModel : ObservableObject
     [ObservableProperty] public partial bool HasNoMatches { get; private set; }
     [ObservableProperty] public partial string Summary { get; private set; } = "Measuring…";
 
+    /// <summary>Sections for apps, background processes and Windows processes.</summary>
+    [ObservableProperty] public partial bool GroupByType { get; set; }
+
+    /// <summary>One row per program; off lists every process.</summary>
+    [ObservableProperty] public partial bool CombinePrograms { get; set; }
+
     /// <summary>What happened after End task, shown under the header until the next one.</summary>
     [ObservableProperty] public partial string? Message { get; private set; }
 
@@ -266,6 +333,32 @@ public partial class ProcessesViewModel : ObservableObject
     private string Arrow(ProcessSort column) => Sort != column ? "" : SortDescending ? " ▾" : " ▴";
 
     partial void OnQueryChanged(string value) => Refresh();
+
+    partial void OnGroupByTypeChanged(bool value)
+    {
+        if (_settings.Current.Processes.GroupByType != value)
+            _settings.Update(s => s.Processes.GroupByType = value);
+        Refresh();
+    }
+
+    partial void OnCombineProgramsChanged(bool value)
+    {
+        if (_settings.Current.Processes.CombinePrograms != value)
+            _settings.Update(s => s.Processes.CombinePrograms = value);
+        Refresh();
+    }
+
+    private void ToggleSection(ProcessSectionViewModel section)
+    {
+        section.IsExpanded = !section.IsExpanded;
+        _settings.Update(s =>
+        {
+            s.Processes.Collapsed.Remove(section.Kind);
+            if (!section.IsExpanded)
+                s.Processes.Collapsed.Add(section.Kind);
+        });
+        Refresh();
+    }
 
     /// <summary>A column header: sorts by it, or flips the order when it's already the sort. Numbers start busiest first.</summary>
     [RelayCommand]
@@ -318,25 +411,57 @@ public partial class ProcessesViewModel : ObservableObject
         HasData = !list.IsBaseline;
         Summary = HasData ? $"{list.Processes.Count} processes · {list.Apps.Count} programs" : "Measuring…";
 
+        // The rows to show: one per program, or one per process, filtered by the search.
         var query = Query.Trim();
-        var shown = new List<ProcessRowViewModel>();
+        var matches = new List<ProcessRowViewModel>();
         var seen = new HashSet<string>();
         foreach (var app in list.Apps)
         {
-            seen.Add(app.Key);
-            if (!_rows.TryGetValue(app.Key, out var row))
-                _rows[app.Key] = row = new ProcessRowViewModel(app.Key);
-            row.Update(app, _info(app.Key));
-            if (query.Length == 0 || row.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
-                || app.ImageName.Contains(query, StringComparison.OrdinalIgnoreCase))
-                shown.Add(row);
+            var info = _info(app.Key);
+            var name = info?.DisplayName ?? app.ImageName;
+            if (query.Length > 0 && !name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                && !app.ImageName.Contains(query, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (CombinePrograms)
+                matches.Add(Row(app, info, single: false, seen));
+            else
+                foreach (var member in app.Members)
+                    matches.Add(Row(app.Single(member), info, single: true, seen));
         }
         foreach (var gone in _rows.Keys.Where(k => !seen.Contains(k)).ToList())
             _rows.Remove(gone);
 
-        shown.Sort(Compare);
-        HasNoMatches = HasData && shown.Count == 0;
-        SyncRows(shown);
+        matches.Sort(Compare);
+        HasNoMatches = HasData && matches.Count == 0;
+
+        var items = new List<object>(matches.Count + SectionOrder.Length);
+        if (!GroupByType)
+            items.AddRange(matches);
+        else
+        {
+            foreach (var kind in SectionOrder)
+            {
+                var rows = matches.Where(r => r.App!.Kind == kind).ToList();
+                if (rows.Count == 0)
+                    continue;
+                var section = _sections[kind];
+                section.Update(rows.Select(r => r.App!).ToList(), list.HasGpu);
+                items.Add(section);
+                // A search looks inside folded sections too, so a match is never hidden.
+                if (section.IsExpanded || query.Length > 0)
+                    items.AddRange(rows);
+            }
+        }
+        SyncItems(items);
+    }
+
+    private ProcessRowViewModel Row(AppUsage app, AppInfo? info, bool single, HashSet<string> seen)
+    {
+        seen.Add(app.Key);
+        if (!_rows.TryGetValue(app.Key, out var row))
+            _rows[app.Key] = row = new ProcessRowViewModel(app.Key);
+        row.Update(app, info, single);
+        return row;
     }
 
     private int Compare(ProcessRowViewModel a, ProcessRowViewModel b)
@@ -360,21 +485,21 @@ public partial class ProcessesViewModel : ObservableObject
             ? byName
             : string.CompareOrdinal(a.Key, b.Key);
 
-    /// <summary>Moves rows into place rather than rebuilding the list, so the selection and scroll position survive.</summary>
-    private void SyncRows(List<ProcessRowViewModel> wanted)
+    /// <summary>Moves items into place rather than rebuilding the list, so the scroll position survives.</summary>
+    private void SyncItems(List<object> wanted)
     {
         var keep = wanted.ToHashSet();
-        for (var i = Rows.Count - 1; i >= 0; i--)
+        for (var i = Items.Count - 1; i >= 0; i--)
         {
-            if (!keep.Contains(Rows[i]))
-                Rows.RemoveAt(i);
+            if (!keep.Contains(Items[i]))
+                Items.RemoveAt(i);
         }
         for (var i = 0; i < wanted.Count; i++)
         {
-            var at = Rows.IndexOf(wanted[i]);
+            var at = Items.IndexOf(wanted[i]);
             if (at == i) continue;
-            if (at < 0) Rows.Insert(i, wanted[i]);
-            else Rows.Move(at, i);
+            if (at < 0) Items.Insert(i, wanted[i]);
+            else Items.Move(at, i);
         }
     }
 }

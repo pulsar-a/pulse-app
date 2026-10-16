@@ -278,8 +278,168 @@ public class ProcessInsightsTests(ITestOutputHelper output) : PulseTest
 
     // ---- The Processes page -------------------------------------------------------------------
 
-    private static ProcessesViewModel Page(List<AppUsage>? ended = null, int refuse = 0) =>
-        new(Info, app => { ended?.Add(app); return refuse; }) { IsActive = true };
+    private ProcessesViewModel Page(List<AppUsage>? ended = null, int refuse = 0, SettingsService? settings = null) =>
+        new(settings ?? NewSettings(), Info, app => { ended?.Add(app); return refuse; }) { IsActive = true };
+
+    // ---- Sections, like Task Manager ------------------------------------------------------------
+
+    private static AppUsage App(string name, params ProcessUsage[] members) =>
+        ProcessApps.Group(members.Select(m => m with { Name = name }).ToList(), session: 1, self: 999).Single();
+
+    [Fact]
+    public void Programs_with_a_window_are_apps_and_the_windows_folder_is_windows()
+    {
+        var apps = ProcessApps.Classify(
+        [
+            App("chrome.exe", U(10, "", 5), U(11, "", 1)),          // one of its processes has the window
+            App("notepad.exe", U(20, "", 0)),                        // from the Windows folder, but open: an app
+            App("updater.exe", U(30, "", 0)),
+            App("RuntimeBroker.exe", U(40, "", 0)),
+            App("MsMpEng.exe", U(50, "", 0, session: 0)),            // protected service, no path
+            App("System", U(4, "", 0, session: 0)),
+            App("dropbox.exe", U(60, "", 0)),                        // no path, but in the user's session
+        ],
+            hasWindow: pid => pid is 11 or 20,
+            pathOf: key => key switch
+            {
+                "notepad.exe" => @"C:\Windows\System32\notepad.exe",
+                "updater.exe" => @"C:\Program Files\Thing\updater.exe",
+                "runtimebroker.exe" => @"c:\windows\system32\RuntimeBroker.exe",
+                _ => null,
+            },
+            windowsFolder: @"C:\Windows");
+
+        var kinds = apps.ToDictionary(a => a.ImageName, a => a.Kind);
+        Assert.Equal(ProcessKind.App, kinds["chrome.exe"]);
+        Assert.Equal(ProcessKind.App, kinds["notepad.exe"]);
+        Assert.Equal(ProcessKind.Background, kinds["updater.exe"]);
+        Assert.Equal(ProcessKind.Windows, kinds["RuntimeBroker.exe"]);
+        Assert.Equal(ProcessKind.Windows, kinds["MsMpEng.exe"]);
+        Assert.Equal(ProcessKind.Windows, kinds["System"]);
+        Assert.Equal(ProcessKind.Background, kinds["dropbox.exe"]);
+    }
+
+    private static ProcessList Sorted() =>
+        Classified(
+        [
+            U(10, "game.exe", 22, 88, 6_000_000_000), U(11, "chrome.exe", 9, 4, 900_000_000), U(12, "chrome.exe", 3, 1, 600_000_000),
+            U(20, "updater.exe", 2), U(30, "dwm.exe", 1, 3),
+        ],
+        app: [10, 11], windows: ["dwm.exe"]);
+
+    /// <param name="app">PIDs with a window.</param>
+    /// <param name="windows">Programs that run from the Windows folder.</param>
+    private static ProcessList Classified(ProcessUsage[] processes, int[] app, string[] windows)
+    {
+        var list = List(processes: processes);
+        return list with
+        {
+            Apps = ProcessApps.Classify(list.Apps, app.Contains,
+                key => windows.Contains(key) ? @"C:\Windows\System32\" + key : null, @"C:\Windows"),
+        };
+    }
+
+    [Fact]
+    public void The_page_groups_programs_into_apps_background_and_windows()
+    {
+        var page = Page();
+        page.Apply(Sorted());
+
+        Assert.Equal([ProcessKind.App, ProcessKind.Background, ProcessKind.Windows], page.Sections.Select(s => s.Kind));
+        Assert.Equal(["Apps", "Space Game", "chrome.exe", "Background processes", "updater.exe", "Windows processes", "dwm.exe"],
+            page.Items.Select(i => i is ProcessSectionViewModel s ? s.Title : ((ProcessRowViewModel)i).Name));
+        var apps = page.Sections[0];
+        Assert.Equal(2, apps.Count);
+        Assert.Equal("34%", apps.CpuText);   // game 22 + chrome 12
+    }
+
+    [Fact]
+    public void Grouping_by_type_can_be_turned_off_and_is_remembered()
+    {
+        var settings = NewSettings();
+        var page = Page(settings: settings);
+        page.Apply(Sorted());
+
+        page.GroupByType = false;
+
+        Assert.Empty(page.Sections);
+        Assert.Equal(4, page.Items.Count);
+        Assert.Equal("Space Game", page.Rows[0].Name);
+        Assert.False(settings.Current.Processes.GroupByType);
+        Assert.False(Page(settings: settings).GroupByType);
+    }
+
+    [Fact]
+    public void A_folded_section_keeps_its_heading_and_stays_folded()
+    {
+        var settings = NewSettings();
+        var page = Page(settings: settings);
+        page.Apply(Sorted());
+
+        page.Sections[0].ToggleCommand.Execute(null);
+
+        Assert.False(page.Sections[0].IsExpanded);
+        Assert.Equal(["updater.exe", "dwm.exe"], page.Rows.Select(r => r.Key));
+        Assert.Equal([ProcessKind.App], settings.Current.Processes.Collapsed);
+
+        // Opening the page again: still folded.
+        var again = Page(settings: settings);
+        again.Apply(Sorted());
+        Assert.False(again.Sections[0].IsExpanded);
+
+        // A search looks inside it anyway.
+        page.Query = "chrome";
+        Assert.Equal(["chrome.exe"], page.Rows.Select(r => r.Key));
+
+        page.Query = "";
+        page.Sections[0].ToggleCommand.Execute(null);
+        Assert.Empty(settings.Current.Processes.Collapsed);
+        Assert.Equal(4, page.Rows.Count);
+    }
+
+    [Fact]
+    public void With_combining_off_every_process_has_its_own_row_in_its_programs_section()
+    {
+        var settings = NewSettings();
+        var ended = new List<AppUsage>();
+        var page = Page(ended, settings: settings);
+        page.Apply(Sorted());
+        page.Confirm = _ => Task.FromResult(true);
+
+        page.CombinePrograms = false;
+
+        var chrome = page.Rows.Where(r => r.App!.ImageName == "chrome.exe").ToList();
+        Assert.Equal(2, chrome.Count);
+        Assert.Equal("chrome.exe · PID 11", chrome[0].Detail);
+        Assert.Equal("9.0%", chrome[0].CpuText);
+        // Chrome's helper without a window still sits under Apps, with its program.
+        Assert.All(chrome, r => Assert.Equal(ProcessKind.App, r.App!.Kind));
+        Assert.Equal(3, page.Sections[0].Count);
+        Assert.False(settings.Current.Processes.CombinePrograms);
+
+        // End task then ends just that one process.
+        page.EndTaskCommand.Execute(chrome[1]);
+        Assert.Equal(12, ended.Single().Members.Single().Pid);
+    }
+
+    [Fact]
+    public void Settings_start_grouped_and_combined()
+    {
+        var settings = NewSettings().Current.Processes;
+
+        Assert.True(settings.GroupByType);
+        Assert.True(settings.CombinePrograms);
+        Assert.Empty(settings.Collapsed);
+    }
+
+    [Fact]
+    public void Real_desktop_windows_are_found_without_error()
+    {
+        var sw = Stopwatch.StartNew();
+        var pids = DesktopWindows.Pids();
+        output.WriteLine($"{pids.Count} processes with a desktop window, found in {sw.Elapsed.TotalMilliseconds:0.0} ms");
+        Assert.DoesNotContain(0, pids);
+    }
 
     [Fact]
     public void The_page_lists_programs_busiest_first_and_sorts_by_any_column()

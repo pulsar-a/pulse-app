@@ -3,7 +3,8 @@ namespace Pulse.Services.Processes;
 /// <summary>One process's share of the machine over the last sampling interval.</summary>
 /// <param name="Cpu">Percent of the whole CPU (all cores), like Task Manager: 0 to 100.</param>
 /// <param name="Gpu">Percent of its busiest GPU engine, like Task Manager; null when GPU counters aren't available.</param>
-public sealed record ProcessUsage(int Pid, long CreateTime, string Name, int SessionId, double Cpu, double? Gpu, long Memory);
+/// <param name="CanEnd">Whether the user may end it (see <see cref="ProcessApps.CanEnd"/>); set when grouping.</param>
+public sealed record ProcessUsage(int Pid, long CreateTime, string Name, int SessionId, double Cpu, double? Gpu, long Memory, bool CanEnd = false);
 
 /// <summary>One reading of every process, published by <see cref="ProcessMonitor"/>.</summary>
 /// <param name="Apps">The same processes grouped by program (see <see cref="ProcessApps"/>).</param>

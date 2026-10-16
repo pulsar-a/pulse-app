@@ -143,7 +143,7 @@ public partial class MainViewModel : ObservableObject
     public void AttachProcesses(ProcessMonitor monitor)
     {
         _processes = monitor;
-        Processes = new ProcessesViewModel(monitor.Info, ProcessMonitor.End) { IsActive = IsProcessesSelected };
+        Processes = new ProcessesViewModel(_settings, monitor.Info, ProcessMonitor.End) { IsActive = IsProcessesSelected };
         monitor.Updated += OnProcessesUpdated;
         UpdateProcessSampling();
     }

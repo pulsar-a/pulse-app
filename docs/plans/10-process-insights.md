@@ -59,12 +59,23 @@ independent of the UI-heavy steps, so it can move earlier if wanted.
 - A fourth page, **Processes**, between All sensors and Settings: every program with CPU (and a small bar),
   GPU and memory, sorted busiest first. Click a column to sort by it, again to flip; search matches the
   friendly name or the file name. Rows are moved, not rebuilt, so the list doesn't flicker.
+- **Two groupings, each switched on or off on the page (and remembered in settings):**
+  - **Group by type**, like Task Manager: *Apps* (a program with a window on the desktop: visible, unowned,
+    not a tool window, not cloaked, titled; a Store app's window is traced from ApplicationFrameHost to the
+    app inside), *Background processes*, and *Windows processes* (Windows' core processes, anything run from
+    the Windows folder, and protected session-0 processes whose path Windows won't give). A program's helper
+    processes go with it: Chrome's renderers sit under Apps with Chrome. Each section shows its count and
+    totals, and folds away with a click (also remembered); a search looks inside folded sections.
+  - **Combine processes:** one row per program (the default), or every process on its own row with its PID,
+    still in its program's section. End task then ends just that one process.
+  - Executable paths are now looked up for every program straight away (cheap), since the sections depend
+    on them; only descriptions and icons are spread over several samples.
 - **End task**, on hover, only for the user's own programs: not services (session 0), not other users', not
   Windows' own (dwm, csrss, svchost and the like), and not Pulse. It always asks first, says how many
   processes will close, and checks each process's start time before ending it, so a reused PID is never hit.
 
 ## Tests
-270 passing (32 new):
+277 passing (39 new):
 - **CPU deltas:** the first sample is a baseline; share of all cores over the interval; a newly started process;
   a reused PID; exited processes; readings out of range; reset after a pause.
 - **GPU:** busiest engine per process, duplicates adding up, idle and malformed instances ignored.
@@ -73,15 +84,23 @@ independent of the UI-heavy steps, so it can move earlier if wanted.
   them through a pause; the "What's heating" titles and heading colors; the dashboard noticing the tile is hidden (which pauses sampling).
 - **Page:** sorting, search, rows kept between updates, only updating while open, End task asking first and
   refusing system programs, the message when Windows refuses.
+- **Groupings:** apps by window, Windows by folder or core name, background otherwise; the three sections in
+  order with totals; grouping off (remembered); folding a section (remembered, and searched through);
+  combining off giving one row per process in its program's section, with End task ending just that one.
 - **Real machine:** the native sample against the `Process` class (it must find this test process with the right
   start time and stay under 50 ms), the GPU counters, and ending a real child process only with its real start time.
 
 Rendered offscreen in dark and light with real processes: the full-width tile, a half-width "What's heating
-your CPU" tile, and the Processes page.
+your CPU" tile, and the Processes page grouped, with a folded section, and flat with one row per process.
+(The on/off switches animate, so offscreen stills show them mid-change; check them in the app.)
+
+## Later, maybe
+- Nest helper processes under their parent like Task Manager does, using the parent PID the same native call
+  already returns: eM Client's `MailClient.Cef.exe` helpers show as a separate background program today.
 
 ## Done when
 - [ ] Running a game shows it at the top of the GPU list within 2 seconds. Not tried with a game yet; the
       sampling interval is 2 s and the GPU counters update per sample.
 - [x] Sampling doesn't show up as a noticeable cost in Pulse's own CPU usage: about 7 ms every 2 s, and only
       while a tile or page shows it. Worth confirming from the once-a-minute line in `pulse.log`.
-- [ ] Not seen yet in the running app: the tile, the page, End task's confirmation dialog.
+- [ ] Not seen yet in the running app: the tile, the page, the grouping switches, End task's confirmation dialog.

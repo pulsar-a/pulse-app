@@ -22,8 +22,32 @@ internal sealed class AppInfoCache
 {
     private const int LookupsPerSample = 24;
     private readonly ConcurrentDictionary<string, AppInfo> _known = new();
+    private readonly ConcurrentDictionary<string, string?> _paths = new();
 
     public AppInfo? Find(string key) => _known.GetValueOrDefault(key);
+
+    /// <summary>A program's executable, or null when Windows won't say. Known for every program after <see cref="ResolvePaths"/>.</summary>
+    public string? PathOf(string key) => _paths.GetValueOrDefault(key);
+
+    /// <summary>
+    /// Finds every new program's executable straight away (one cheap call per process), since the sections
+    /// on the Processes page depend on it; only the slower description and icon wait their turn.
+    /// </summary>
+    public void ResolvePaths(IReadOnlyList<AppUsage> apps)
+    {
+        foreach (var app in apps)
+        {
+            if (_paths.ContainsKey(app.Key))
+                continue;
+            string? path = null;
+            foreach (var member in app.Members)
+            {
+                if ((path = NativeProcesses.ImagePath(member.Pid)) is not null)
+                    break;
+            }
+            _paths[app.Key] = path;
+        }
+    }
 
     /// <summary>
     /// Looks up programs not seen before. The top few by CPU, GPU and memory go first (they're the ones on
@@ -43,19 +67,13 @@ internal sealed class AppInfoCache
                 continue;
             if (lookups++ >= LookupsPerSample)
                 return;
-            _known[app.Key] = Look(app);
+            _known[app.Key] = Look(app, PathOf(app.Key));
         }
     }
 
-    private static AppInfo Look(AppUsage app)
+    private static AppInfo Look(AppUsage app, string? path)
     {
         var fallback = Path.GetFileNameWithoutExtension(app.ImageName) is { Length: > 0 } stem ? stem : app.ImageName;
-        string? path = null;
-        foreach (var member in app.Members)
-        {
-            if ((path = NativeProcesses.ImagePath(member.Pid)) is not null)
-                break;
-        }
         if (path is null)
             return new AppInfo(fallback, null, null);
 

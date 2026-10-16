@@ -37,6 +37,54 @@
             </Style.Triggers>
         </Style>
 
+        <!-- A section heading (Apps, Background processes, Windows processes): click to fold it away. -->
+        <DataTemplate DataType="{x:Type vm:ProcessSectionViewModel}">
+            <Button Command="{Binding ToggleCommand}" Cursor="Hand" Margin="0,12,0,4" AutomationProperties.Name="{Binding Title}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="8" Padding="10,6">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource Pulse.RowHover}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+                <DockPanel>
+                    <Border DockPanel.Dock="Right" Width="{StaticResource ActionColumn}" />
+                    <TextBlock DockPanel.Dock="Right" Width="{StaticResource NumberColumn}" Text="{Binding MemoryText}" TextAlignment="Right"
+                               VerticalAlignment="Center" Style="{StaticResource Caption}" />
+                    <TextBlock DockPanel.Dock="Right" Width="{StaticResource NumberColumn}" Text="{Binding GpuText}" TextAlignment="Right"
+                               VerticalAlignment="Center" Style="{StaticResource Caption}"
+                               Visibility="{Binding DataContext.HasGpu, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock DockPanel.Dock="Right" Width="{StaticResource NumberColumn}" Text="{Binding CpuText}" TextAlignment="Right"
+                               VerticalAlignment="Center" Style="{StaticResource Caption}" />
+                    <ui:SymbolIcon x:Name="Chevron" DockPanel.Dock="Left" Symbol="ChevronDown20" FontSize="14" Width="20" Margin="0,0,12,0"
+                                   VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <ui:SymbolIcon.RenderTransform>
+                            <RotateTransform Angle="0" />
+                        </ui:SymbolIcon.RenderTransform>
+                    </ui:SymbolIcon>
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource CardTitle}" FontSize="14">
+                        <Run Text="{Binding Title, Mode=OneWay}" /> <Run Text="{Binding Count, Mode=OneWay, StringFormat=({0})}"
+                                                                         Foreground="{DynamicResource Pulse.Text.Caption}" FontWeight="Normal" />
+                    </TextBlock>
+                </DockPanel>
+            </Button>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsExpanded}" Value="False">
+                    <Setter TargetName="Chevron" Property="RenderTransform">
+                        <Setter.Value>
+                            <RotateTransform Angle="-90" />
+                        </Setter.Value>
+                    </Setter>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type vm:ProcessRowViewModel}">
             <Border x:Name="Row" Padding="10,7" CornerRadius="8" Background="Transparent" Margin="0,1">
                 <DockPanel>
@@ -108,8 +156,13 @@
         </Grid.RowDefinitions>
 
         <DockPanel Margin="0,0,0,2">
-            <TextBlock DockPanel.Dock="Right" Text="{Binding Summary}" VerticalAlignment="Center"
-                       Style="{StaticResource Secondary}" />
+            <!-- The two groupings, each on or off (remembered). -->
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:ToggleSwitch Content="Group by type" IsChecked="{Binding GroupByType}" Margin="0,0,20,0"
+                                 ToolTip="Sections for apps, background processes and Windows processes, like Task Manager" />
+                <ui:ToggleSwitch Content="Combine processes" IsChecked="{Binding CombinePrograms}"
+                                 ToolTip="One row per program, its processes added up. Off: every process on its own row" />
+            </StackPanel>
             <ui:TextBox MaxWidth="340" HorizontalAlignment="Stretch" Margin="0,0,12,0" PlaceholderText="Search programs"
                         AutomationProperties.Name="Search programs"
                         Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}">
@@ -119,8 +172,11 @@
             </ui:TextBox>
         </DockPanel>
 
-        <TextBlock Grid.Row="1" Text="{Binding Message}" Style="{StaticResource Secondary}" Margin="2,10,0,0" TextWrapping="Wrap"
-                   Visibility="{Binding Message, Converter={x:Static views:Converters.NotNullToVisibility}}" />
+        <StackPanel Grid.Row="1" Margin="2,10,0,0">
+            <TextBlock Text="{Binding Summary}" Style="{StaticResource Caption}" />
+            <TextBlock Text="{Binding Message}" Style="{StaticResource Secondary}" Margin="0,4,0,0" TextWrapping="Wrap"
+                       Visibility="{Binding Message, Converter={x:Static views:Converters.NotNullToVisibility}}" />
+        </StackPanel>
 
         <!-- Column headers: click to sort, click again to flip. -->
         <DockPanel Grid.Row="2" Margin="10,14,16,4">
@@ -149,7 +205,7 @@
         </DockPanel>
 
         <!-- Virtualized: only rows in view get UI elements. -->
-        <ItemsControl Grid.Row="3" ItemsSource="{Binding Rows}" Focusable="False"
+        <ItemsControl Grid.Row="3" ItemsSource="{Binding Items}" Focusable="False"
                       VirtualizingPanel.IsVirtualizing="True"
                       VirtualizingPanel.VirtualizationMode="Recycling"
                       VirtualizingPanel.ScrollUnit="Pixel"

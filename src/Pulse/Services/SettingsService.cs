@@ -25,6 +25,7 @@ public sealed class Settings
     public DashboardSettings Dashboard { get; set; } = new();
     public MiniSettings Mini { get; set; } = new();
     public AppearanceSettings Appearance { get; set; } = new();
+    public Pulse.Services.Processes.ProcessesSettings Processes { get; set; } = new();
 
     /// <summary>Version 1 stored the pump header here; <see cref="SettingsService.Load"/> moves it into roles.</summary>
     [JsonPropertyName("PumpSensorId")]

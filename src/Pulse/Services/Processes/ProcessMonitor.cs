@@ -23,6 +23,7 @@ public sealed class ProcessMonitor : IDisposable
     private readonly AppInfoCache _info = new();
     private readonly SampleStats _stats = new();
     private readonly int _session = Process.GetCurrentProcess().SessionId;
+    private readonly string _windowsFolder = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
     private GpuEngineCounters? _gpu;
     private bool _gpuOpened;
     private Thread? _thread;
@@ -121,6 +122,10 @@ public sealed class ProcessMonitor : IDisposable
         var baseline = !_tracker.HasBaseline;
         var processes = _tracker.Update(samples, DateTime.UtcNow.ToFileTimeUtc(), Environment.ProcessorCount, gpu);
         var apps = ProcessApps.Group(processes, _session, Environment.ProcessId);
+        // Task Manager's sections: apps have a window; Windows processes come from the Windows folder.
+        _info.ResolvePaths(apps);
+        var windows = DesktopWindows.Pids();
+        apps = ProcessApps.Classify(apps, windows.Contains, _info.PathOf, _windowsFolder);
         _info.Resolve(apps);
 
         var list = new ProcessList(processes, apps, gpu is not null, baseline, DateTime.Now);
