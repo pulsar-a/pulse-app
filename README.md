@@ -67,6 +67,8 @@ src/Pulse/
   Services/SensorFormat.cs      Units and number formatting per sensor type
   Services/Processes/           Per-process CPU, GPU and memory sampling, grouped by program
   Services/Coolers/             USB cooler drivers (Corsair Commander), shared politely with iCUE and similar apps
+  Services/Web/                 Phone and web view: a read-only local-network server (off by default)
+  Web/                          The web view's page, embedded in Pulse
   Models/HardwareSnapshot.cs    Snapshot records handed to the UI thread
   ViewModels/                   Dashboard, All sensors and main window state (CommunityToolkit.Mvvm)
   Views/                        XAML for the Dashboard, All sensors and Processes pages

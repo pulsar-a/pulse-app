@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Pulse.Services;
 using Pulse.Services.Coolers;
 using Pulse.Services.History;
+using Pulse.Services.Web;
 
 namespace Pulse.ViewModels;
 
@@ -82,6 +83,111 @@ public partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(ThemeMatchWindows));
         OnPropertyChanged(nameof(ThemeDark));
         OnPropertyChanged(nameof(ThemeLight));
+    }
+
+    // Phone and web view
+
+    private WebHost? _web;
+
+    public void AttachWeb(WebHost web)
+    {
+        _web = web;
+        HasWeb = true;
+        web.Changed += RefreshWeb;
+        RefreshWeb();
+    }
+
+    [ObservableProperty] public partial bool HasWeb { get; private set; }
+
+    public bool WebEnabled
+    {
+        get => _settings.Current.Web.Enabled;
+        set
+        {
+            if (_settings.Current.Web.Enabled == value) return;
+            _settings.Update(s => s.Web.Enabled = value);
+            Log.Write(value ? "Web view turned on" : "Web view turned off");
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>The port as typed; applied when it's a valid one (1024–65535).</summary>
+    public string WebPort
+    {
+        get => _settings.Current.Web.Port.ToString();
+        set
+        {
+            if (!int.TryParse(value, out var port) || port is < 1024 or > 65535)
+            {
+                WebPortError = "Use a number from 1024 to 65535.";
+                return;
+            }
+            WebPortError = null;
+            if (port != _settings.Current.Web.Port)
+                _settings.Update(s => s.Web.Port = port);
+        }
+    }
+
+    [ObservableProperty] public partial string? WebPortError { get; private set; }
+    [ObservableProperty] public partial string WebStatus { get; private set; } = "";
+    [ObservableProperty] public partial string? WebLink { get; private set; }
+    [ObservableProperty] public partial System.Windows.Media.ImageSource? WebQrCode { get; private set; }
+
+    /// <summary>Firewall and network hints, worked out in the background (netsh and WMI take a moment).</summary>
+    [ObservableProperty] public partial string? WebNetworkHint { get; private set; }
+    [ObservableProperty] public partial bool WebNeedsFirewallRule { get; private set; }
+
+    private void RefreshWeb()
+    {
+        if (_web is null) return;
+        WebStatus = _web.Status;
+        if (WebLink != _web.Link)
+        {
+            WebLink = _web.Link;
+            WebQrCode = _web.Link is { } link ? WebHost.QrCode(link) : null;
+        }
+        OnPropertyChanged(nameof(WebEnabled));
+        OnPropertyChanged(nameof(WebPort));
+        if (_web.IsRunning)
+            _ = CheckWebNetworkAsync();
+        else
+        {
+            WebNetworkHint = null;
+            WebNeedsFirewallRule = false;
+        }
+    }
+
+    private async Task CheckWebNetworkAsync()
+    {
+        var (hasRule, onlyPublic) = await Task.Run(() => (WebNetwork.HasFirewallRule(), WebNetwork.OnlyPublicNetworks()));
+        WebNeedsFirewallRule = !hasRule;
+        WebNetworkHint = onlyPublic == true
+            ? "Windows treats this network as Public, so phones can't connect. If it's your home network, set it to Private in Windows Settings → Network & internet → your connection."
+            : hasRule
+                ? "Windows Firewall lets phones in on private networks."
+                : "Windows Firewall will probably block phones until you allow it.";
+    }
+
+    [RelayCommand]
+    private void NewWebLink() => _web?.NewLink();
+
+    [RelayCommand]
+    private void CopyWebLink()
+    {
+        if (WebLink is { } link)
+            System.Windows.Clipboard.SetText(link);
+    }
+
+    /// <summary>Adds the firewall rule (private networks, this port only). Only ever on the user's click.</summary>
+    [RelayCommand]
+    private async Task AllowWebThroughFirewall()
+    {
+        var port = _settings.Current.Web.Port;
+        var ok = await Task.Run(() => WebNetwork.AllowThroughFirewall(port));
+        if (!ok)
+            WebNetworkHint = "Couldn't add the firewall rule. Windows Firewall may be managed by another program.";
+        else
+            await CheckWebNetworkAsync();
     }
 
     // USB coolers

@@ -71,7 +71,7 @@ public partial class MainViewModel : ObservableObject
             if (_isWindowActive == value)
                 return;
             _isWindowActive = value;
-            _hardware.IsIdle = !value && !_isMiniActive;
+            UpdateIdle();
             Log.Write(value ? "Window shown: live updates resumed" : "Window hidden: idle mode");
             UpdateProcessSampling();
 
@@ -92,9 +92,43 @@ public partial class MainViewModel : ObservableObject
         {
             if (_isMiniActive == value) return;
             _isMiniActive = value;
-            _hardware.IsIdle = !_isWindowActive && !value;
+            UpdateIdle();
         }
     }
+
+    /// <summary>A phone or browser is watching the web view: keep reading at full speed even with the window hidden.</summary>
+    public bool IsRemoteActive
+    {
+        get => _isRemoteActive;
+        set
+        {
+            if (_isRemoteActive == value) return;
+            _isRemoteActive = value;
+            UpdateIdle();
+        }
+    }
+
+    private volatile bool _isRemoteActive;
+
+    private void UpdateIdle() => _hardware.IsIdle = !_isWindowActive && !_isMiniActive && !_isRemoteActive;
+
+    // ---- Phone and web view (step 12) -----------------------------------------------------------
+
+    private DashboardViewModel? _webDashboard;
+
+    /// <summary>The history behind the details panel, also read by the web view's charts.</summary>
+    public Services.History.HistoryStore? HistoryStore { get; private set; }
+
+    /// <summary>The web view's own dashboard: never shown, it turns snapshots into the same cards the window has.</summary>
+    public DashboardViewModel CreateWebDashboard() =>
+        _webDashboard = new DashboardViewModel(HardwareService.IsDriverInstalled, _catalog, _stream)
+        {
+            CoolerStatuses = Dashboard.CoolerStatuses,
+        };
+
+    /// <summary>The name in the header: the motherboard, or the PC's name.</summary>
+    public static string MachineNameOf(HardwareSnapshot snapshot) =>
+        snapshot.OfType(HardwareType.Motherboard).FirstOrDefault()?.Name ?? Environment.MachineName;
 
     /// <summary>Opens or closes the mini window; set by the app.</summary>
     public Action? ToggleMini { get; set; }
@@ -119,6 +153,7 @@ public partial class MainViewModel : ObservableObject
     public void AttachHistory(Services.History.HistoryRecorder recorder, Services.History.HistoryStore store)
     {
         Settings.AttachHistory(recorder);
+        HistoryStore = store;
         Details = new SensorDetailsViewModel(store, _stream, _catalog, _settings, CreateAlert) { PinBoard = Dashboard, CardAccent = Dashboard.CardAccent };
     }
 
@@ -139,6 +174,8 @@ public partial class MainViewModel : ObservableObject
         void Apply()
         {
             Dashboard.CoolerStatuses = coolers.Statuses;
+            if (_webDashboard is not null)
+                _webDashboard.CoolerStatuses = coolers.Statuses;
             Settings.SetCoolers(coolers.Statuses);
             if (_stream.Latest is { } latest && IsDashboardSelected)
                 Dashboard.Apply(latest);
@@ -306,8 +343,7 @@ public partial class MainViewModel : ObservableObject
             return;
 
         var sw = Stopwatch.StartNew();
-        var board = snapshot.OfType(HardwareType.Motherboard).FirstOrDefault();
-        MachineName = board?.Name ?? Environment.MachineName;
+        MachineName = MachineNameOf(snapshot);
         StatusText = $"Live · updated {snapshot.Timestamp:HH:mm:ss}";
 
         _catalog.Update(snapshot);

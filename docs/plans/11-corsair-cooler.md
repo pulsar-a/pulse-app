@@ -36,7 +36,7 @@ only way to get coolant temperature on this machine.
 - **The device:** USB `1B1C:0C32`, a composite device with two HID interfaces (`MI_00`, `MI_01`).
   liquidctl lists `0x0c32` as the **Corsair Commander ST**. Also on this PC: `1B1C:1C07` (the Corsair PSU,
   which LHM already reads) and `1B1C:0C39` (a consumer-control HID device, not part of the cooler protocol).
-  Firmware is not read yet: that needs the probe.
+  Firmware 2.0.19 (read by the probe, below).
 - **iCUE is resident:** `Corsair.Service` runs in the background even with the iCUE window closed, so iCUE
   owns the controller unless that service is stopped.
 - **Protocol** (liquidctl `commander_core.py`): HID interface 0, 96-byte reports, byte 1 always `0x08`.
@@ -126,7 +126,7 @@ Pulse is meant for other people's PCs too, so this is a small driver layer rathe
   fixtures). Refuses while iCUE or similar (or Pulse) is running; `ARGS=--force` overrides.
 
 ## Tasks
-- [x] Confirm the device model (Commander ST, `1B1C:0C32`, 64-byte reports). Firmware: pending the probe.
+- [x] Confirm the device model (Commander ST, `1B1C:0C32`, 64-byte reports, firmware 2.0.19).
 - [x] Driver layer for several devices, Corsair Commander driver (read-only).
 - [x] Reader integrated into the polling pipeline with throttling and recovery.
 - [x] iCUE (and other cooler software) detection and behavior.
@@ -135,10 +135,6 @@ Pulse is meant for other people's PCs too, so this is a small driver layer rathe
 - [ ] Compare the readings with iCUE (±1 °C, ±50 rpm).
 - [ ] See it in Pulse itself: the cooling card with the Corsair pump and coolant, and pausing when iCUE starts.
 - [ ] Optional: offer the driver to LibreHardwareMonitor upstream.
-- [ ] Probe tool and go/no-go decision, written into this file.
-- [ ] Reader integrated into the polling pipeline with throttling and recovery.
-- [ ] iCUE detection and behavior.
-- [ ] Tests: packet parsing against captured responses.
 
 ## Tests
 299 passing (22 new): packets; replies parsed in liquidctl's documented layouts; malformed replies rejected;

@@ -27,10 +27,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The phone and web view's page, served from inside Pulse (no CDNs, works offline on the LAN). -->
+    <EmbeddedResource Include="Web\*" LogicalName="Pulse.Web.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <!-- QR codes for the phone link (MIT, no dependencies). -->
+    <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
   </ItemGroup>
 

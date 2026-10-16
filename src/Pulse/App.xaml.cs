@@ -20,6 +20,7 @@ public partial class App : Application
     private MiniController? _mini;
     private ProcessMonitor? _processes;
     private Pulse.Services.Coolers.CoolerService? _coolers;
+    private Pulse.Services.Web.WebHost? _web;
     private bool _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -139,6 +140,15 @@ public partial class App : Application
         _coolers.Start();
         viewModel.AttachCoolers(_coolers);
 
+        // The phone and web view: off until turned on in Settings; then a read-only page on the local network.
+        var feed = new Pulse.Services.Web.WebFeed(Dispatcher, stream, viewModel.CreateWebDashboard,
+            () => viewModel.Alerts?.Items ?? Enumerable.Empty<AlertItem>(), MainViewModel.MachineNameOf);
+        var server = new Pulse.Services.Web.WebServer(feed, () => viewModel.HistoryStore, () => settings.Current.Web.Token);
+        server.StreamsChanged += () => Dispatcher.BeginInvoke(() => viewModel.IsRemoteActive = server.Streams > 0);
+        _web = new Pulse.Services.Web.WebHost(settings, server);
+        viewModel.Settings.AttachWeb(_web);
+        _web.Apply();
+
         // If Pulse was moved since "Start with Windows" was turned on, point the task at the new location.
         if (HardwareService.IsElevated && Environment.ProcessPath is { } exe)
             _ = StartupTask.RepairPathAsync(exe);
@@ -208,6 +218,7 @@ public partial class App : Application
         // Remove the tray icon first, so it doesn't linger in the notification area.
         _tray?.Dispose();
         _mini?.Dispose();
+        _web?.Dispose();
         _processes?.Dispose();
         _hardware?.Dispose();
         // Its reads always end by handing the cooler back to its own curves; this just stops the loop.

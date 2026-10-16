@@ -413,6 +413,63 @@
                 </StackPanel>
             </Border>
 
+            <!-- Phone and web view -->
+            <Border Style="{StaticResource PulseCard}" Visibility="{Binding HasWeb, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="Phone and web view" Style="{StaticResource SectionTitle}" />
+                    <DockPanel>
+                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding WebEnabled}" VerticalAlignment="Center"
+                                         AutomationProperties.Name="Phone and web view" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="See this PC's dashboard from a phone" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="A read-only page, live every second, for phones and computers on the same local network. Nothing on the internet can reach it, and only devices with the link get in."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock Text="{Binding WebStatus}" Style="{StaticResource Caption}" Margin="0,8,0,0" TextWrapping="Wrap" />
+
+                    <!-- While on: the link and its QR code, the port, and the firewall. -->
+                    <StackPanel Margin="0,12,0,0" Visibility="{Binding WebEnabled, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel Visibility="{Binding WebLink, Converter={x:Static views:Converters.NotNullToVisibility}}">
+                            <Border DockPanel.Dock="Left" Background="White" CornerRadius="10" Padding="8" Margin="0,0,16,0">
+                                <Image Source="{Binding WebQrCode}" Width="148" Height="148" RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                       AutomationProperties.Name="QR code with the link" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Scan with the phone's camera, or open:" Style="{StaticResource Caption}" />
+                                <TextBlock Text="{Binding WebLink}" TextWrapping="Wrap" Margin="0,4,0,8" FontFamily="Consolas" FontSize="12" />
+                                <WrapPanel>
+                                    <ui:Button Content="Copy link" Margin="0,0,6,6" Command="{Binding CopyWebLinkCommand}" />
+                                    <ui:Button Content="New link" Margin="0,0,6,6" Command="{Binding NewWebLinkCommand}"
+                                               ToolTip="Makes a new link. The old one, and every phone using it, stops working." />
+                                </WrapPanel>
+                                <TextBlock Text="Anyone with this link on your network can see your PC's readings. Make a new link to shut them out."
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <DockPanel Margin="0,14,0,0">
+                            <ui:TextBox DockPanel.Dock="Right" Width="110" Text="{Binding WebPort, UpdateSourceTrigger=LostFocus}"
+                                        AutomationProperties.Name="Port" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Port" Style="{StaticResource SettingLabel}" />
+                                <TextBlock Text="{Binding WebPortError}" Foreground="{DynamicResource Pulse.Danger.Text}" FontSize="12"
+                                           Visibility="{Binding WebPortError, Converter={x:Static views:Converters.NotNullToVisibility}}" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <DockPanel Margin="0,14,0,0" Visibility="{Binding WebNetworkHint, Converter={x:Static views:Converters.NotNullToVisibility}}">
+                            <ui:Button DockPanel.Dock="Right" Content="Allow in Windows Firewall" VerticalAlignment="Center"
+                                       Command="{Binding AllowWebThroughFirewallCommand}"
+                                       ToolTip="Adds an inbound rule for this port, on private networks only"
+                                       Visibility="{Binding WebNeedsFirewallRule, Converter={StaticResource BoolToVisibility}}" />
+                            <TextBlock Text="{Binding WebNetworkHint}" Style="{StaticResource Caption}" TextWrapping="Wrap"
+                                       VerticalAlignment="Center" Margin="0,0,16,0" />
+                        </DockPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- USB coolers -->
             <Border Style="{StaticResource PulseCard}">
                 <StackPanel>

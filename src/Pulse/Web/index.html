@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#16171b">
+  <title>Pulse</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1 id="machine">Pulse</h1>
+      <p class="status"><span id="dot" class="dot"></span><span id="status">Connecting…</span></p>
+    </div>
+  </header>
+
+  <main>
+    <section id="alerts" class="alerts" hidden></section>
+    <section id="gauges" class="grid"></section>
+    <section id="cooling" class="card"></section>
+    <section id="fans" class="card" hidden></section>
+    <section id="drives" class="card" hidden></section>
+    <section id="network" class="card" hidden></section>
+  </main>
+
+  <!-- History of one reading: tap a card. -->
+  <div id="sheet" class="sheet" hidden>
+    <div class="sheet-card">
+      <div class="sheet-head">
+        <h2 id="sheet-title"></h2>
+        <button id="sheet-close" class="close" aria-label="Close">×</button>
+      </div>
+      <div class="ranges" role="group" aria-label="Range">
+        <button data-range="1h" class="on">1 hour</button>
+        <button data-range="24h">24 hours</button>
+        <button data-range="7d">7 days</button>
+      </div>
+      <svg id="chart" class="chart" viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <p id="sheet-stats" class="caption"></p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
