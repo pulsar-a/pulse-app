@@ -585,6 +585,17 @@
                                            Style="{StaticResource Caption}" TextWrapping="Wrap" />
                             </StackPanel>
                         </DockPanel>
+                        <StackPanel Margin="0,12,0,0">
+                            <TextBlock Text="Which versions" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="Until you choose, a beta gets betas and a stable version gets stable versions. Switching a beta to stable never goes back a version: it stays until a newer stable version is out."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            <WrapPanel Margin="0,8,0,0">
+                                <RadioButton Content="Stable versions only" GroupName="UpdateChannel" Margin="0,0,24,4"
+                                             IsChecked="{Binding StableUpdatesOnly}" />
+                                <RadioButton Content="Betas too: new features sooner, a few more rough edges" GroupName="UpdateChannel"
+                                             Margin="0,0,0,4" IsChecked="{Binding BetaUpdates}" />
+                            </WrapPanel>
+                        </StackPanel>
                         <DockPanel Margin="0,12,0,0">
                             <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding KeepDataOnUninstall}" VerticalAlignment="Center"
                                              AutomationProperties.Name="Keep settings and history when uninstalling" />

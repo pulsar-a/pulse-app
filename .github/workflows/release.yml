@@ -1,7 +1,7 @@
 # Publishes a release when a version tag is pushed (step 14): `git tag v0.2.0 && git push origin v0.2.0`.
 # Builds and tests, packages with Velopack (installer, update packages, portable zip), and creates the GitHub
-# Release that installed copies update from. A tag with a suffix (v0.2.0-beta.1) makes a pre-release, which
-# installed copies don't pick up.
+# Release that installed copies update from. A tag with a suffix (v0.2.0-beta.1) makes a pre-release, which only
+# copies on the beta channel pick up (betas by default, or anyone who chose "Betas too" in Settings → About).
 name: Release
 
 on:

@@ -75,6 +75,34 @@ public class ReleaseTests : PulseTest
         Assert.False(UpdatePolicy.ShouldCheck(false, null, Now));
     }
 
+    [Theory]
+    [InlineData(null, false, UpdateChannel.Stable)]                 // not chosen, stable copy: stable releases
+    [InlineData(null, true, UpdateChannel.Beta)]                    // not chosen, a beta: the next beta
+    [InlineData(UpdateChannel.Stable, true, UpdateChannel.Stable)]  // a beta tester going back to stable
+    [InlineData(UpdateChannel.Beta, false, UpdateChannel.Beta)]     // a stable user opting in
+    [InlineData(UpdateChannel.Stable, false, UpdateChannel.Stable)]
+    public void The_users_choice_wins_and_until_then_it_follows_the_running_version(
+        UpdateChannel? chosen, bool runningPrerelease, UpdateChannel expected) =>
+        Assert.Equal(expected, UpdatePolicy.Channel(chosen, runningPrerelease));
+
+    [Fact]
+    public void The_channel_choice_is_saved()
+    {
+        var settings = NewSettings();
+        var page = new Pulse.ViewModels.SettingsViewModel(settings, new SensorCatalog(settings), true, new SensorStream());
+        page.AttachUpdates(new UpdateService(settings, () => false), () => { });
+
+        Assert.True(page.StableUpdatesOnly);   // a copy built from source counts as stable
+        Assert.Null(settings.Current.Updates.Channel);
+
+        page.BetaUpdates = true;
+        Assert.Equal(UpdateChannel.Beta, settings.Current.Updates.Channel);
+        Assert.False(page.StableUpdatesOnly);
+
+        page.StableUpdatesOnly = true;
+        Assert.Equal(UpdateChannel.Stable, settings.Current.Updates.Channel);
+    }
+
     [Fact]
     public void An_update_never_restarts_pulse_during_a_critical_alert()
     {
@@ -89,6 +117,7 @@ public class ReleaseTests : PulseTest
 
         Assert.True(updates.AutoInstall);
         Assert.True(updates.KeepDataOnUninstall);
+        Assert.Null(updates.Channel);   // follows the running version until chosen
         Assert.Null(updates.LastCheck);
     }
 

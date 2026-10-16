@@ -3,11 +3,24 @@ using Velopack.Sources;
 
 namespace Pulse.Services.Updates;
 
+/// <summary>Which releases count as updates.</summary>
+public enum UpdateChannel
+{
+    /// <summary>Stable releases only.</summary>
+    Stable,
+
+    /// <summary>Pre-releases (betas) too.</summary>
+    Beta,
+}
+
 /// <summary>Settings → About → Updates.</summary>
 public sealed class UpdateSettings
 {
     /// <summary>Check daily and install on the next exit (on by default).</summary>
     public bool AutoInstall { get; set; } = true;
+
+    /// <summary>The user's choice of releases; null until they make one, and then it follows the running version.</summary>
+    public UpdateChannel? Channel { get; set; }
 
     /// <summary>Uninstalling keeps settings and history unless the user turns this off (read by <see cref="UninstallCleanup"/>).</summary>
     public bool KeepDataOnUninstall { get; set; } = true;
@@ -40,6 +53,15 @@ public static class UpdatePolicy
     public static bool ShouldCheck(bool autoInstall, DateTime? lastCheck, DateTime now) =>
         autoInstall && (lastCheck is not { } last || now - last >= CheckEvery || last > now);
 
+    /// <summary>
+    /// The channel in effect: the user's choice when they made one; otherwise a beta keeps getting betas (someone
+    /// testing one wants the next one, not to wait for a stable release) and a stable copy gets stable releases.
+    /// Choosing Stable on a beta never downgrades: Velopack only offers versions newer than the running one, so it
+    /// stays put until a newer stable release is out.
+    /// </summary>
+    public static UpdateChannel Channel(UpdateChannel? chosen, bool runningPrerelease) =>
+        chosen ?? (runningPrerelease ? UpdateChannel.Beta : UpdateChannel.Stable);
+
     /// <summary>A restart takes the monitoring away for a moment: never while a critical alert (a stopped pump) is on.</summary>
     public static bool MayRestartNow(bool criticalAlert) => !criticalAlert;
 }
@@ -57,6 +79,7 @@ public sealed class UpdateService
     private readonly SettingsService _settings;
     private readonly Func<bool> _criticalAlert;
     private readonly UpdateManager? _manager;
+    private UpdateManager? _active;
     private UpdateInfo? _pending;
 
     /// <param name="criticalAlert">Whether a critical alert is firing right now.</param>
@@ -86,6 +109,12 @@ public sealed class UpdateService
 
     public int Progress { get; private set; }
 
+    /// <summary>This copy is a pre-release (a beta, or a local build like 0.0.1-local).</summary>
+    public bool RunningPrerelease => _manager?.CurrentVersion?.IsPrerelease == true;
+
+    /// <summary>The channel in effect right now (see <see cref="UpdatePolicy.Channel"/>).</summary>
+    public UpdateChannel Channel => UpdatePolicy.Channel(_settings.Current.Updates.Channel, RunningPrerelease);
+
     public event Action? Changed;
 
     /// <summary>The automatic check, called on a timer: does nothing unless it's due.</summary>
@@ -102,27 +131,33 @@ public sealed class UpdateService
         Set(UpdateState.Checking, "Checking for updates…");
         try
         {
-            var update = await _manager.CheckForUpdatesAsync();
+            // The same app either way; only which releases on GitHub count.
+            var betas = Channel == UpdateChannel.Beta;
+            var manager = betas ? new UpdateManager(new GithubSource(RepositoryUrl, accessToken: null, prerelease: true)) : _manager;
+            var update = await manager.CheckForUpdatesAsync();
             _settings.Update(s => s.Updates.LastCheck = DateTime.UtcNow);
             if (update is null)
             {
-                Set(UpdateState.UpToDate, $"Pulse {_manager.CurrentVersion} is the latest version.");
+                Set(UpdateState.UpToDate, betas
+                    ? $"Pulse {_manager.CurrentVersion} is the latest version, betas included."
+                    : $"Pulse {_manager.CurrentVersion} is the latest stable version.");
                 return;
             }
 
             var version = update.TargetFullRelease.Version;
             Set(UpdateState.Downloading, $"Downloading Pulse {version}…");
-            await _manager.DownloadUpdatesAsync(update, p =>
+            await manager.DownloadUpdatesAsync(update, p =>
             {
                 Progress = p;
                 Changed?.Invoke();
             });
             _pending = update;
+            _active = manager;
             Log.Write($"Update {version} downloaded");
 
             // Installs when Pulse exits, unless the user restarts into it sooner.
             if (_settings.Current.Updates.AutoInstall)
-                _manager.WaitExitThenApplyUpdates(update.TargetFullRelease, silent: true, restart: false);
+                manager.WaitExitThenApplyUpdates(update.TargetFullRelease, silent: true, restart: false);
             Set(UpdateState.Ready, $"Pulse {version} is ready. It installs when Pulse exits, or restart now.");
         }
         catch (Exception ex)
@@ -135,7 +170,7 @@ public sealed class UpdateService
     /// <summary>Restarts into the downloaded version, unless a critical alert is on.</summary>
     public bool RestartToUpdate()
     {
-        if (_manager is null || _pending is null)
+        if (_active is null || _pending is null)
             return false;
         if (!UpdatePolicy.MayRestartNow(_criticalAlert()))
         {
@@ -143,7 +178,7 @@ public sealed class UpdateService
             return false;
         }
         Log.Write($"Restarting into {PendingVersion}");
-        _manager.ApplyUpdatesAndRestart(_pending.TargetFullRelease);
+        _active.ApplyUpdatesAndRestart(_pending.TargetFullRelease);
         return true;
     }
 

@@ -183,8 +183,14 @@ asking for admin rights looks exactly like malware. The options (check current p
   what needs admin (the task, the firewall rule) to an elevated helper (`--uninstall-cleanup`): one UAC prompt,
   only if there's something to remove. Then the data folder goes only if the user turned "keep" off.
 - **Release workflow** (`v*` tag): test, publish (ReadyToRun), fetch the previous release for delta updates,
-  `vpk pack`, then `vpk upload github --publish`. A tag with a suffix (`v0.2.0-beta.1`) makes a pre-release,
-  which installed copies don't pick up.
+  `vpk pack`, then `vpk upload github --publish`. A tag with a suffix (`v0.2.0-beta.1`) makes a pre-release.
+- **Stable or beta:** Settings → About → "Which versions": "Stable versions only" or "Betas too". Until the user
+  chooses, it follows the running version (a beta gets the next beta, a stable copy gets stable releases); a choice
+  always wins. Switching a beta to stable never downgrades: it stays until a newer stable release is out.
+  Found with `v0.2.0-beta.1`, the first real release: the first version skipped pre-releases altogether, so a
+  beta could never update to the next beta, and the status said "the latest version" when it meant "the
+  latest stable version". Copies from before the fix (`v0.2.0-beta.1`, local builds) still skip betas:
+  install `v0.2.0-beta.2` or later by hand once.
 - Tests (18 new): the elevation rules; one copy finding and waking another (with its own object names, so a
   running Pulse is never touched); the update policy; defaults; a copy not installed never updating; and the
   uninstall steps against a fake system (one prompt, none when not needed, a declined prompt reported, the data

@@ -115,6 +115,28 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>"Stable versions only": shows the channel in effect; picking it makes the choice explicit.</summary>
+    public bool StableUpdatesOnly
+    {
+        get => (_updates?.Channel ?? UpdateChannel.Stable) == UpdateChannel.Stable;
+        set { if (value) SetChannel(UpdateChannel.Stable); }
+    }
+
+    public bool BetaUpdates
+    {
+        get => _updates?.Channel == UpdateChannel.Beta;
+        set { if (value) SetChannel(UpdateChannel.Beta); }
+    }
+
+    private void SetChannel(UpdateChannel channel)
+    {
+        if (_settings.Current.Updates.Channel == channel) return;
+        _settings.Update(s => s.Updates.Channel = channel);
+        Log.Write($"Update channel: {channel}");
+        OnPropertyChanged(nameof(StableUpdatesOnly));
+        OnPropertyChanged(nameof(BetaUpdates));
+    }
+
     public bool KeepDataOnUninstall
     {
         get => _settings.Current.Updates.KeepDataOnUninstall;
@@ -140,6 +162,8 @@ public partial class SettingsViewModel : ObservableObject
             _ => _updates.Status,
         };
         CanCheckForUpdates = _updates.State is UpdateState.Idle or UpdateState.UpToDate or UpdateState.Failed;
+        OnPropertyChanged(nameof(StableUpdatesOnly));
+        OnPropertyChanged(nameof(BetaUpdates));
         CanRestartToUpdate = _updates.State == UpdateState.Ready;
     }
 
