@@ -154,12 +154,56 @@ asking for admin rights looks exactly like malware. The options (check current p
   not over-redacted; settings losing only the token; reading the tail of a log being written; a report before
   the first reading; the Windows version line. 338 passing.
 
+### Installer, updates and elevation (built; real-install checks pending)
+- **Velopack 1.2.161**, packId **`PulseApp`**: it installs to `%LOCALAPPDATA%\PulseApp\`, apart from the data in
+  `%LOCALAPPDATA%\Pulse\`, so uninstalling can never take settings and history along by accident.
+  `make package` builds the same packages locally (with vpk installed). Checked: a local build makes
+  `PulseApp-win-Setup.exe` (26 MB), a full update package (18 MB) and a portable zip, in about 3 seconds.
+- **Pulse elevates itself.** With `highestAvailable` in the manifest, Windows refuses to start Pulse from a
+  non-elevated program for an admin user (error 740). The installer, updater and uninstaller are such programs:
+  they start the app for their hooks and to restart it. So the manifest is now `asInvoker`, and `Program.Main`
+  (which replaces WPF's generated entry point) does:
+  1. Velopack's hooks, which exit before anything else runs.
+  2. If a copy is already running, bring it to the front and exit, so a second launch never shows a UAC
+     prompt just to focus a window.
+  3. If Pulse isn't elevated but could be (an admin with UAC's limited token), start an elevated copy and exit.
+     When "Start with Windows" is on, that goes through its scheduled task, which runs elevated **with no prompt
+     at all**, and the new copy is then asked to show its window. Otherwise the UAC prompt appears, as before.
+  4. If the prompt is declined, Pulse now runs with fewer sensors (and the banner says why) instead of not starting.
+  Standard users and debugger sessions run as they are. `--no-elevate` skips it.
+- **Focusing across elevation:** the activation event now has a security descriptor (user, SYSTEM and
+  administrators, with a Medium "no-write-up" label), so a non-elevated launch may signal the elevated copy.
+  Before, it couldn't, and the code said so.
+- **Updates in Settings → About:** the status line, "Check for updates", "Restart to update", "Install updates
+  automatically" (daily; the update installs when Pulse exits), and "Keep my settings and history when
+  uninstalling". A copy that wasn't installed (built from source, or the zip) says so and never updates itself.
+  A restart never happens during a critical alert. "Restart to update" shuts the services down first (tray
+  icon, history, settings), since the updater ends the process.
+- **Uninstalling:** the hook removes the toast identity, tries to remove the startup task unelevated, and hands
+  what needs admin (the task, the firewall rule) to an elevated helper (`--uninstall-cleanup`): one UAC prompt,
+  only if there's something to remove. Then the data folder goes only if the user turned "keep" off.
+- **Release workflow** (`v*` tag): test, publish (ReadyToRun), fetch the previous release for delta updates,
+  `vpk pack`, then `vpk upload github --publish`. A tag with a suffix (`v0.2.0-beta.1`) makes a pre-release,
+  which installed copies don't pick up.
+- Tests (18 new): the elevation rules; one copy finding and waking another (with its own object names, so a
+  running Pulse is never touched); the update policy; defaults; a copy not installed never updating; and the
+  uninstall steps against a fake system (one prompt, none when not needed, a declined prompt reported, the data
+  folder only by choice, a locked data folder reported). 360 passing.
+
+#### To check on a real install (needs a release and you at the keyboard)
+1. Push a pre-release tag (`v0.2.0-beta.1`) and watch the workflow.
+2. Install with `PulseApp-win-Setup.exe`. Expect one UAC prompt when it starts Pulse.
+3. Settings → Startup → "Start with Windows" on, exit, start Pulse from the Start menu: no prompt.
+4. Launch it again while it runs: the window comes to the front, no prompt.
+5. Push `v0.2.0-beta.2`, then Check for updates → Restart to update: back up on the new version, elevated.
+6. Uninstall from Windows Settings → Apps: one UAC prompt; no task, no firewall rule left; data kept.
+
 ## Decisions for you
 - **License:** MIT (simplest, most permissive) or GPL-3.0 (keeps forks open; also lets the Corsair driver be
   offered to LHM, which is MPL-2.0, either way). Needed before the repository is public.
 - **Public repository?** Needed for SignPath's free signing and for GitHub Releases to serve updates without a token.
 - **Signing route:** one of the three above.
-- **Data folder fix:** `PulseApp` packId or moving the data (the spike decides if you don't mind which).
+- ~~Data folder fix~~: decided, packId `PulseApp` (see Progress).
 
 ## Risks
 - **Elevation and updates:** `highestAvailable` and per-user installers don't fit together naturally (spikes in 3 and 5).
@@ -174,13 +218,16 @@ asking for admin rights looks exactly like malware. The options (check current p
 - [ ] License, `THIRD-PARTY-NOTICES.md`, README install section (your decisions first).
 - [x] CI: build and test on push and pull request (`.github/workflows/ci.yml`). Not run yet: it starts with the next push.
 - [x] Version from the git tag (MinVer): between tags it's `0.1.0-alpha.0.<commits>`; tag `v0.2.0` makes it 0.2.0.
-- [ ] Release workflow publishing a GitHub Release.
+- [x] Release workflow publishing a GitHub Release (`.github/workflows/release.yml`, on a `v*` tag). Not run yet.
 - [x] Copy diagnostics with redaction and a preview, from Settings → About and the tray menu.
-- [ ] Spikes: data folder, elevated restart after update, startup task path, toasts and tray after install,
-      uninstall rights.
-- [ ] Velopack packaging in the release workflow; in-app update check and install.
+- [x] Spikes, on paper: data folder (packId `PulseApp`), elevation (the manifest is now `asInvoker`; Pulse
+      elevates itself), uninstall rights (an elevated helper for the task and rule). See Progress.
+- [ ] Spikes, on a real install: the elevated restart after an update, the startup task's path, toasts and
+      the tray icon after install, and the uninstall prompt.
+- [x] Velopack packaging in the release workflow; in-app update check and install (Settings → About).
 - [ ] First-run setup pages.
-- [ ] Uninstall hook: task, firewall rule, registry entries, data folder by the user's choice.
+- [x] Uninstall hook: task, firewall rule, toast identity, data folder by the user's choice. The tray-promotion
+      entry stays (Windows keeps one per exe path, harmless).
 - [ ] Code signing in the release workflow.
 - [ ] Tests: diagnostics redaction; the update policy (no update during a critical alert, daily check); uninstall
       cleanup against a fake system (task, rule and keys behind an interface).

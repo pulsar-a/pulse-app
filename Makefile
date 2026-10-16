@@ -4,7 +4,7 @@ CONFIG  ?= Debug
 EXE     ?= src/Pulse/bin/$(CONFIG)/net10.0-windows10.0.19041.0/win-x64/Pulse.exe
 FIXTURE ?= $(CURDIR)/tests/Pulse.Tests/Fixtures/admin.json
 
-.PHONY: start build test snapshot icon publish clean probe probe-read
+.PHONY: start build test snapshot icon publish package clean probe probe-read
 
 # Build, then launch through the Windows shell so the admin (UAC) prompt appears.
 # `dotnet run` can't do that from a non-elevated terminal and fails with error 740.
@@ -26,6 +26,12 @@ snapshot: build
 # Needs the .NET 10 runtime on the target machine.
 publish:
 	dotnet publish $(PROJECT) -c Release -r win-x64 --self-contained false -p:PublishReadyToRun=true -o artifacts/publish --nologo
+
+# The installer and update packages, as a release builds them (artifacts/releases). Needs vpk:
+# dotnet tool install -g vpk --version 1.2.161. VERSION=0.2.0 to pick the version.
+VERSION ?= 0.0.1-local
+package: publish
+	vpk pack --packId PulseApp --packVersion $(VERSION) --packDir artifacts/publish --mainExe Pulse.exe --packTitle Pulse --icon src/Pulse/Resources/Pulse.ico --framework net10-x64-desktop -o artifacts/releases
 
 # Redraw the app icon (src/Pulse/Resources/Pulse.ico and PNGs) from tools/IconGen.
 icon:

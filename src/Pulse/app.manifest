@@ -4,9 +4,10 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- Reading CPU, motherboard and drive sensors requires admin rights.
-             Admins get an elevation prompt; standard users run with limited sensors. -->
-        <requestedExecutionLevel level="highestAvailable" uiAccess="false" />
+        <!-- Pulse needs admin rights for CPU, motherboard and drive sensors, but asks for them itself (Elevation.cs):
+             with highestAvailable here, Windows refuses to start it from any non-elevated program (error 740),
+             including the installer and updater. Admins still get one prompt; standard users run with fewer sensors. -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>

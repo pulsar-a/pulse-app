@@ -28,6 +28,7 @@ public sealed class Settings
     public Pulse.Services.Processes.ProcessesSettings Processes { get; set; } = new();
     public Pulse.Services.Coolers.CoolerSettings Coolers { get; set; } = new();
     public Pulse.Services.Web.WebSettings Web { get; set; } = new();
+    public Pulse.Services.Updates.UpdateSettings Updates { get; set; } = new();
 
     /// <summary>Version 1 stored the pump header here; <see cref="SettingsService.Load"/> moves it into roles.</summary>
     [JsonPropertyName("PumpSensorId")]

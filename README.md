@@ -123,8 +123,8 @@ Pulse is WPF on .NET 10 with [WPF-UI](https://github.com/lepoco/wpfui) and
 
 ### Run and test
 
-- **Rider:** start Rider **as administrator** (otherwise launching fails with Windows error 740), open
-  `Pulse.slnx`, pick the **Pulse** configuration, Run.
+- **Rider:** open `Pulse.slnx`, pick the **Pulse** configuration, Run. Under the debugger Pulse doesn't ask for
+  admin rights (that would start a second, undebugged copy), so start Rider **as administrator** to see every sensor.
 - **Command line:**
 
 | Target | What it does |
@@ -134,12 +134,16 @@ Pulse is WPF on .NET 10 with [WPF-UI](https://github.com/lepoco/wpfui) and
 | `make test` | Run the tests; works while Pulse is open |
 | `make snapshot` | Record every sensor once, as admin, to `tests/Pulse.Tests/Fixtures/admin.json` (close Pulse first) |
 | `make publish` | Release build with ReadyToRun in `artifacts/publish` |
+| `make package` | The installer and update packages, as a release builds them, in `artifacts/releases` (needs `vpk`) |
 | `make probe` | List supported USB coolers and any cooler software running (sends nothing) |
 | `make probe-read` | Read a USB cooler once and log every exchange (close Pulse and iCUE first) |
 | `make icon` | Redraw the app icon from `tools/IconGen` |
 | `make clean` | Remove build output |
 
-Only one Pulse runs at a time; launching it again brings the open window to the front.
+Only one Pulse runs at a time; launching it again brings the open window to the front. Pulse asks for admin
+rights itself (the manifest is `asInvoker`), so `--no-elevate` runs it without them, and under a debugger it
+doesn't ask. **Releases** are a tag away: `git tag v0.2.0 && git push origin v0.2.0` builds, packages and
+publishes them (`.github/workflows/release.yml`).
 
 ### How it fits together
 

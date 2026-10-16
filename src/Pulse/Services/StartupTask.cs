@@ -66,6 +66,18 @@ public static class StartupTask
     }
 
     /// <summary>
+    /// Starts the task now: Pulse, elevated, in the tray, without a UAC prompt (the task was created as admin).
+    /// How a non-elevated launch gets an elevated Pulse when "Start with Windows" is on (see <see cref="Elevation"/>).
+    /// </summary>
+    public static async Task<bool> RunNowAsync()
+    {
+        var (exitCode, output) = await RunSchtasksAsync("/Run", "/TN", TaskName);
+        if (exitCode != 0)
+            Log.Write($"Couldn't start the startup task (exit code {exitCode}): {output.Trim()}");
+        return exitCode == 0;
+    }
+
+    /// <summary>
     /// If Pulse was moved since the task was created, the task would launch a missing file.
     /// Re-point it at the current exe. Does nothing if there's no task or it's already correct.
     /// </summary>

@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Pulse.Services;
 using Pulse.Services.Coolers;
 using Pulse.Services.History;
+using Pulse.Services.Updates;
 using Pulse.Services.Web;
 
 namespace Pulse.ViewModels;
@@ -84,6 +85,69 @@ public partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(ThemeDark));
         OnPropertyChanged(nameof(ThemeLight));
     }
+
+    // About → Updates
+
+    private UpdateService? _updates;
+    private Action? _restartToUpdate;
+
+    public void AttachUpdates(UpdateService updates, Action restartToUpdate)
+    {
+        _updates = updates;
+        _restartToUpdate = restartToUpdate;
+        updates.Changed += RefreshUpdates;
+        RefreshUpdates();
+    }
+
+    [ObservableProperty] public partial string UpdateStatus { get; private set; } = "";
+    [ObservableProperty] public partial bool CanCheckForUpdates { get; private set; }
+    [ObservableProperty] public partial bool CanRestartToUpdate { get; private set; }
+    [ObservableProperty] public partial bool IsInstalled { get; private set; }
+
+    public bool AutoInstallUpdates
+    {
+        get => _settings.Current.Updates.AutoInstall;
+        set
+        {
+            if (_settings.Current.Updates.AutoInstall == value) return;
+            _settings.Update(s => s.Updates.AutoInstall = value);
+            OnPropertyChanged();
+        }
+    }
+
+    public bool KeepDataOnUninstall
+    {
+        get => _settings.Current.Updates.KeepDataOnUninstall;
+        set
+        {
+            if (_settings.Current.Updates.KeepDataOnUninstall == value) return;
+            _settings.Update(s => s.Updates.KeepDataOnUninstall = value);
+            OnPropertyChanged();
+        }
+    }
+
+    private void RefreshUpdates()
+    {
+        if (_updates is null) return;
+        IsInstalled = _updates.State != UpdateState.NotInstalled;
+        UpdateStatus = _updates.State switch
+        {
+            UpdateState.NotInstalled => "This copy wasn't installed with the installer (built from source, or from a zip), so it doesn't update itself.",
+            UpdateState.Idle => _settings.Current.Updates.LastCheck is { } last
+                ? $"Last checked {last.ToLocalTime():d MMM, HH:mm}."
+                : "Not checked yet.",
+            UpdateState.Downloading => $"{_updates.Status} {_updates.Progress}%",
+            _ => _updates.Status,
+        };
+        CanCheckForUpdates = _updates.State is UpdateState.Idle or UpdateState.UpToDate or UpdateState.Failed;
+        CanRestartToUpdate = _updates.State == UpdateState.Ready;
+    }
+
+    [RelayCommand]
+    private Task CheckForUpdates() => _updates?.CheckAsync() ?? Task.CompletedTask;
+
+    [RelayCommand]
+    private void RestartToUpdate() => _restartToUpdate?.Invoke();
 
     // About → Copy diagnostics
 

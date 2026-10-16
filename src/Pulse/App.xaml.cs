@@ -21,6 +21,8 @@ public partial class App : Application
     private ProcessMonitor? _processes;
     private Pulse.Services.Coolers.CoolerService? _coolers;
     private Pulse.Services.Web.WebHost? _web;
+    private Pulse.Services.Updates.UpdateService? _updates;
+    private System.Windows.Threading.DispatcherTimer? _updateTimer;
     private bool _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -151,6 +153,17 @@ public partial class App : Application
         viewModel.Settings.AttachWeb(_web);
         _web.Apply();
 
+        // Updates: a daily check once installed (never on a copy built from source), installed when Pulse exits.
+        _updates = new Pulse.Services.Updates.UpdateService(settings, () => alerts.IsCriticalActive);
+        viewModel.Settings.AttachUpdates(_updates, RestartToUpdate);
+        _updateTimer = new System.Windows.Threading.DispatcherTimer { Interval = Pulse.Services.Updates.UpdatePolicy.FirstCheckDelay };
+        _updateTimer.Tick += async (_, _) =>
+        {
+            _updateTimer.Interval = TimeSpan.FromHours(1);
+            await _updates.CheckIfDueAsync();
+        };
+        _updateTimer.Start();
+
         // If Pulse was moved since "Start with Windows" was turned on, point the task at the new location.
         if (HardwareService.IsElevated && Environment.ProcessPath is { } exe)
             _ = StartupTask.RepairPathAsync(exe);
@@ -231,8 +244,30 @@ public partial class App : Application
         Shutdown();
     }
 
+    /// <summary>Settings → About → Restart to update: shut down as on exit, then hand over to the updater.</summary>
+    private void RestartToUpdate()
+    {
+        if (_updates is null) return;
+        _exiting = true;
+        _updateTimer?.Stop();
+        DisposeServices();
+        // The updater restarts Pulse, which then elevates itself again (through the startup task when there is one).
+        if (!_updates.RestartToUpdate())
+            Shutdown();
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
+        DisposeServices();
+        base.OnExit(e);
+    }
+
+    private bool _disposed;
+
+    private void DisposeServices()
+    {
+        if (_disposed) return;
+        _disposed = true;
         // Remove the tray icon first, so it doesn't linger in the notification area.
         _tray?.Dispose();
         _mini?.Dispose();
@@ -245,6 +280,5 @@ public partial class App : Application
         _history?.Dispose();
         _settings?.Dispose();
         _instance?.Dispose();
-        base.OnExit(e);
     }
 }

@@ -560,6 +560,42 @@
                     <TextBlock Text="{Binding AdminText}" Style="{StaticResource Caption}" Margin="0,4,0,0" />
                     <TextBlock Text="{Binding DriverText}" Style="{StaticResource Caption}" />
 
+                    <!-- Updates -->
+                    <DockPanel Margin="0,16,0,0">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ui:Button Content="Restart to update" Appearance="Primary" Margin="0,0,6,0"
+                                       Command="{Binding RestartToUpdateCommand}"
+                                       Visibility="{Binding CanRestartToUpdate, Converter={StaticResource BoolToVisibility}}" />
+                            <ui:Button Content="Check for updates" Command="{Binding CheckForUpdatesCommand}"
+                                       IsEnabled="{Binding CanCheckForUpdates}"
+                                       Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Updates" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisibility}}">
+                        <DockPanel Margin="0,12,0,0">
+                            <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding AutoInstallUpdates}" VerticalAlignment="Center"
+                                             AutomationProperties.Name="Install updates automatically" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Install updates automatically" Style="{StaticResource SettingLabel}" />
+                                <TextBlock Text="Checks once a day and installs when Pulse exits, so the next start is the new version. Never while a critical alert is on."
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                        <DockPanel Margin="0,12,0,0">
+                            <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding KeepDataOnUninstall}" VerticalAlignment="Center"
+                                             AutomationProperties.Name="Keep settings and history when uninstalling" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="Keep my settings and history when uninstalling" Style="{StaticResource SettingLabel}" />
+                                <TextBlock Text="Off: uninstalling also removes your settings, history and log. The startup task and firewall rule always go."
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+
                     <DockPanel Margin="0,16,0,0">
                         <ui:Button DockPanel.Dock="Right" Content="Open log folder" VerticalAlignment="Center"
                                    Command="{Binding OpenLogFolderCommand}">
