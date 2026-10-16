@@ -22,8 +22,9 @@ tests on the view-model logic catch regressions as the dashboard grows.
 - [x] **Snapshot fixtures:** `Pulse.exe --dump-snapshot <file>` reads the hardware twice (rates need
       two reads) and writes a `HardwareSnapshot` as JSON (`Services/SnapshotDump.cs`, `Services/SnapshotJson.cs`).
   - [x] `Fixtures/non-admin.json` captured.
-  - [ ] `Fixtures/admin.json`: run `make snapshot` (asks for admin rights; close Pulse first).
-        `Real_snapshot_with_admin_fills_the_dashboard` is a no-op until this file exists.
+  - [x] `Fixtures/admin.json`: captured 2026-10-16 with `make snapshot` (all 5 drives found that time).
+        `Real_snapshot_with_admin_fills_the_dashboard` now runs against it. The `snapshot` target moved its
+        PowerShell into `tools/snapshot.ps1`: inline, Git Bash's shell expanded `$p` before PowerShell saw it.
 - [x] Tests isolate themselves: settings and log go to a temporary folder (`SettingsService(folder)`,
       `Log.FilePath`), numbers are formatted with the invariant culture.
 - [x] First tests (32 passing):
@@ -49,6 +50,17 @@ this machine and may contribute.
 - [ ] Verify: launch Pulse as admin 10 times (`make start`, close, repeat) and check `pulse.log` each time
       for "LHM found 5". If it still misses drives, compare runs with Armoury Crate stopped.
 - [ ] If misses remain: open storage before the other hardware groups, or re-scan with a longer delay.
+- **New lead (2026-10-16): the USB cooler service.** Three admin runs in an hour:
+  - `make snapshot` (sensor library only): all 5 drives.
+  - Two full Pulse runs, where `CoolerService` scanned and read the Corsair Commander at the moment LHM opened the
+    drives: 3 of 5 each time, and the three re-scans that followed (with the cooler read every 2 s) found no SATA
+    drive either.
+  - Two misses against one success isn't proof, but it fits the earlier finding that a second reader running
+    at the same time makes SATA drives go missing.
+  - Cheap test: Settings → USB coolers → "Don't read USB coolers", restart Pulse a few times, and check
+    `pulse.log` for "LHM found 5".
+  - If that's it: start `CoolerService` only after the first snapshot (once LHM has opened the drives), and pause
+    cooler reads during storage re-scans.
 
 ### Single instance
 - [x] `Services/SingleInstance.cs`: a named mutex allows one Pulse per user session. A second launch

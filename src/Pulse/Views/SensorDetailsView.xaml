@@ -63,13 +63,13 @@
                         Margin="0,0,0,12">
                     <StackPanel Orientation="Horizontal">
                         <RadioButton Style="{StaticResource NavPill}" GroupName="DetailsRange" Content="5 min"
-                                     Command="{Binding SelectRangeCommand}" CommandParameter="{Binding Ranges[0]}" />
-                        <RadioButton Style="{StaticResource NavPill}" GroupName="DetailsRange" Content="1 hour" IsChecked="True"
-                                     Command="{Binding SelectRangeCommand}" CommandParameter="{Binding Ranges[1]}" />
+                                     IsChecked="{Binding SelectedRangeIndex, Converter={x:Static views:Converters.IndexIs}, ConverterParameter=0}" />
+                        <RadioButton Style="{StaticResource NavPill}" GroupName="DetailsRange" Content="1 hour"
+                                     IsChecked="{Binding SelectedRangeIndex, Converter={x:Static views:Converters.IndexIs}, ConverterParameter=1}" />
                         <RadioButton Style="{StaticResource NavPill}" GroupName="DetailsRange" Content="24 hours"
-                                     Command="{Binding SelectRangeCommand}" CommandParameter="{Binding Ranges[2]}" />
+                                     IsChecked="{Binding SelectedRangeIndex, Converter={x:Static views:Converters.IndexIs}, ConverterParameter=2}" />
                         <RadioButton Style="{StaticResource NavPill}" GroupName="DetailsRange" Content="7 days"
-                                     Command="{Binding SelectRangeCommand}" CommandParameter="{Binding Ranges[3]}" />
+                                     IsChecked="{Binding SelectedRangeIndex, Converter={x:Static views:Converters.IndexIs}, ConverterParameter=3}" />
                     </StackPanel>
                 </Border>
 

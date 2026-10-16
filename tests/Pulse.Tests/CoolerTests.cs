@@ -414,6 +414,34 @@ public class CoolerTests : PulseTest
     }
 
     [Fact]
+    public void Two_pumps_say_where_each_one_is()
+    {
+        // As on the dev PC: the pump's tach on motherboard header Fan #2 (picked as the pump), and the
+        // Commander's own pump channel. Both are "Pump"; the rows tell them apart.
+        var dashboard = Dashboard(out var settings);
+        settings.Update(s => s.Sensors.Roles["Pump"] = "/lpc/nct6798d/0/fan/1");
+        var board = Hardware("/lpc/nct6798d/0", "Nuvoton NCT6798D", HardwareType.SuperIO,
+            Sensor("/lpc/nct6798d/0/fan/1", "Fan #2", SensorType.Fan, 2538, max: 2600));
+
+        dashboard.Apply(Of(board, Commander(pump: 2580)));
+
+        var pumps = dashboard.Cooling.Rows.Where(r => r.Label.StartsWith("Pump")).ToList();
+        Assert.Equal(["Pump · motherboard", "Pump · Corsair Commander ST"], pumps.Select(r => r.Label));
+        Assert.Contains("2,538", pumps[0].Value);
+        Assert.Contains("2,580", pumps[1].Value);
+    }
+
+    [Fact]
+    public void One_pump_is_just_pump()
+    {
+        var dashboard = Dashboard(out _);
+
+        dashboard.Apply(Of(Commander()));
+
+        Assert.Single(dashboard.Cooling.Rows, r => r.Label == "Pump");
+    }
+
+    [Fact]
     public void A_paused_cooler_explains_itself_on_the_cooling_card()
     {
         var dashboard = Dashboard(out _);

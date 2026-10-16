@@ -123,7 +123,20 @@ public partial class SensorDetailsViewModel : ObservableObject
     [ObservableProperty] public partial Color Accent { get; private set; } = Palette.Cpu;
     [ObservableProperty] public partial Func<double, string> ValueFormatter { get; private set; } = v => v.ToString("0.#");
 
-    [ObservableProperty] public partial DetailsRange SelectedRange { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedRangeIndex))]
+    public partial DetailsRange SelectedRange { get; set; }
+
+    /// <summary>The range as a position in <see cref="Ranges"/>, for the pills: they follow the range however it changes.</summary>
+    public int SelectedRangeIndex
+    {
+        get => Ranges.ToList().IndexOf(SelectedRange);
+        set
+        {
+            if (value >= 0 && value < Ranges.Count)
+                SelectedRange = Ranges[value];
+        }
+    }
     [ObservableProperty] public partial IReadOnlyList<HistoryPoint>? Points { get; private set; }
     [ObservableProperty] public partial IReadOnlyList<HistoryPoint>? ComparePoints { get; private set; }
     [ObservableProperty] public partial DateTime From { get; private set; }
@@ -173,9 +186,6 @@ public partial class SensorDetailsViewModel : ObservableObject
 
     partial void OnSelectedRangeChanged(DetailsRange value) => _ = LoadAsync();
     partial void OnSelectedCompareChanged(CompareChoice? value) => _ = LoadAsync();
-
-    [RelayCommand]
-    private void SelectRange(DetailsRange range) => SelectedRange = range;
 
     private void RefreshName()
     {

@@ -540,6 +540,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         var headers = new List<SensorReading>();
         var usbPump = false;
         SensorReading? coolerPump = null;
+        var pumpOwners = new Dictionary<string, HardwareReading>();
 
         foreach (var hardware in snapshot.Hardware)
         {
@@ -554,6 +555,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                     else if (owner.Type == HardwareType.Cooler)
                         usbPump = true;
                     pumps.Insert(0, sensor);
+                    pumpOwners[sensor.Id] = owner;
                     if (!sources.Contains(owner.Name))
                         sources.Add(owner.Name);
                     continue;
@@ -587,6 +589,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                 }
 
                 target.Add(sensor);
+                if (target == pumps)
+                    pumpOwners[sensor.Id] = owner;
                 if (target == pumps && isCooler)
                     coolerPump ??= sensor;
                 if (!sources.Contains(owner.Name))
@@ -686,7 +690,9 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         }
 
         var rows = new List<(string, string)>();
-        rows.AddRange(pumps.Select(s => (Label(s), SensorFormat.Format(s.Type, s.Value))));
+        // Two pumps (the header picked as the pump and a USB cooler's own pump channel) would both read "Pump".
+        rows.AddRange(pumps.Select(s => (pumps.Count > 1 ? $"{Label(s)} · {Where(s, pumpOwners)}" : Label(s),
+            SensorFormat.Format(s.Type, s.Value))));
         rows.AddRange(coolant.Select(s => (Label(s), SensorFormat.Format(s.Type, s.Value))));
         rows.AddRange(flows.Select(s => (Label(s), SensorFormat.Format(s.Type, s.Value))));
 
@@ -716,6 +722,12 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             .ToList();
         Cooling.SyncHeaders(choices, PumpSensorId);
     }
+
+    /// <summary>Where a pump reading comes from, in a few words: "motherboard", or the cooler's name.</summary>
+    private static string Where(SensorReading sensor, Dictionary<string, HardwareReading> owners) =>
+        owners.TryGetValue(sensor.Id, out var owner)
+            ? owner.Type is HardwareType.SuperIO or HardwareType.EmbeddedController ? "motherboard" : owner.Name
+            : "";
 
     /// <summary>The pump shows as "Pump" unless the user renamed it; other sensors by their display name.</summary>
     private string Label(SensorReading sensor) =>

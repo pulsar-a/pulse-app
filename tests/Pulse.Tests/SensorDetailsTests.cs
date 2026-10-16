@@ -1,3 +1,4 @@
+using System.IO;
 using LibreHardwareMonitor.Hardware;
 using Pulse.Controls;
 using Pulse.Models;
@@ -14,6 +15,40 @@ public class SensorDetailsTests : PulseTest
 
     private static HistoryPoint Point(int minute, double avg, double spread = 0) =>
         new(T0.AddMinutes(minute), avg - spread, avg, avg + spread);
+
+    // ---- Range pills ----------------------------------------------------------------------------
+
+    [Fact]
+    public void The_range_pills_follow_the_range_however_it_changes()
+    {
+        var stream = new SensorStream();
+        var catalog = NewCatalog(out var settings);
+        var details = new SensorDetailsViewModel(new HistoryStore(stream, Path.Combine(TempFolder, "none.db")), stream, catalog,
+            settings, _ => { });
+
+        Assert.Equal(1, details.SelectedRangeIndex);   // one hour to start
+
+        details.SelectedRange = details.Ranges[2];     // from code: the 24 hours pill lights up
+        Assert.Equal(2, details.SelectedRangeIndex);
+
+        details.SelectedRangeIndex = 3;                // a pill clicked
+        Assert.Equal(TimeSpan.FromDays(7), details.SelectedRange.Span);
+
+        details.SelectedRangeIndex = 9;                // nonsense is ignored
+        Assert.Equal(3, details.SelectedRangeIndex);
+    }
+
+    [Fact]
+    public void Radio_buttons_bind_to_an_index()
+    {
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+
+        Assert.Equal(true, Pulse.Views.Converters.IndexIs.Convert(2, typeof(bool?), "2", culture));
+        Assert.Equal(false, Pulse.Views.Converters.IndexIs.Convert(1, typeof(bool?), "2", culture));
+        Assert.Equal(3, Pulse.Views.Converters.IndexIs.ConvertBack(true, typeof(int), "3", culture));
+        // Unchecking a pill (another one was checked) leaves the index to that one.
+        Assert.Same(System.Windows.Data.Binding.DoNothing, Pulse.Views.Converters.IndexIs.ConvertBack(false, typeof(int), "3", culture));
+    }
 
     // ---- Chart math ---------------------------------------------------------------------------
 

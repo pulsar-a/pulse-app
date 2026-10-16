@@ -20,7 +20,7 @@ test:
 
 # Capture a real snapshot as admin into the test fixtures (asks for admin rights; close Pulse first).
 snapshot: build
-	powershell -NoProfile -Command "$$p = Start-Process -FilePath '$(EXE)' -ArgumentList '--dump-snapshot','$(FIXTURE)' -Verb RunAs -Wait -PassThru; if ($$p.ExitCode -eq 2) { Write-Error 'Pulse is running. Close it first.'; exit 2 } elseif ($$p.ExitCode -ne 0) { Write-Error 'Snapshot failed; see the .error.txt next to the fixture.'; exit 1 } else { Write-Host 'Saved $(FIXTURE)' }"
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/snapshot.ps1 -Exe "$(EXE)" -Fixture "$(FIXTURE)"
 
 # Release build with ReadyToRun (precompiled, so startup does less work) in artifacts/publish.
 # Needs the .NET 10 runtime on the target machine.
