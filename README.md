@@ -134,7 +134,9 @@ Pulse is WPF on .NET 10 with [WPF-UI](https://github.com/lepoco/wpfui) and
 | `make test` | Run the tests; works while Pulse is open |
 | `make snapshot` | Record every sensor once, as admin, to `tests/Pulse.Tests/Fixtures/admin.json` (close Pulse first) |
 | `make publish` | Release build with ReadyToRun in `artifacts/publish` |
-| `make package` | The installer and update packages, as a release builds them, in `artifacts/releases` (needs `vpk`) |
+| `make package` | The installer and update packages, as a release builds them, in `artifacts/releases` |
+| `make changelog` | What the next release would be: its version and changelog (changes nothing) |
+| `make release` | Release: version from the commits, `CHANGELOG.md`, release commit and tag, pushed (asks first). `PRE=beta` for a beta, `VERSION=1.0.0` to choose |
 | `make probe` | List supported USB coolers and any cooler software running (sends nothing) |
 | `make probe-read` | Read a USB cooler once and log every exchange (close Pulse and iCUE first) |
 | `make icon` | Redraw the app icon from `tools/IconGen` |
@@ -142,8 +144,19 @@ Pulse is WPF on .NET 10 with [WPF-UI](https://github.com/lepoco/wpfui) and
 
 Only one Pulse runs at a time; launching it again brings the open window to the front. Pulse asks for admin
 rights itself (the manifest is `asInvoker`), so `--no-elevate` runs it without them, and under a debugger it
-doesn't ask. **Releases** are a tag away: `git tag v0.2.0 && git push origin v0.2.0` builds, packages and
-publishes them (`.github/workflows/release.yml`).
+doesn't ask.
+
+### Commits and releases
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org): `feat: …` for something new,
+`fix: …` for a fix, `perf: …`, and `docs:`, `chore:`, `ci:`, `test:` or `refactor:` for the rest (those don't make
+a release on their own). `BREAKING CHANGE:` in the body marks a breaking change.
+
+`make release` turns them into a release with [Versionize](https://github.com/versionize/versionize) (pinned with
+vpk in `dotnet-tools.json`; `dotnet tool restore` sets both up). It picks the next version, writes `CHANGELOG.md`,
+commits it with the tag, and pushes. The tag starts `.github/workflows/release.yml`, which tests, packages with
+Velopack and publishes the GitHub Release, with that version's changelog as its notes. A stable release lists
+everything since the last stable one, betas included.
 
 ### How it fits together
 

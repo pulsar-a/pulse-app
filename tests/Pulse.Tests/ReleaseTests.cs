@@ -76,14 +76,11 @@ public class ReleaseTests : PulseTest
     }
 
     [Theory]
-    [InlineData(null, false, UpdateChannel.Stable)]                 // not chosen, stable copy: stable releases
-    [InlineData(null, true, UpdateChannel.Beta)]                    // not chosen, a beta: the next beta
-    [InlineData(UpdateChannel.Stable, true, UpdateChannel.Stable)]  // a beta tester going back to stable
-    [InlineData(UpdateChannel.Beta, false, UpdateChannel.Beta)]     // a stable user opting in
-    [InlineData(UpdateChannel.Stable, false, UpdateChannel.Stable)]
-    public void The_users_choice_wins_and_until_then_it_follows_the_running_version(
-        UpdateChannel? chosen, bool runningPrerelease, UpdateChannel expected) =>
-        Assert.Equal(expected, UpdatePolicy.Channel(chosen, runningPrerelease));
+    [InlineData(null, UpdateChannel.Stable)]                  // not chosen: stable, even on a beta
+    [InlineData(UpdateChannel.Beta, UpdateChannel.Beta)]      // opted in
+    [InlineData(UpdateChannel.Stable, UpdateChannel.Stable)]  // went back to stable
+    public void Betas_are_strictly_opt_in(UpdateChannel? chosen, UpdateChannel expected) =>
+        Assert.Equal(expected, UpdatePolicy.Channel(chosen));
 
     [Fact]
     public void The_channel_choice_is_saved()
@@ -117,7 +114,7 @@ public class ReleaseTests : PulseTest
 
         Assert.True(updates.AutoInstall);
         Assert.True(updates.KeepDataOnUninstall);
-        Assert.Null(updates.Channel);   // follows the running version until chosen
+        Assert.Null(updates.Channel);   // not chosen, which means stable
         Assert.Null(updates.LastCheck);
     }
 

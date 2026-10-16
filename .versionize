@@ -1,0 +1,23 @@
+{
+  "tagOnly": true,
+  "changelog": {
+    "header": "# Changelog\n\nWhat changed in each version of Pulse. Written from the commit history by `make release` (Versionize), following [Conventional Commits](https://www.conventionalcommits.org).\n",
+    "sections": [
+      { "type": "feat", "section": "Features", "hidden": false },
+      { "type": "fix", "section": "Bug fixes", "hidden": false },
+      { "type": "perf", "section": "Performance", "hidden": false },
+      { "type": "docs", "section": "Documentation", "hidden": true },
+      { "type": "chore", "section": "Chores", "hidden": true },
+      { "type": "ci", "section": "CI", "hidden": true },
+      { "type": "test", "section": "Tests", "hidden": true },
+      { "type": "refactor", "section": "Refactoring", "hidden": true },
+      { "type": "style", "section": "Style", "hidden": true },
+      { "type": "build", "section": "Build", "hidden": true }
+    ],
+    "linkTemplates": {
+      "issueLink": "https://github.com/pulsar-a/pulse-app/issues/{issue}",
+      "commitLink": "https://github.com/pulsar-a/pulse-app/commit/{commitSha}",
+      "versionTagLink": "https://github.com/pulsar-a/pulse-app/compare/{previousTag}...{currentTag}"
+    }
+  }
+}

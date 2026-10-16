@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "versionize": {
+      "version": "2.7.0",
+      "commands": [
+        "versionize"
+      ],
+      "rollForward": false
+    },
+    "vpk": {
+      "version": "1.2.161",
+      "commands": [
+        "vpk"
+      ],
+      "rollForward": false
+    }
+  }
+}

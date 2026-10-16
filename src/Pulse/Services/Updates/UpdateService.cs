@@ -19,7 +19,7 @@ public sealed class UpdateSettings
     /// <summary>Check daily and install on the next exit (on by default).</summary>
     public bool AutoInstall { get; set; } = true;
 
-    /// <summary>The user's choice of releases; null until they make one, and then it follows the running version.</summary>
+    /// <summary>The user's choice of releases; null until they make one, which means stable.</summary>
     public UpdateChannel? Channel { get; set; }
 
     /// <summary>Uninstalling keeps settings and history unless the user turns this off (read by <see cref="UninstallCleanup"/>).</summary>
@@ -54,13 +54,11 @@ public static class UpdatePolicy
         autoInstall && (lastCheck is not { } last || now - last >= CheckEvery || last > now);
 
     /// <summary>
-    /// The channel in effect: the user's choice when they made one; otherwise a beta keeps getting betas (someone
-    /// testing one wants the next one, not to wait for a stable release) and a stable copy gets stable releases.
-    /// Choosing Stable on a beta never downgrades: Velopack only offers versions newer than the running one, so it
+    /// The channel in effect: stable unless the user turned betas on, even on a beta (betas are strictly opt-in).
+    /// Stable on a beta never downgrades: Velopack only offers versions newer than the running one, so a beta
     /// stays put until a newer stable release is out.
     /// </summary>
-    public static UpdateChannel Channel(UpdateChannel? chosen, bool runningPrerelease) =>
-        chosen ?? (runningPrerelease ? UpdateChannel.Beta : UpdateChannel.Stable);
+    public static UpdateChannel Channel(UpdateChannel? chosen) => chosen ?? UpdateChannel.Stable;
 
     /// <summary>A restart takes the monitoring away for a moment: never while a critical alert (a stopped pump) is on.</summary>
     public static bool MayRestartNow(bool criticalAlert) => !criticalAlert;
@@ -109,11 +107,8 @@ public sealed class UpdateService
 
     public int Progress { get; private set; }
 
-    /// <summary>This copy is a pre-release (a beta, or a local build like 0.0.1-local).</summary>
-    public bool RunningPrerelease => _manager?.CurrentVersion?.IsPrerelease == true;
-
     /// <summary>The channel in effect right now (see <see cref="UpdatePolicy.Channel"/>).</summary>
-    public UpdateChannel Channel => UpdatePolicy.Channel(_settings.Current.Updates.Channel, RunningPrerelease);
+    public UpdateChannel Channel => UpdatePolicy.Channel(_settings.Current.Updates.Channel);
 
     public event Action? Changed;
 

@@ -1,7 +1,8 @@
-# Publishes a release when a version tag is pushed (step 14): `git tag v0.2.0 && git push origin v0.2.0`.
+# Publishes a release when a version tag is pushed (step 14). `make release` makes the tag, with its CHANGELOG.md
+# entry, and pushes it; a tag pushed by hand works too (its notes then just point at the commits).
 # Builds and tests, packages with Velopack (installer, update packages, portable zip), and creates the GitHub
 # Release that installed copies update from. A tag with a suffix (v0.2.0-beta.1) makes a pre-release, which only
-# copies on the beta channel pick up (betas by default, or anyone who chose "Betas too" in Settings → About).
+# copies with "Betas too" chosen in Settings → About pick up; everyone else gets stable releases only.
 name: Release
 
 on:
@@ -14,9 +15,6 @@ permissions:
 concurrency:
   group: release
   cancel-in-progress: false
-
-env:
-  VPK_VERSION: 1.2.161
 
 jobs:
   release:
@@ -46,26 +44,47 @@ jobs:
           dotnet publish src/Pulse/Pulse.csproj -c Release -r win-x64 --self-contained false
           -p:PublishReadyToRun=true -o artifacts/publish
 
-      - name: Install vpk
-        run: dotnet tool install -g vpk --version ${{ env.VPK_VERSION }}
+      # vpk and Versionize, at the versions pinned in dotnet-tools.json.
+      - name: Tools
+        run: dotnet tool restore
+
+      # This version's section of CHANGELOG.md (written by `make release`), as the release notes.
+      - name: Release notes
+        shell: pwsh
+        run: |
+          $lines = Get-Content CHANGELOG.md -ErrorAction SilentlyContinue
+          $start = [array]::IndexOf($lines, "<a name=""$env:VERSION""></a>")
+          $notes = @()
+          if ($start -ge 0) {
+            for ($i = $start + 1; $i -lt $lines.Count -and $lines[$i] -notmatch '^<a name='; $i++) { $notes += $lines[$i] }
+            $notes = $notes | Select-Object -Skip 1   # the "## [version](compare link) (date)" heading: the release has a title
+          }
+          if (-not ($notes -join '').Trim()) {
+            $notes = @("See the [commits in this release](${{ github.server_url }}/${{ github.repository }}/commits/${{ github.ref_name }}).")
+          }
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          ($notes -join "`n").Trim() | Set-Content artifacts/release-notes.md -Encoding utf8
+          Get-Content artifacts/release-notes.md
 
       # The previous release, so this one can ship small delta updates. The very first release has none.
+      # A beta is built against the latest pre-release (--pre), which beta copies are running; without it the
+      # download looks only at stable releases, and betas shipped full packages only.
       - name: Previous release
         continue-on-error: true
         run: >
-          vpk download github --repoUrl ${{ github.server_url }}/${{ github.repository }}
-          --token ${{ secrets.GITHUB_TOKEN }} -o artifacts/releases
+          dotnet vpk download github --repoUrl ${{ github.server_url }}/${{ github.repository }}
+          --token ${{ secrets.GITHUB_TOKEN }} ${{ env.PRERELEASE }} -o artifacts/releases
 
       # PulseApp, not Pulse: Velopack installs to %LOCALAPPDATA%\<packId>, and Pulse's settings and history live in
       # %LOCALAPPDATA%\Pulse, which uninstalling would otherwise delete. Signing is added here later (step 14).
       - name: Package
         run: >
-          vpk pack --packId PulseApp --packVersion ${{ env.VERSION }} --packDir artifacts/publish
+          dotnet vpk pack --packId PulseApp --packVersion ${{ env.VERSION }} --packDir artifacts/publish
           --mainExe Pulse.exe --packTitle Pulse --icon src/Pulse/Resources/Pulse.ico
-          --framework net10-x64-desktop -o artifacts/releases
+          --framework net10-x64-desktop --releaseNotes artifacts/release-notes.md -o artifacts/releases
 
       - name: Create the GitHub Release
         run: >
-          vpk upload github --repoUrl ${{ github.server_url }}/${{ github.repository }}
+          dotnet vpk upload github --repoUrl ${{ github.server_url }}/${{ github.repository }}
           --token ${{ secrets.GITHUB_TOKEN }} --publish ${{ env.PRERELEASE }}
           --releaseName "Pulse ${{ env.VERSION }}" --tag ${{ github.ref_name }} -o artifacts/releases

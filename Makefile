@@ -4,7 +4,7 @@ CONFIG  ?= Debug
 EXE     ?= src/Pulse/bin/$(CONFIG)/net10.0-windows10.0.19041.0/win-x64/Pulse.exe
 FIXTURE ?= $(CURDIR)/tests/Pulse.Tests/Fixtures/admin.json
 
-.PHONY: start build test snapshot icon publish package clean probe probe-read
+.PHONY: start build test snapshot icon publish package release changelog clean probe probe-read
 
 # Build, then launch through the Windows shell so the admin (UAC) prompt appears.
 # `dotnet run` can't do that from a non-elevated terminal and fails with error 740.
@@ -27,11 +27,21 @@ snapshot: build
 publish:
 	dotnet publish $(PROJECT) -c Release -r win-x64 --self-contained false -p:PublishReadyToRun=true -o artifacts/publish --nologo
 
-# The installer and update packages, as a release builds them (artifacts/releases). Needs vpk:
-# dotnet tool install -g vpk --version 1.2.161. VERSION=0.2.0 to pick the version.
-VERSION ?= 0.0.1-local
+# The installer and update packages, as a release builds them (artifacts/releases), with the pinned vpk.
+# PACKAGE_VERSION=0.2.0-beta.1.local to pick the version.
+PACKAGE_VERSION ?= 0.0.1-local
 package: publish
-	vpk pack --packId PulseApp --packVersion $(VERSION) --packDir artifacts/publish --mainExe Pulse.exe --packTitle Pulse --icon src/Pulse/Resources/Pulse.ico --framework net10-x64-desktop -o artifacts/releases
+	dotnet tool restore
+	dotnet vpk pack --packId PulseApp --packVersion $(PACKAGE_VERSION) --packDir artifacts/publish --mainExe Pulse.exe --packTitle Pulse --icon src/Pulse/Resources/Pulse.ico --framework net10-x64-desktop -o artifacts/releases
+
+# Release: the next version from the conventional commits, CHANGELOG.md, a release commit and tag, pushed
+# (which starts the release workflow). Asks before it changes anything. PRE=beta for a beta, VERSION=1.0.0 to choose.
+release:
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/release.ps1 -Pre "$(PRE)" -Version "$(VERSION)"
+
+# What the next release would be, and its changelog. Changes nothing.
+changelog:
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/release.ps1 -Pre "$(PRE)" -Version "$(VERSION)" -DryRun
 
 # Redraw the app icon (src/Pulse/Resources/Pulse.ico and PNGs) from tools/IconGen.
 icon:

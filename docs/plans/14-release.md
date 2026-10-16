@@ -184,9 +184,9 @@ asking for admin rights looks exactly like malware. The options (check current p
   only if there's something to remove. Then the data folder goes only if the user turned "keep" off.
 - **Release workflow** (`v*` tag): test, publish (ReadyToRun), fetch the previous release for delta updates,
   `vpk pack`, then `vpk upload github --publish`. A tag with a suffix (`v0.2.0-beta.1`) makes a pre-release.
-- **Stable or beta:** Settings → About → "Which versions": "Stable versions only" or "Betas too". Until the user
-  chooses, it follows the running version (a beta gets the next beta, a stable copy gets stable releases); a choice
-  always wins. Switching a beta to stable never downgrades: it stays until a newer stable release is out.
+- **Stable or beta:** Settings → About → "Which versions": "Stable versions only" (the default, for everyone,
+  betas included) or "Betas too" (opt-in). Going back to stable from a beta never downgrades: it stays until a
+  newer stable release is out. A beta tester turns "Betas too" on once.
   Found with `v0.2.0-beta.1`, the first real release: the first version skipped pre-releases altogether, so a
   beta could never update to the next beta, and the status said "the latest version" when it meant "the
   latest stable version". Copies from before the fix (`v0.2.0-beta.1`, local builds) still skip betas:
@@ -203,6 +203,24 @@ asking for admin rights looks exactly like malware. The options (check current p
 4. Launch it again while it runs: the window comes to the front, no prompt.
 5. Push `v0.2.0-beta.2`, then Check for updates → Restart to update: back up on the new version, elevated.
 6. Uninstall from Windows Settings → Apps: one UAC prompt; no task, no firewall rule left; data kept.
+
+### Releasing (built)
+- `make release` (`tools/release.ps1`, on Versionize 2.7.0 pinned in `dotnet-tools.json` with vpk):
+  - Checks: no uncommitted changes, on `main`, not behind GitHub.
+  - Picks the version from the conventional commits since the last release (feat → minor, fix → patch,
+    breaking → major), or takes `PRE=beta` / `VERSION=…`. Nothing worth releasing (docs and chores only) stops it.
+  - Shows the version and its changelog section, asks, then writes CHANGELOG.md, commits
+    `chore(release): <version>`, tags `v<version>`, and pushes both in one atomic push.
+  - A stable release aggregates its betas. Versionize's `--aggregate-pre-releases` doesn't bump the version by
+    itself in tag-only mode, so the script asks for the version in a dry run first, then releases exactly that.
+  - `make changelog` shows the same without changing anything.
+- The release workflow takes the version's section from CHANGELOG.md as the release notes (`vpk pack
+  --releaseNotes`), or links the commits for a tag pushed by hand. vpk and Versionize come from `dotnet tool restore`.
+- Tested on a throwaway clone pushing to a bare stand-in for GitHub: a beta, nothing to release, a stable release
+  after it (with the whole history), and a dirty tree refused. Found there: PowerShell 5.1 with
+  `ErrorActionPreference = Stop` treats git's progress output on stderr as fatal, and a helper named `Git` shadowed
+  git itself.
+- To check on the next real release: that the GitHub release shows the notes.
 
 ## Decisions for you
 - **License:** MIT (simplest, most permissive) or GPL-3.0 (keeps forks open; also lets the Corsair driver be
@@ -222,21 +240,23 @@ asking for admin rights looks exactly like malware. The options (check current p
 
 ## Tasks
 - [ ] License, `THIRD-PARTY-NOTICES.md`, README install section (your decisions first).
-- [x] CI: build and test on push and pull request (`.github/workflows/ci.yml`). Not run yet: it starts with the next push.
+- [x] CI: build and test on push and pull request (`.github/workflows/ci.yml`). Green since its first run.
 - [x] Version from the git tag (MinVer): between tags it's `0.1.0-alpha.0.<commits>`; tag `v0.2.0` makes it 0.2.0.
-- [x] Release workflow publishing a GitHub Release (`.github/workflows/release.yml`, on a `v*` tag). Not run yet.
+- [x] Release workflow publishing a GitHub Release (`.github/workflows/release.yml`, on a `v*` tag). Published `v0.2.0-beta.1` and `beta.2`.
 - [x] Copy diagnostics with redaction and a preview, from Settings → About and the tray menu.
 - [x] Spikes, on paper: data folder (packId `PulseApp`), elevation (the manifest is now `asInvoker`; Pulse
       elevates itself), uninstall rights (an elevated helper for the task and rule). See Progress.
-- [ ] Spikes, on a real install: the elevated restart after an update, the startup task's path, toasts and
-      the tray icon after install, and the uninstall prompt.
+- [x] On a real install (2026-10-16): installing over an earlier copy (Repair keeps settings and history) and
+      updating from a beta to the next beta through Settings → About, on this PC.
+- [ ] Still to see on a real install: starting through the startup task without a prompt, a second launch
+      focusing the elevated copy, toasts and the tray icon after install, and the uninstall prompt and leftovers.
 - [x] Velopack packaging in the release workflow; in-app update check and install (Settings → About).
 - [ ] First-run setup pages.
 - [x] Uninstall hook: task, firewall rule, toast identity, data folder by the user's choice. The tray-promotion
       entry stays (Windows keeps one per exe path, harmless).
 - [ ] Code signing in the release workflow.
-- [ ] Tests: diagnostics redaction; the update policy (no update during a critical alert, daily check); uninstall
-      cleanup against a fake system (task, rule and keys behind an interface).
+- [x] Tests: diagnostics redaction; the update policy (critical alerts, daily checks, channels); uninstall cleanup
+      against a fake system. 364 passing.
 
 ## Done when
 - On a clean Windows 11 VM: downloading `Setup.exe` from GitHub Releases and running it installs Pulse without

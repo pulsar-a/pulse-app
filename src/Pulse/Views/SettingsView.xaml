@@ -587,7 +587,7 @@
                         </DockPanel>
                         <StackPanel Margin="0,12,0,0">
                             <TextBlock Text="Which versions" Style="{StaticResource SettingLabel}" />
-                            <TextBlock Text="Until you choose, a beta gets betas and a stable version gets stable versions. Switching a beta to stable never goes back a version: it stays until a newer stable version is out."
+                            <TextBlock Text="Stable versions unless you turn betas on. Going back to stable from a beta never goes back a version: it stays until a newer stable version is out."
                                        Style="{StaticResource Caption}" TextWrapping="Wrap" />
                             <WrapPanel Margin="0,8,0,0">
                                 <RadioButton Content="Stable versions only" GroupName="UpdateChannel" Margin="0,0,24,4"
