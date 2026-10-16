@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using LibreHardwareMonitor.Hardware;
 using Pulse.Models;
 using Pulse.Services;
+using Pulse.Services.Processes;
 
 namespace Pulse.ViewModels;
 
@@ -38,6 +39,11 @@ public partial class MainViewModel : ObservableObject
         Settings = new SettingsViewModel(settings, _catalog, driverInstalled, stream);
         Search = new SensorSearchViewModel(_catalog, stream, OpenDetails);
         Dashboard.RequestPinSearch = () => Search.Open(id => Dashboard.Pin(id), "Pin a sensor to the dashboard");
+        Dashboard.OpenProcesses = () => IsProcessesSelected = true;
+        Dashboard.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DashboardViewModel.ShowsProcesses)) UpdateProcessSampling();
+        };
 
         ApplySettings();
         settings.Changed += ApplySettings;
@@ -67,6 +73,7 @@ public partial class MainViewModel : ObservableObject
             _isWindowActive = value;
             _hardware.IsIdle = !value && !_isMiniActive;
             Log.Write(value ? "Window shown: live updates resumed" : "Window hidden: idle mode");
+            UpdateProcessSampling();
 
             // Catch up straight away with the newest reading instead of waiting for the next tick.
             if (value && _stream.Latest is { } latest)
@@ -124,6 +131,50 @@ public partial class MainViewModel : ObservableObject
         Settings.AttachAlerts(alerts);
     }
 
+    // ---- Processes (step 10) -------------------------------------------------------------------
+
+    private ProcessMonitor? _processes;
+    private ProcessList? _pendingProcesses;
+    private int _processesScheduled;
+
+    /// <summary>The Processes page. Created with the process sampler, which the app starts after the window.</summary>
+    [ObservableProperty] public partial ProcessesViewModel? Processes { get; private set; }
+
+    public void AttachProcesses(ProcessMonitor monitor)
+    {
+        _processes = monitor;
+        Processes = new ProcessesViewModel(monitor.Info, ProcessMonitor.End) { IsActive = IsProcessesSelected };
+        monitor.Updated += OnProcessesUpdated;
+        UpdateProcessSampling();
+    }
+
+    /// <summary>
+    /// Processes are sampled only while someone can see them: the window is up and shows the Processes page,
+    /// or the dashboard with its Top processes tile.
+    /// </summary>
+    private void UpdateProcessSampling()
+    {
+        if (_processes is null) return;
+        _processes.IsWanted = _isWindowActive && (IsProcessesSelected || (IsDashboardSelected && Dashboard.ShowsProcesses));
+    }
+
+    /// <summary>On the sampling thread. Like sensor snapshots, only the newest list is applied.</summary>
+    private void OnProcessesUpdated(ProcessList list)
+    {
+        Volatile.Write(ref _pendingProcesses, list);
+        if (Interlocked.Exchange(ref _processesScheduled, 1) == 0)
+            _dispatcher.BeginInvoke(ApplyProcesses, DispatcherPriority.Background);
+    }
+
+    private void ApplyProcesses()
+    {
+        Interlocked.Exchange(ref _processesScheduled, 0);
+        if (Interlocked.Exchange(ref _pendingProcesses, null) is not { } list || _processes is null)
+            return;
+        Dashboard.ProcessesCard.Apply(list, _processes.Info);
+        Processes?.Apply(list);
+    }
+
     /// <summary>The bell's "Alert settings" link.</summary>
     [RelayCommand]
     private void OpenAlertSettings() => IsSettingsSelected = true;
@@ -159,6 +210,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] public partial bool IsDashboardSelected { get; set; } = true;
     [ObservableProperty] public partial bool IsSensorsSelected { get; set; }
     [ObservableProperty] public partial bool IsSettingsSelected { get; set; }
+    [ObservableProperty] public partial bool IsProcessesSelected { get; set; }
 
     partial void OnIsSensorsSelectedChanged(bool value) => Sensors.IsActive = value;
 
@@ -166,6 +218,14 @@ public partial class MainViewModel : ObservableObject
     {
         if (value && _stream.Latest is { } latest)
             Dashboard.Apply(latest);
+        UpdateProcessSampling();
+    }
+
+    partial void OnIsProcessesSelectedChanged(bool value)
+    {
+        if (Processes is not null)
+            Processes.IsActive = value;
+        UpdateProcessSampling();
     }
 
     partial void OnIsSettingsSelectedChanged(bool value)

@@ -118,6 +118,16 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     public DrivesCardViewModel DrivesCard { get; } = new();
     public NetworkViewModel Network { get; } = new();
     public CoolingViewModel Cooling { get; } = new();
+    public ProcessesCardViewModel ProcessesCard { get; } = new();
+
+    /// <summary>The Top processes tile is on the dashboard (not hidden): processes are sampled only then.</summary>
+    [ObservableProperty] public partial bool ShowsProcesses { get; private set; }
+
+    /// <summary>Opens the Processes page; set by the main view model.</summary>
+    public Action? OpenProcesses { get; set; }
+
+    [RelayCommand]
+    private void ShowProcesses() => OpenProcesses?.Invoke();
 
     public ObservableCollection<CoreTileViewModel> Cores => CoresCard.Cores;
     public ObservableCollection<FanRowViewModel> Fans => FansCard.Rows;
@@ -143,6 +153,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         UpdateDrives(snapshot);
         UpdateNetwork(snapshot);
         UpdatePinned(snapshot);
+        ProcessesCard.SetHeat(Cpu.Heat, Cpu.GaugeText, Gpu.Heat, Gpu.GaugeText);
         IsLoading = false;
     }
 
@@ -877,6 +888,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         SyncCollection(Tiles, visible);
         SyncCollection(HiddenTiles, hidden);
         HasHiddenTiles = hidden.Count > 0;
+        ShowsProcesses = visible.Any(t => t.Kind == TileKind.Processes);
         UpdatePinned(_stream.Latest);
     }
 
@@ -891,6 +903,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         TileKind.Fans => FansCard,
         TileKind.Drives => DrivesCard,
         TileKind.Network => Network,
+        TileKind.Processes => ProcessesCard,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 

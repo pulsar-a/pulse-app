@@ -96,6 +96,7 @@ public partial class DashboardTileViewModel : ObservableObject
             TileKind.Fans => "Fans",
             TileKind.Drives => "Drives",
             TileKind.Network => "Network",
+            TileKind.Processes => "Top processes",
             _ => Kind.ToString(),
         },
     };
@@ -115,6 +116,7 @@ public partial class DashboardTileViewModel : ObservableObject
             TileKind.Fans => 260,
             TileKind.Drives => 330,
             TileKind.Network => 280,
+            TileKind.Processes => 300,
             _ => 240,
         },
     };

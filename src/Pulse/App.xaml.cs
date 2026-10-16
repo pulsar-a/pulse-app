@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using Pulse.Services;
 using Pulse.Services.History;
+using Pulse.Services.Processes;
 using Pulse.ViewModels;
 using Pulse.Views;
 using Wpf.Ui.Appearance;
@@ -17,6 +18,7 @@ public partial class App : Application
     private TrayIcon? _tray;
     private HistoryRecorder? _history;
     private MiniController? _mini;
+    private ProcessMonitor? _processes;
     private bool _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -94,6 +96,11 @@ public partial class App : Application
         // History: every minute of every sensor, on disk (Settings → History).
         _history = new HistoryRecorder(stream, settings);
         viewModel.AttachHistory(_history, new HistoryStore(stream, _history.DatabasePath));
+
+        // What's using the CPU and GPU: sampled only while the Top processes tile or the Processes page is on screen.
+        _processes = new ProcessMonitor();
+        viewModel.AttachProcesses(_processes);
+        _processes.Start();
 
         // The mini window: always on top, for games (Settings → Mini window).
         _mini = new MiniController(settings, new MiniViewModel(viewModel.Catalog, stream, settings, Dispatcher),
@@ -196,6 +203,7 @@ public partial class App : Application
         // Remove the tray icon first, so it doesn't linger in the notification area.
         _tray?.Dispose();
         _mini?.Dispose();
+        _processes?.Dispose();
         _hardware?.Dispose();
         // After polling stops, so the minute in progress is complete when it's written.
         _history?.Dispose();

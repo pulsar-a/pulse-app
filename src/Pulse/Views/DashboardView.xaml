@@ -370,6 +370,95 @@
                 </Border>
         </DataTemplate>
 
+        <!-- Top processes: the busiest programs by CPU, GPU and memory, as many columns as the tile has room for.
+             Clicking it opens the Processes page. -->
+        <DataTemplate DataType="{x:Type vm:ProcessesCardViewModel}">
+            <Border Style="{StaticResource HeatClickableCard}" ToolTip="Show all processes">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowProcessesCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                </Border.InputBindings>
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,14">
+                        <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Cpu.Soft}">
+                            <ui:SymbolIcon Symbol="AppsList24" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Cpu}" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Secondary}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- The first figures need two readings, a second apart. -->
+                    <StackPanel Visibility="{Binding HasData, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,12" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,0,12" />
+                        <controls:Shimmer Height="14" CornerRadius="4" Margin="0,0,60,0" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Lists}" Focusable="False"
+                                  Visibility="{Binding HasData, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <controls:ColumnsPanel MinColumnWidth="240" ColumnGap="28" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:TopProcessListViewModel}">
+                                <StackPanel>
+                                    <TextBlock x:Name="Heading" Text="{Binding Title}" Style="{StaticResource Caption}" Margin="0,0,0,8" />
+                                    <!-- Tag carries the bar color down to the rows. -->
+                                    <ItemsControl x:Name="Rows" ItemsSource="{Binding Items}" Focusable="False" Tag="{DynamicResource Pulse.Accent.Cpu}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:TopProcessViewModel}">
+                                                <StackPanel Margin="0,0,0,9" ToolTip="{Binding ToolTip}" Background="Transparent">
+                                                    <DockPanel>
+                                                        <Grid DockPanel.Dock="Left" Width="16" Height="16" Margin="0,0,8,0">
+                                                            <ui:SymbolIcon Symbol="Apps16" FontSize="14" Foreground="{DynamicResource Pulse.Text.Caption}"
+                                                                           Visibility="{Binding Icon, Converter={x:Static views:Converters.NullToVisibility}}" />
+                                                            <Image Source="{Binding Icon}" Width="16" Height="16" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                        </Grid>
+                                                        <TextBlock DockPanel.Dock="Right" Text="{Binding ValueText}" FontSize="13" Margin="8,0,0,0"
+                                                                   Style="{StaticResource Metric}" />
+                                                        <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}" TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                    </DockPanel>
+                                                    <Grid Margin="24,5,0,0">
+                                                        <Border Style="{StaticResource BarTrack}" />
+                                                        <Border Style="{StaticResource BarTrack}" RenderTransformOrigin="0,0.5"
+                                                                Background="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                                            <Border.RenderTransform>
+                                                                <ScaleTransform ScaleX="{Binding Fraction}" />
+                                                            </Border.RenderTransform>
+                                                        </Border>
+                                                    </Grid>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Metric}" Value="Gpu">
+                                        <Setter TargetName="Rows" Property="Tag" Value="{DynamicResource Pulse.Accent.Gpu}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Metric}" Value="Memory">
+                                        <Setter TargetName="Rows" Property="Tag" Value="{DynamicResource Pulse.Accent.Memory}" />
+                                    </DataTrigger>
+                                    <!-- The list for the part that's running hot says so in its heading (text-safe status colors). -->
+                                    <DataTrigger Binding="{Binding Heat}" Value="Warm">
+                                        <Setter TargetName="Heading" Property="Foreground" Value="{DynamicResource Pulse.Warning}" />
+                                        <Setter TargetName="Heading" Property="FontWeight" Value="SemiBold" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Heat}" Value="Hot">
+                                        <Setter TargetName="Heading" Property="Foreground" Value="{DynamicResource Pulse.Danger.Text}" />
+                                        <Setter TargetName="Heading" Property="FontWeight" Value="SemiBold" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
 
         <!-- Pinned sensors: one in large type with a sparkline, or a group of rows. -->
         <DataTemplate DataType="{x:Type vm:PinnedTileViewModel}">

@@ -160,6 +160,13 @@
                         </StackPanel>
                     </RadioButton>
                     <RadioButton Style="{StaticResource NavPill}" GroupName="Pages"
+                                 IsChecked="{Binding IsProcessesSelected}" ToolTip="Processes: what's using the CPU and GPU">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon x:Name="ProcessesIcon" Symbol="AppsList24" FontSize="16" Margin="0,0,6,0" />
+                            <TextBlock x:Name="ProcessesLabel" Text="Processes" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource NavPill}" GroupName="Pages"
                                  IsChecked="{Binding IsSettingsSelected}" ToolTip="Settings"
                                  AutomationProperties.Name="Settings">
                         <ui:SymbolIcon Symbol="Settings24" FontSize="16" />
@@ -217,6 +224,8 @@
             <!-- Created on first visit (see MainWindow.xaml.cs), so startup only builds the dashboard. -->
             <ContentControl x:Name="SensorsPage" Focusable="False" IsTabStop="False"
                                Visibility="{Binding DataContext.IsSensorsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
+            <ContentControl x:Name="ProcessesPage" Focusable="False" IsTabStop="False"
+                            Visibility="{Binding DataContext.IsProcessesSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
             <ContentControl x:Name="SettingsPage" Focusable="False" IsTabStop="False"
                                 Visibility="{Binding DataContext.IsSettingsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
         </Grid>

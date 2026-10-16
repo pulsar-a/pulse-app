@@ -42,6 +42,7 @@ public partial class MainWindow : FluentWindow
         DashboardPage.IsVisibleChanged += (_, e) => { if (e.NewValue is true) PlayEntrance(DashboardPage); };
         SensorsPage.IsVisibleChanged += (_, e) => { if (e.NewValue is true) PlayEntrance(SensorsPage); };
         SettingsPage.IsVisibleChanged += (_, e) => { if (e.NewValue is true) PlayEntrance(SettingsPage); };
+        ProcessesPage.IsVisibleChanged += (_, e) => { if (e.NewValue is true) PlayEntrance(ProcessesPage); };
 
         // Idle mode: nobody can see a minimized or hidden window, so stop updating it.
         StateChanged += (_, _) => UpdateActivity();
@@ -85,8 +86,8 @@ public partial class MainWindow : FluentWindow
         HeaderActions.Margin = stacked ? new Thickness(0, 10, 0, 0) : new Thickness(0);
 
         var narrow = width < 640;
-        DashboardLabel.Visibility = SensorsLabel.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
-        DashboardIcon.Margin = SensorsIcon.Margin = narrow ? new Thickness(0) : new Thickness(0, 0, 6, 0);
+        DashboardLabel.Visibility = SensorsLabel.Visibility = ProcessesLabel.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        DashboardIcon.Margin = SensorsIcon.Margin = ProcessesIcon.Margin = narrow ? new Thickness(0) : new Thickness(0, 0, 6, 0);
         var side = narrow ? 14 : 30;
         Header.Margin = new Thickness(side, 2, side, 10);
         Banners.Margin = new Thickness(side, 0, side, 4);
@@ -105,6 +106,9 @@ public partial class MainWindow : FluentWindow
             // Pages other than the dashboard are built the first time they're opened.
             case nameof(MainViewModel.IsSensorsSelected) when _viewModel.IsSensorsSelected:
                 EnsurePage(SensorsPage, () => new SensorsView { DataContext = _viewModel.Sensors });
+                return;
+            case nameof(MainViewModel.IsProcessesSelected) when _viewModel.IsProcessesSelected && _viewModel.Processes is { } processes:
+                EnsurePage(ProcessesPage, () => new ProcessesView { DataContext = processes });
                 return;
             case nameof(MainViewModel.IsSettingsSelected) when _viewModel.IsSettingsSelected:
                 EnsurePage(SettingsPage, () => new SettingsView { DataContext = _viewModel.Settings });

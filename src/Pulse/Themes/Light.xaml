@@ -51,6 +51,8 @@
     <SolidColorBrush x:Key="Pulse.Accent.Upload" Color="{StaticResource Pulse.Accent.Upload.Color}" />
     <SolidColorBrush x:Key="Pulse.Accent.Storage" Color="{StaticResource Pulse.Accent.Storage.Color}" />
     <SolidColorBrush x:Key="Pulse.Accent.Fans" Color="{StaticResource Pulse.Accent.Fans.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Gpu" Color="{StaticResource Pulse.Accent.Gpu.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Memory" Color="{StaticResource Pulse.Accent.Memory.Color}" />
 
     <SolidColorBrush x:Key="Pulse.Accent.Cpu.Soft" Color="#33FF7A45" />
     <SolidColorBrush x:Key="Pulse.Accent.Network.Soft" Color="#334FA8FF" />

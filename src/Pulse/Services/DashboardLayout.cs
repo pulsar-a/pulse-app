@@ -15,6 +15,9 @@ public enum TileKind
     Drives,
     Network,
 
+    /// <summary>The busiest programs by CPU, GPU and memory (step 10).</summary>
+    Processes,
+
     /// <summary>Sensors the user pinned: one sensor in large type, or a few as a group.</summary>
     Pinned,
 }
@@ -85,6 +88,7 @@ public static class DashboardLayout
         (TileKind.Fans, TileSize.Medium),
         (TileKind.Drives, TileSize.Medium),
         (TileKind.Network, TileSize.Medium),
+        (TileKind.Processes, TileSize.Full),
     ];
 
     public static int Span(TileSize size) => size switch
@@ -111,6 +115,7 @@ public static class DashboardLayout
         TileKind.Cores => [TileSize.Large, TileSize.Wide, TileSize.Full],
         TileKind.Pinned => [TileSize.Small, TileSize.Medium, TileSize.Large, TileSize.Wide],
         TileKind.Drives => [TileSize.Medium, TileSize.Large, TileSize.Wide],
+        TileKind.Processes => [TileSize.Medium, TileSize.Large, TileSize.Wide, TileSize.Full],
         _ => [TileSize.Small, TileSize.Medium, TileSize.Large],
     };
 

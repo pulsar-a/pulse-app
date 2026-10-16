@@ -63,9 +63,10 @@ built one at a time, ordered so each step builds on the previous ones instead of
 src/Pulse/
   Services/HardwareService.cs   Polls LHM on a background thread and publishes immutable snapshots
   Services/SensorFormat.cs      Units and number formatting per sensor type
+  Services/Processes/           Per-process CPU, GPU and memory sampling, grouped by program
   Models/HardwareSnapshot.cs    Snapshot records handed to the UI thread
   ViewModels/                   Dashboard, All sensors and main window state (CommunityToolkit.Mvvm)
-  Views/                        XAML for the Dashboard and All sensors pages
+  Views/                        XAML for the Dashboard, All sensors and Processes pages
   Controls/                     RingGauge, Sparkline and the color palette
   Themes/Styles.xaml            Card, text and navigation styles
 ```
