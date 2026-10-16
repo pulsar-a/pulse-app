@@ -25,6 +25,7 @@ pipeline) come first, even though they're less visible than tray icons or charts
 | 11 ⏳ | [Corsair cooler over USB](11-corsair-cooler.md) | 1, 2 | Coolant temperature and pump speed from the Corsair controller |
 | 12 ✅ | [Phone and web view](12-web-dashboard.md) | 2, 5 | Dashboard in a browser on the local network |
 | 13 | [Fan control](13-fan-control.md) | 4, 11 | Deferred: safe, limited fan curves (maybe never) |
+| 14 | [Release and distribution](14-release.md) | all | Signed installer, auto-updates, CI, first-run setup, clean uninstall, diagnostics |
 
 ## Dependency map
 
@@ -47,6 +48,8 @@ graph TD
     S5 --> S12[12 Web view]
     S4 --> S13[13 Fan control]
     S11 --> S13
+    S12 --> S14[14 Release]
+    S11 --> S14
 ```
 
 ## Why this order
