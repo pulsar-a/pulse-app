@@ -118,6 +118,8 @@ public partial class App : Application
         viewModel.Settings.AttachMini(_mini, () => viewModel.Search.Open(
             id => SettingsViewModel.AddMiniItem(settings, id), "Add a sensor to the mini window"));
         _tray.Mini = _mini;
+        _tray.ShowDiagnostics = ShowDiagnostics;
+        viewModel.Settings.OpenDiagnostics = ShowDiagnostics;
         MainWindow.Activated += (_, _) => _mini.SetPulseInFront(true);
         MainWindow.Deactivated += (_, _) => _mini.SetPulseInFront(false);
 
@@ -204,6 +206,22 @@ public partial class App : Application
         window.Topmost = true;
         window.Topmost = false;
         window.Focus();
+    }
+
+    /// <summary>The diagnostics report, in a window to check before copying.</summary>
+    private void ShowDiagnostics()
+    {
+        if (MainWindow?.DataContext is not MainViewModel viewModel)
+            return;
+        var owner = MainWindow is { IsVisible: true } ? MainWindow : null;
+        var scale = owner is null ? 1 : System.Windows.Media.VisualTreeHelper.GetDpi(owner).DpiScaleX;
+        var window = new DiagnosticsWindow(viewModel.BuildDiagnostics(scale));
+        if (owner is not null)
+            window.Owner = owner;
+        else
+            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        window.Show();
+        window.Activate();
     }
 
     private void ExitPulse()

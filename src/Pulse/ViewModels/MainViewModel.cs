@@ -166,6 +166,45 @@ public partial class MainViewModel : ObservableObject
         Settings.AttachAlerts(alerts);
     }
 
+    // ---- Diagnostics (step 14) ------------------------------------------------------------------
+
+    /// <summary>
+    /// The Copy diagnostics report: how Pulse is set up, what hardware it found, the USB coolers, the settings
+    /// and the log's tail, with private details taken out. UI thread.
+    /// </summary>
+    public string BuildDiagnostics(double displayScale)
+    {
+        _settings.Flush();
+        string json;
+        try
+        {
+            json = System.IO.File.Exists(_settings.FilePath) ? System.IO.File.ReadAllText(_settings.FilePath) : "{}";
+        }
+        catch (System.IO.IOException)
+        {
+            json = "{}";
+        }
+        var facts = new DiagnosticsFacts(
+            Settings.Version,
+            Diagnostics.WindowsVersion(),
+            HardwareService.IsElevated,
+            HardwareService.IsDriverInstalled,
+            (System.Windows.Media.RenderCapability.Tier >> 16) switch
+            {
+                2 => "graphics card (tier 2)",
+                1 => "partly on the graphics card (tier 1)",
+                _ => "software (tier 0)",
+            },
+            displayScale,
+            ThemeService.Current.ToString(),
+            System.Globalization.CultureInfo.CurrentCulture.Name,
+            _settings.Current.General.UpdateInterval);
+        return Diagnostics.Report(facts, _stream.Latest, Dashboard.CoolerStatuses,
+            Diagnostics.Tail(Log.FilePath, Diagnostics.LogLines), json,
+            new Redaction(_settings.Current.Web.Token, Environment.MachineName, Environment.UserName,
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
+    }
+
     // ---- USB coolers (step 11) -----------------------------------------------------------------
 
     /// <summary>Shows what Pulse does with each USB cooler on the cooling card and in Settings, as it changes.</summary>

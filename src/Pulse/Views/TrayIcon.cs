@@ -296,6 +296,9 @@ public sealed class TrayIcon : IDisposable
     /// <summary>The mini window, for its menu entries; set by the app.</summary>
     public MiniController? Mini { get; set; }
 
+    /// <summary>Opens the diagnostics report; set by the app.</summary>
+    public Action? ShowDiagnostics { get; set; }
+
     private void BuildMenu()
     {
         var menu = _icon.ContextMenu!;
@@ -352,6 +355,13 @@ public sealed class TrayIcon : IDisposable
                 await RefreshStartupCheckAsync(startup);
         };
         menu.Items.Add(startup);
+
+        if (ShowDiagnostics is { } diagnostics)
+        {
+            var report = new MenuItem { Header = "Copy diagnostics…" };
+            report.Click += (_, _) => diagnostics();
+            menu.Items.Add(report);
+        }
 
         menu.Items.Add(new Separator());
         var exit = new MenuItem { Header = "Exit Pulse" };

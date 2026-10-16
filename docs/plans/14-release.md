@@ -128,6 +128,32 @@ asking for admin rights looks exactly like malware. The options (check current p
 - Sign `Pulse.exe`, `Setup.exe` and the update packages (Velopack signs during `vpk pack` with a sign command).
   Reputation still builds over the first downloads; signing makes that per publisher, not per file.
 
+## Progress
+
+### CI and versioning (done)
+- `.github/workflows/ci.yml`: on pushes to `main` and on pull requests, `windows-latest` restores, builds the
+  solution in Release, runs the tests, and uploads the results (TRX) even when they fail. Full history is fetched
+  for the version. A newer push cancels a running build for the same branch.
+- The tests were checked for anything tied to this PC: the only system change is a temporary test key under
+  `HKCU\Software\PulseTests`, which is removed again; nothing creates tasks, firewall rules or real toasts.
+- MinVer sets the version from `v*` tags. It's a build-time package only, nothing is shipped. Settings → About shows it.
+
+### Copy diagnostics (done)
+- `Services/Diagnostics.cs` builds the report:
+  - Pulse's version, Windows (name, feature update and build from the registry), admin, PawnIO, rendering tier,
+    display scale, theme, culture and update interval.
+  - Every device with its identifier and how many of its sensors answered (sub-hardware indented), then totals.
+  - The USB coolers and their state; the settings with the web token removed; the last 500 lines of the log.
+- Redaction runs over the whole report: the token wherever it appears (the log can hold a link), the profile
+  folder as `%USERPROFILE%`, then the user and computer names as whole words (names under 3 letters are left,
+  so "al" doesn't blank out "all"). No readings or history are included.
+- `Views/DiagnosticsWindow` shows the report first, with Copy, Save as file and Close. Opened from Settings →
+  About → "Copy diagnostics…" and from the tray menu.
+- Checked on this PC: a real report has no trace of the user or computer name.
+- Tests (7): what the report contains; nothing private left, from settings and from log lines; short names
+  not over-redacted; settings losing only the token; reading the tail of a log being written; a report before
+  the first reading; the Windows version line. 338 passing.
+
 ## Decisions for you
 - **License:** MIT (simplest, most permissive) or GPL-3.0 (keeps forks open; also lets the Corsair driver be
   offered to LHM, which is MPL-2.0, either way). Needed before the repository is public.
@@ -146,9 +172,10 @@ asking for admin rights looks exactly like malware. The options (check current p
 
 ## Tasks
 - [ ] License, `THIRD-PARTY-NOTICES.md`, README install section (your decisions first).
-- [ ] CI: build and test on push and pull request.
-- [ ] Version from the git tag; release workflow publishing a GitHub Release.
-- [ ] Copy diagnostics with redaction and a preview, from Settings and the tray.
+- [x] CI: build and test on push and pull request (`.github/workflows/ci.yml`). Not run yet: it starts with the next push.
+- [x] Version from the git tag (MinVer): between tags it's `0.1.0-alpha.0.<commits>`; tag `v0.2.0` makes it 0.2.0.
+- [ ] Release workflow publishing a GitHub Release.
+- [x] Copy diagnostics with redaction and a preview, from Settings → About and the tray menu.
 - [ ] Spikes: data folder, elevated restart after update, startup task path, toasts and tray after install,
       uninstall rights.
 - [ ] Velopack packaging in the release workflow; in-app update check and install.

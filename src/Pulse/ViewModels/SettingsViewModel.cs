@@ -85,6 +85,14 @@ public partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(ThemeLight));
     }
 
+    // About → Copy diagnostics
+
+    /// <summary>Opens the diagnostics report for the user to check and copy; set by the app.</summary>
+    public Action? OpenDiagnostics { get; set; }
+
+    [RelayCommand]
+    private void CopyDiagnostics() => OpenDiagnostics?.Invoke();
+
     // Phone and web view
 
     private WebHost? _web;

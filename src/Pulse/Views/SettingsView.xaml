@@ -577,6 +577,20 @@
                         <TextBlock Text="Settings file" Style="{StaticResource SettingLabel}" />
                         <TextBlock Text="{Binding SettingsPath}" Style="{StaticResource Caption}" />
                     </StackPanel>
+
+                    <DockPanel Margin="0,16,0,0">
+                        <ui:Button DockPanel.Dock="Right" Content="Copy diagnostics…" VerticalAlignment="Center"
+                                   Command="{Binding CopyDiagnosticsCommand}">
+                            <ui:Button.Icon>
+                                <ui:SymbolIcon Symbol="DocumentCopy20" />
+                            </ui:Button.Icon>
+                        </ui:Button>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                            <TextBlock Text="Report a problem" Style="{StaticResource SettingLabel}" />
+                            <TextBlock Text="A report of what Pulse found on this PC and what its log says, to paste into a bug report. You see all of it before anything is copied."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
                 </StackPanel>
             </Border>
         </StackPanel>

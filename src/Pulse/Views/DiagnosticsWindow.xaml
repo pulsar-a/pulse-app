@@ -1,0 +1,41 @@
+<ui:FluentWindow x:Class="Pulse.Views.DiagnosticsWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="Pulse diagnostics"
+                 Width="760" Height="640" MinWidth="420" MinHeight="360"
+                 WindowStartupLocation="CenterOwner"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Pulse diagnostics" ShowMinimize="False" ShowMaximize="False" />
+
+        <StackPanel Grid.Row="1" Margin="20,4,20,10">
+            <TextBlock Text="What Pulse found on this PC, for a bug report" Style="{StaticResource CardTitle}" />
+            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0"
+                       Text="Check it before you share it. Pulse left out your web view link, your user and computer names, your profile folder, and all readings and history." />
+        </StackPanel>
+
+        <TextBox x:Name="Report" Grid.Row="2" Margin="20,0,20,0" IsReadOnly="True" FontFamily="Consolas" FontSize="12"
+                 TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                 AcceptsReturn="True" AutomationProperties.Name="Diagnostics report" />
+
+        <DockPanel Grid.Row="3" Margin="20,12,20,18">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <ui:Button Content="Save as file…" Margin="0,0,8,0" Click="Save_Click" />
+                <ui:Button Content="Copy" Appearance="Primary" Margin="0,0,8,0" Click="Copy_Click" />
+                <ui:Button Content="Close" Click="Close_Click" />
+            </StackPanel>
+            <TextBlock x:Name="Status" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+        </DockPanel>
+    </Grid>
+</ui:FluentWindow>
