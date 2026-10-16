@@ -11,6 +11,9 @@
     <SolidColorBrush x:Key="Pulse.Brand" Color="{StaticResource Pulse.Brand.Color}" />
     <SolidColorBrush x:Key="Pulse.Live" Color="#3DDC97" />
 
+    <!-- Small text (captions, hints): the same as WPF-UI's tertiary text in the dark theme -->
+    <SolidColorBrush x:Key="Pulse.Text.Caption" Color="#8BFFFFFF" />
+
     <!-- Surfaces -->
     <SolidColorBrush x:Key="Pulse.CardBackground" Color="#0DFFFFFF" />
     <SolidColorBrush x:Key="Pulse.CardBorder" Color="#14FFFFFF" />
@@ -29,7 +32,7 @@
     <SolidColorBrush x:Key="Pulse.PillHover" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="Pulse.PillSelected" Color="#26FFFFFF" />
     <SolidColorBrush x:Key="Pulse.Track" Color="#14FFFFFF" />
-    <SolidColorBrush x:Key="Pulse.SplashBackground" Color="#F20F1013" />
+    <SolidColorBrush x:Key="Pulse.SplashBackground" Color="#FF0F1013" />
     <!-- Popups sit outside the window, so they can't show Mica: they need an opaque surface. -->
     <SolidColorBrush x:Key="Pulse.PopupBackground" Color="#FF202228" />
     <SolidColorBrush x:Key="Pulse.TooltipBackground" Color="#F0101114" />
@@ -55,6 +58,10 @@
     <SolidColorBrush x:Key="Pulse.Accent.Storage.Soft" Color="#2938BDF8" />
     <SolidColorBrush x:Key="Pulse.Accent.Fans.Soft" Color="#292DD4BF" />
 
+    <!-- Heat borders on cards: nearing the limit, at it. -->
+    <SolidColorBrush x:Key="Pulse.Heat.Warm" Color="#FB923C" />
+    <SolidColorBrush x:Key="Pulse.Heat.Hot" Color="#EF4444" />
+
     <!-- Status -->
     <SolidColorBrush x:Key="Pulse.Warning" Color="#FFC048" />
     <SolidColorBrush x:Key="Pulse.Warning.Background" Color="#29FFC048" />
@@ -63,6 +70,8 @@
     <SolidColorBrush x:Key="Pulse.Info.Background" Color="#1F4FA8FF" />
     <SolidColorBrush x:Key="Pulse.Info.Border" Color="#554FA8FF" />
     <SolidColorBrush x:Key="Pulse.Danger" Color="#EF4444" />
+    <!-- Red for text: lighter than the badge red, so it stays readable on dark cards. -->
+    <SolidColorBrush x:Key="Pulse.Danger.Text" Color="#F87171" />
 
     <!-- Instruments: gauges, bars and placeholders -->
     <SolidColorBrush x:Key="Pulse.Gauge.Track" Color="#1CFFFFFF" />

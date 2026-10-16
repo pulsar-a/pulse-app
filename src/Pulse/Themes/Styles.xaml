@@ -18,14 +18,116 @@
         <Setter Property="Margin" Value="6" />
     </Style>
 
-    <!-- A card that opens sensor details when clicked: a hand cursor and a gentle hover lift. -->
+    <!-- A card that opens sensor details when clicked: a hand cursor, a brighter surface on hover, and
+         (with Windows animations on) a 2 px lift. -->
     <Style x:Key="ClickableCard" TargetType="Border" BasedOn="{StaticResource PulseCard}">
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <TranslateTransform />
+            </Setter.Value>
+        </Setter>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{DynamicResource Pulse.CardHover}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource Pulse.CardBorderHover}" />
             </Trigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True" />
+                    <Condition Binding="{Binding AnimationsEnabled, Source={x:Static controls:Motion.Current}}" Value="True" />
+                </MultiDataTrigger.Conditions>
+                <MultiDataTrigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.Y)"
+                                             To="-2" Duration="0:0:0.16" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </MultiDataTrigger.EnterActions>
+                <MultiDataTrigger.ExitActions>
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetProperty="(Border.RenderTransform).(TranslateTransform.Y)"
+                                             To="0" Duration="0:0:0.2" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </MultiDataTrigger.ExitActions>
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Cards whose view model has a Heat level (Processor, Graphics, System power, CPU cooling, pinned tiles). -->
+    <Style x:Key="HeatClickableCard" TargetType="Border" BasedOn="{StaticResource ClickableCard}">
+        <Style.Triggers>
+            <!-- Heat: an orange border when the main reading nears its limit, red at it, softly pulsing
+                 (still with Windows animations off). Border only, never behind the text. -->
+            <DataTrigger Binding="{Binding Heat}" Value="Warm">
+                <Setter Property="BorderBrush" Value="{DynamicResource Pulse.Heat.Warm}" />
+                <Setter Property="BorderThickness" Value="1.5" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Heat}" Value="Hot">
+                <Setter Property="BorderBrush" Value="{DynamicResource Pulse.Heat.Hot}" />
+                <Setter Property="BorderThickness" Value="1.5" />
+            </DataTrigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding Heat}" Value="Hot" />
+                    <Condition Binding="{Binding AnimationsEnabled, Source={x:Static controls:Motion.Current}}" Value="True" />
+                </MultiDataTrigger.Conditions>
+                <MultiDataTrigger.EnterActions>
+                    <BeginStoryboard Name="HeatPulse">
+                        <Storyboard RepeatBehavior="Forever" AutoReverse="True" Timeline.DesiredFrameRate="30">
+                            <DoubleAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Opacity)"
+                                             From="1" To="0.3" Duration="0:0:1.1">
+                                <DoubleAnimation.EasingFunction>
+                                    <SineEase EasingMode="EaseInOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </MultiDataTrigger.EnterActions>
+                <MultiDataTrigger.ExitActions>
+                    <StopStoryboard BeginStoryboardName="HeatPulse" />
+                </MultiDataTrigger.ExitActions>
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- The same for cards that aren't clickable as a whole (Drives: each row opens its own drive). -->
+    <Style x:Key="HeatCard" TargetType="Border" BasedOn="{StaticResource PulseCard}">
+        <Style.Triggers>
+            <!-- Heat: an orange border when the main reading nears its limit, red at it, softly pulsing
+                 (still with Windows animations off). Border only, never behind the text. -->
+            <DataTrigger Binding="{Binding Heat}" Value="Warm">
+                <Setter Property="BorderBrush" Value="{DynamicResource Pulse.Heat.Warm}" />
+                <Setter Property="BorderThickness" Value="1.5" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding Heat}" Value="Hot">
+                <Setter Property="BorderBrush" Value="{DynamicResource Pulse.Heat.Hot}" />
+                <Setter Property="BorderThickness" Value="1.5" />
+            </DataTrigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding Heat}" Value="Hot" />
+                    <Condition Binding="{Binding AnimationsEnabled, Source={x:Static controls:Motion.Current}}" Value="True" />
+                </MultiDataTrigger.Conditions>
+                <MultiDataTrigger.EnterActions>
+                    <BeginStoryboard Name="HeatPulseStatic">
+                        <Storyboard RepeatBehavior="Forever" AutoReverse="True" Timeline.DesiredFrameRate="30">
+                            <DoubleAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Opacity)"
+                                             From="1" To="0.3" Duration="0:0:1.1">
+                                <DoubleAnimation.EasingFunction>
+                                    <SineEase EasingMode="EaseInOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </MultiDataTrigger.EnterActions>
+                <MultiDataTrigger.ExitActions>
+                    <StopStoryboard BeginStoryboardName="HeatPulseStatic" />
+                </MultiDataTrigger.ExitActions>
+            </MultiDataTrigger>
         </Style.Triggers>
     </Style>
 
@@ -45,7 +147,7 @@
 
     <Style x:Key="Caption" TargetType="TextBlock" BasedOn="{StaticResource Secondary}">
         <Setter Property="FontSize" Value="11" />
-        <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource Pulse.Text.Caption}" />
     </Style>
 
     <Style x:Key="Metric" TargetType="TextBlock">

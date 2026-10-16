@@ -205,7 +205,7 @@
                 </DockPanel>
             </Border>
 
-            <TextBlock Text="{Binding ErrorText}" Foreground="{DynamicResource Pulse.Danger}" Margin="0,0,0,8"
+            <TextBlock Text="{Binding ErrorText}" Foreground="{DynamicResource Pulse.Danger.Text}" Margin="0,0,0,8"
                        Visibility="{Binding ErrorText, Converter={x:Static views:Converters.NotNullToVisibility}}" />
         </StackPanel>
 
@@ -302,104 +302,8 @@
             </Border>
         </Grid>
 
-        <!-- Launch splash: a red heartbeat trace that keeps beating until the first readings arrive. -->
-        <Grid x:Name="Splash" Grid.Row="1" Grid.RowSpan="3" Background="{DynamicResource Pulse.SplashBackground}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,60">
-                <Grid x:Name="SplashLogo" Width="240" Height="100" RenderTransformOrigin="0.5,0.5">
-                    <Grid.RenderTransform>
-                        <ScaleTransform />
-                    </Grid.RenderTransform>
-
-                    <!-- Rings that ripple out from the spike -->
-                    <Ellipse x:Name="Ring1" Width="70" Height="70" Stroke="{DynamicResource Pulse.Brand}" StrokeThickness="2"
-                             Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"
-                             RenderTransformOrigin="0.5,0.5" Margin="-12,0,0,0">
-                        <Ellipse.RenderTransform>
-                            <ScaleTransform />
-                        </Ellipse.RenderTransform>
-                    </Ellipse>
-                    <Ellipse x:Name="Ring2" Width="70" Height="70" Stroke="{DynamicResource Pulse.Brand}" StrokeThickness="1.5"
-                             Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Center"
-                             RenderTransformOrigin="0.5,0.5" Margin="-12,0,0,0">
-                        <Ellipse.RenderTransform>
-                            <ScaleTransform />
-                        </Ellipse.RenderTransform>
-                    </Ellipse>
-
-                    <!-- The trace, revealed left to right by an animated clip -->
-                    <Canvas x:Name="Trace" Width="240" Height="100">
-                        <Canvas.Clip>
-                            <RectangleGeometry x:Name="TraceClip" Rect="0,0,0,100" />
-                        </Canvas.Clip>
-                        <Path Stroke="{DynamicResource Pulse.Brand}" StrokeThickness="10" Opacity="0.22"
-                              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M4,55 L66,55 L76,46 L86,55 L98,55 L108,16 L120,88 L131,55 L146,55 L158,42 L170,55 L236,55" />
-                        <Path Stroke="{DynamicResource Pulse.Brand}" StrokeThickness="3.2"
-                              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              Data="M4,55 L66,55 L76,46 L86,55 L98,55 L108,16 L120,88 L131,55 L146,55 L158,42 L170,55 L236,55">
-                            <Path.Effect>
-                                <DropShadowEffect Color="{StaticResource Pulse.Brand.Color}" ShadowDepth="0" BlurRadius="18" Opacity="0.9" />
-                            </Path.Effect>
-                        </Path>
-                    </Canvas>
-                </Grid>
-
-                <TextBlock x:Name="SplashTitle" Text="Pulse" FontSize="34" HorizontalAlignment="Center"
-                           Margin="0,10,0,0" Opacity="0" Style="{StaticResource Metric}" />
-                <TextBlock x:Name="SplashStatus" Text="Reading your hardware…" HorizontalAlignment="Center"
-                           Margin="0,6,0,0" Opacity="0" Style="{StaticResource Secondary}" />
-            </StackPanel>
-
-            <Grid.Triggers>
-                <EventTrigger RoutedEvent="Loaded">
-                    <BeginStoryboard x:Name="HeartbeatStory">
-                        <Storyboard RepeatBehavior="Forever" Duration="0:0:1.5">
-                            <!-- Draw the trace -->
-                            <RectAnimation Storyboard.TargetName="TraceClip" Storyboard.TargetProperty="Rect"
-                                           From="0,0,0,100" To="0,0,240,100" Duration="0:0:0.85">
-                                <RectAnimation.EasingFunction>
-                                    <CubicEase EasingMode="EaseInOut" />
-                                </RectAnimation.EasingFunction>
-                            </RectAnimation>
-                            <DoubleAnimation Storyboard.TargetName="Trace" Storyboard.TargetProperty="Opacity"
-                                             From="1" To="0" BeginTime="0:0:1.1" Duration="0:0:0.35" />
-                            <!-- Ripple when the trace hits the spike -->
-                            <DoubleAnimation Storyboard.TargetName="Ring1" Storyboard.TargetProperty="Opacity"
-                                             From="0.8" To="0" BeginTime="0:0:0.42" Duration="0:0:0.9" />
-                            <DoubleAnimation Storyboard.TargetName="Ring1"
-                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                             From="0.3" To="2.4" BeginTime="0:0:0.42" Duration="0:0:0.9" />
-                            <DoubleAnimation Storyboard.TargetName="Ring1"
-                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                             From="0.3" To="2.4" BeginTime="0:0:0.42" Duration="0:0:0.9" />
-                            <DoubleAnimation Storyboard.TargetName="Ring2" Storyboard.TargetProperty="Opacity"
-                                             From="0.6" To="0" BeginTime="0:0:0.58" Duration="0:0:0.9" />
-                            <DoubleAnimation Storyboard.TargetName="Ring2"
-                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                             From="0.3" To="2.0" BeginTime="0:0:0.58" Duration="0:0:0.9" />
-                            <DoubleAnimation Storyboard.TargetName="Ring2"
-                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                             From="0.3" To="2.0" BeginTime="0:0:0.58" Duration="0:0:0.9" />
-                            <!-- A small heartbeat thump of the whole logo -->
-                            <DoubleAnimation Storyboard.TargetName="SplashLogo"
-                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                             From="1" To="1.06" BeginTime="0:0:0.42" Duration="0:0:0.12" AutoReverse="True" />
-                            <DoubleAnimation Storyboard.TargetName="SplashLogo"
-                                             Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                             From="1" To="1.06" BeginTime="0:0:0.42" Duration="0:0:0.12" AutoReverse="True" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation Storyboard.TargetName="SplashTitle" Storyboard.TargetProperty="Opacity"
-                                             To="1" BeginTime="0:0:0.25" Duration="0:0:0.4" />
-                            <DoubleAnimation Storyboard.TargetName="SplashStatus" Storyboard.TargetProperty="Opacity"
-                                             To="1" BeginTime="0:0:0.45" Duration="0:0:0.4" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </Grid.Triggers>
-        </Grid>
+        <!-- Launch splash: a cardiac-monitor heartbeat that keeps beating until the first readings arrive. -->
+        <views:SplashView x:Name="Splash" Grid.Row="1" Grid.RowSpan="3" />
     </Grid>
 
 </ui:FluentWindow>

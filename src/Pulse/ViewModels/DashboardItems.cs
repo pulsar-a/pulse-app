@@ -69,6 +69,9 @@ public partial class CoolingViewModel : ObservableObject
     public System.Collections.ObjectModel.ObservableCollection<StatRow> Rows { get; } = [];
 
     [ObservableProperty] public partial bool HasData { get; set; }
+
+    /// <summary>Hot when the pump is slower than its alert limit.</summary>
+    [ObservableProperty] public partial HeatLevel Heat { get; set; }
     [ObservableProperty] public partial string Source { get; set; } = "";
     [ObservableProperty] public partial string Headline { get; set; } = "—";
     [ObservableProperty] public partial string HeadlineCaption { get; set; } = "";

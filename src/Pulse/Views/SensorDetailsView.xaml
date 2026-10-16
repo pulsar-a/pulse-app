@@ -79,7 +79,7 @@
                                        CompareColor="{DynamicResource Pulse.Accent.Memory.Color}"
                                        ValueFormatter="{Binding ValueFormatter}"
                                        GridBrush="{DynamicResource Pulse.Divider}"
-                                       LabelBrush="{DynamicResource TextFillColorTertiaryBrush}"
+                                       LabelBrush="{DynamicResource Pulse.Text.Caption}"
                                        TooltipBackground="{DynamicResource Pulse.TooltipBackground}" />
 
                 <!-- Range stats -->

@@ -16,13 +16,10 @@ namespace Pulse;
 
 public partial class MainWindow : FluentWindow
 {
-    /// <summary>Show at least one full heartbeat, even when the first readings arrive instantly.</summary>
-    private static readonly TimeSpan MinimumSplash = TimeSpan.FromSeconds(1.5);
 
     /// <summary>If the hardware takes this long, drop the splash and show the skeleton UI instead.</summary>
     private static readonly TimeSpan MaximumSplash = TimeSpan.FromSeconds(6);
 
-    private readonly Stopwatch _sinceLaunch = Stopwatch.StartNew();
     private readonly DispatcherTimer _splashTimeout;
     private bool _splashDismissed;
 
@@ -101,7 +98,7 @@ public partial class MainWindow : FluentWindow
     private void UpdateActivity() =>
         _viewModel.IsWindowActive = IsVisible && WindowState != WindowState.Minimized;
 
-    private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
         {
@@ -119,10 +116,8 @@ public partial class MainWindow : FluentWindow
             case nameof(MainViewModel.Details):
                 WatchDetails();
                 return;
+            // The splash decides when to go: on the beat, after at least two beats.
             case nameof(MainViewModel.IsLoading) when !_viewModel.IsLoading:
-                var remaining = MinimumSplash - _sinceLaunch.Elapsed;
-                if (remaining > TimeSpan.Zero)
-                    await Task.Delay(remaining);
                 DismissSplash();
                 return;
         }
@@ -160,12 +155,12 @@ public partial class MainWindow : FluentWindow
             DetailsLayer.Visibility = Visibility.Visible;
         }
 
-        var fade = new DoubleAnimation(open ? 1 : 0, duration) { EasingFunction = ease };
-        var move = new DoubleAnimation(open ? 0 : DetailsPanel.Width, duration) { EasingFunction = ease };
+        var fade = Motion.Ui(null, open ? 1 : 0, duration, ease);
+        var move = Motion.Ui(null, open ? 0 : DetailsPanel.Width, duration, ease);
         if (open && DetailsScrim.Opacity >= 1 && slide.X == 0)
         {
             // Opening while already open (another sensor from the search): just a quick fade of the content.
-            DetailsPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(0.4, 1, TimeSpan.FromMilliseconds(200)));
+            DetailsPanel.BeginAnimation(OpacityProperty, Motion.Ui(0.4, 1, TimeSpan.FromMilliseconds(200)));
             return;
         }
         if (open)
@@ -213,9 +208,9 @@ public partial class MainWindow : FluentWindow
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         var duration = TimeSpan.FromMilliseconds(180);
         var scale = (ScaleTransform)SearchBoxCard.RenderTransform;
-        scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.96, 1, duration) { EasingFunction = ease });
-        scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.96, 1, duration) { EasingFunction = ease });
-        SearchLayer.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, Motion.Ui(0.96, 1, duration, ease));
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, Motion.Ui(0.96, 1, duration, ease));
+        SearchLayer.BeginAnimation(OpacityProperty, Motion.Ui(0, 1, duration, ease));
         Dispatcher.BeginInvoke(() =>
         {
             SearchBox.Focus();
@@ -290,6 +285,8 @@ public partial class MainWindow : FluentWindow
     /// </summary>
     private void PulseLiveDot()
     {
+        if (!Motion.Enabled)
+            return;
         var duration = TimeSpan.FromMilliseconds(650);
         var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
         var scale = (ScaleTransform)LiveHalo.RenderTransform;
@@ -313,6 +310,7 @@ public partial class MainWindow : FluentWindow
         Log.Write($"Built {host.Name} in {sw.ElapsedMilliseconds} ms");
     }
 
+    /// <summary>Hands over from the splash to the dashboard (once), which rises in as the splash leaves.</summary>
     private void DismissSplash()
     {
         if (_splashDismissed)
@@ -320,30 +318,23 @@ public partial class MainWindow : FluentWindow
         _splashDismissed = true;
         _splashTimeout.Stop();
 
-        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
-        var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(380)) { EasingFunction = ease };
-        fade.Completed += (_, _) =>
+        // The dashboard rises in as the splash zooms away.
+        Splash.Dismiss(() =>
         {
-            Splash.Visibility = Visibility.Collapsed;
-            Splash.BeginAnimation(OpacityProperty, null);
-            // Stop the endless heartbeat so a hidden splash doesn't keep animating.
-            HeartbeatStory.Storyboard.Remove(Splash);
-        };
-
-        // The logo swells slightly as it fades, like the screen breathing out.
-        var grow = new DoubleAnimation(1.25, TimeSpan.FromMilliseconds(380)) { EasingFunction = ease };
-        var scale = (ScaleTransform)SplashLogo.RenderTransform;
-        scale.BeginAnimation(ScaleTransform.ScaleXProperty, grow);
-        scale.BeginAnimation(ScaleTransform.ScaleYProperty, grow);
-        Splash.BeginAnimation(OpacityProperty, fade);
-
-        if (DashboardPage.IsVisible)
-            PlayEntrance(DashboardPage);
+            if (DashboardPage.IsVisible)
+                PlayEntrance(DashboardPage);
+        });
     }
 
     /// <summary>Fades a page in while it rises a few pixels into place.</summary>
     private static void PlayEntrance(FrameworkElement page)
     {
+        if (!Motion.Enabled)
+        {
+            page.BeginAnimation(OpacityProperty, null);
+            page.RenderTransform = Transform.Identity;
+            return;
+        }
         var rise = new TranslateTransform(0, 16);
         page.RenderTransform = rise;
 

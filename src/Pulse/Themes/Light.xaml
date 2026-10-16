@@ -1,0 +1,84 @@
+<!--
+    Pulse color tokens, light theme: the same keys as Dark.xaml.
+    The category accents are the same in both themes, so a color means the same thing everywhere (and
+    code that captured an accent keeps the right one after a switch). Text colors are deeper here, so
+    small text stays readable on light cards (see the contrast test).
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Brand -->
+    <Color x:Key="Pulse.Brand.Color">#FF3B5C</Color>
+    <SolidColorBrush x:Key="Pulse.Brand" Color="{StaticResource Pulse.Brand.Color}" />
+    <SolidColorBrush x:Key="Pulse.Live" Color="#16A34A" />
+
+    <!-- Text that WPF-UI's own light "tertiary" would make too faint on cards -->
+    <SolidColorBrush x:Key="Pulse.Text.Caption" Color="#FF5F5F5F" />
+
+    <!-- Surfaces: white cards over the light Mica backdrop -->
+    <SolidColorBrush x:Key="Pulse.CardBackground" Color="#B3FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.CardBorder" Color="#14000000" />
+    <SolidColorBrush x:Key="Pulse.CardHover" Color="#E6FFFFFF" />
+    <SolidColorBrush x:Key="Pulse.CardBorderHover" Color="#29000000" />
+    <SolidColorBrush x:Key="Pulse.EditOverlay" Color="#A6F3F3F3" />
+    <SolidColorBrush x:Key="Pulse.EditBorder" Color="#59000000" />
+    <SolidColorBrush x:Key="Pulse.Scrim" Color="#40000000" />
+    <SolidColorBrush x:Key="Pulse.SubtleFill" Color="#0D000000" />
+    <SolidColorBrush x:Key="Pulse.QuietFill" Color="#0A000000" />
+    <SolidColorBrush x:Key="Pulse.Divider" Color="#14000000" />
+    <SolidColorBrush x:Key="Pulse.RowHover" Color="#08000000" />
+    <SolidColorBrush x:Key="Pulse.HeaderHover" Color="#0F000000" />
+    <SolidColorBrush x:Key="Pulse.PillHover" Color="#0F000000" />
+    <SolidColorBrush x:Key="Pulse.PillSelected" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="Pulse.Track" Color="#14000000" />
+    <SolidColorBrush x:Key="Pulse.SplashBackground" Color="#FFF3F3F5" />
+    <SolidColorBrush x:Key="Pulse.PopupBackground" Color="#FFF9F9FA" />
+    <!-- The chart's hover readout stays dark (white text) in both themes. -->
+    <SolidColorBrush x:Key="Pulse.TooltipBackground" Color="#F0202228" />
+
+    <!-- Category accents (the same as the dark theme) -->
+    <Color x:Key="Pulse.Accent.Cpu.Color">#FF7A45</Color>
+    <Color x:Key="Pulse.Accent.Gpu.Color">#3DDC97</Color>
+    <Color x:Key="Pulse.Accent.Memory.Color">#A78BFA</Color>
+    <Color x:Key="Pulse.Accent.Power.Color">#FFC048</Color>
+    <Color x:Key="Pulse.Accent.Network.Color">#4FA8FF</Color>
+    <Color x:Key="Pulse.Accent.Upload.Color">#A78BFA</Color>
+    <Color x:Key="Pulse.Accent.Storage.Color">#38BDF8</Color>
+    <Color x:Key="Pulse.Accent.Fans.Color">#2DD4BF</Color>
+
+    <SolidColorBrush x:Key="Pulse.Accent.Cpu" Color="{StaticResource Pulse.Accent.Cpu.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Network" Color="{StaticResource Pulse.Accent.Network.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Upload" Color="{StaticResource Pulse.Accent.Upload.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Storage" Color="{StaticResource Pulse.Accent.Storage.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Fans" Color="{StaticResource Pulse.Accent.Fans.Color}" />
+
+    <SolidColorBrush x:Key="Pulse.Accent.Cpu.Soft" Color="#33FF7A45" />
+    <SolidColorBrush x:Key="Pulse.Accent.Network.Soft" Color="#334FA8FF" />
+    <SolidColorBrush x:Key="Pulse.Accent.Storage.Soft" Color="#3338BDF8" />
+    <SolidColorBrush x:Key="Pulse.Accent.Fans.Soft" Color="#332DD4BF" />
+
+    <!-- Heat borders on cards -->
+    <SolidColorBrush x:Key="Pulse.Heat.Warm" Color="#EA580C" />
+    <SolidColorBrush x:Key="Pulse.Heat.Hot" Color="#DC2626" />
+
+    <!-- Status: deeper, since these are also used for text -->
+    <SolidColorBrush x:Key="Pulse.Warning" Color="#B45309" />
+    <SolidColorBrush x:Key="Pulse.Warning.Background" Color="#26F59E0B" />
+    <SolidColorBrush x:Key="Pulse.Warning.Border" Color="#66D97706" />
+    <SolidColorBrush x:Key="Pulse.Info" Color="#0067C0" />
+    <SolidColorBrush x:Key="Pulse.Info.Background" Color="#1A0067C0" />
+    <SolidColorBrush x:Key="Pulse.Info.Border" Color="#4D0067C0" />
+    <SolidColorBrush x:Key="Pulse.Danger" Color="#C42B1C" />
+    <SolidColorBrush x:Key="Pulse.Danger.Text" Color="#C42B1C" />
+
+    <!-- Instruments -->
+    <SolidColorBrush x:Key="Pulse.Gauge.Track" Color="#17000000" />
+    <SolidColorBrush x:Key="Pulse.Gauge.Tick" Color="#2B000000" />
+    <SolidColorBrush x:Key="Pulse.Gauge.TickMajor" Color="#5C000000" />
+    <SolidColorBrush x:Key="Pulse.Gauge.Knob" Color="#FFFFFFFF" />
+    <Color x:Key="Pulse.Gauge.BandBase">#E7E7EC</Color>
+    <SolidColorBrush x:Key="Pulse.Bar.Cap" Color="#CC1F1F1F" />
+    <Color x:Key="Pulse.Shimmer.Base">#0D000000</Color>
+    <Color x:Key="Pulse.Shimmer.Highlight">#1F000000</Color>
+
+</ResourceDictionary>

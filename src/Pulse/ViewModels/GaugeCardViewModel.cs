@@ -30,6 +30,9 @@ public partial class GaugeCardViewModel : ObservableObject
     /// <summary>The sensor the dial shows; clicking the card opens its details.</summary>
     [ObservableProperty] public partial string? SensorId { get; set; }
     [ObservableProperty] public partial string Device { get; set; } = "Not detected";
+
+    /// <summary>How close the main reading is to its limit; colors the card's border.</summary>
+    [ObservableProperty] public partial HeatLevel Heat { get; set; }
     [ObservableProperty] public partial double Gauge { get; set; }
     [ObservableProperty] public partial string GaugeText { get; set; } = "—";
     [ObservableProperty] public partial string GaugeCaption { get; set; } = "";

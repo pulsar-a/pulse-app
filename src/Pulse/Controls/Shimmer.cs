@@ -39,17 +39,16 @@ public sealed class Shimmer : Border
 
         // Sliding the gradient from one width left to one width right carries the highlight band
         // from off the left edge to off the right edge; outside the gradient the base color pads it.
-        Loaded += (_, _) => sweep.BeginAnimation(TranslateTransform.XProperty,
-            Sweep());
+        // With Windows animations off, placeholders stay still (the base color alone still reads as "loading").
+        Loaded += (_, _) => sweep.BeginAnimation(TranslateTransform.XProperty, Motion.Enabled ? Sweep() : null);
         Unloaded += (_, _) => sweep.BeginAnimation(TranslateTransform.XProperty, null);
         IsVisibleChanged += (_, e) =>
         {
             // Don't animate placeholders nobody can see.
             if (e.NewValue is false)
                 sweep.BeginAnimation(TranslateTransform.XProperty, null);
-            else if (IsLoaded)
-                sweep.BeginAnimation(TranslateTransform.XProperty,
-                    Sweep());
+            else if (IsLoaded && Motion.Enabled)
+                sweep.BeginAnimation(TranslateTransform.XProperty, Sweep());
         };
     }
 

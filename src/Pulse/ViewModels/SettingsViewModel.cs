@@ -54,6 +54,35 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
+    // Appearance
+
+    public bool ThemeMatchWindows
+    {
+        get => _settings.Current.Appearance.Theme == AppearanceSettings.MatchWindows;
+        set { if (value) SetTheme(AppearanceSettings.MatchWindows); }
+    }
+
+    public bool ThemeDark
+    {
+        get => _settings.Current.Appearance.Theme == AppearanceSettings.Dark;
+        set { if (value) SetTheme(AppearanceSettings.Dark); }
+    }
+
+    public bool ThemeLight
+    {
+        get => _settings.Current.Appearance.Theme == AppearanceSettings.Light;
+        set { if (value) SetTheme(AppearanceSettings.Light); }
+    }
+
+    private void SetTheme(string theme)
+    {
+        if (_settings.Current.Appearance.Theme == theme) return;
+        _settings.Update(s => s.Appearance.Theme = theme);
+        OnPropertyChanged(nameof(ThemeMatchWindows));
+        OnPropertyChanged(nameof(ThemeDark));
+        OnPropertyChanged(nameof(ThemeLight));
+    }
+
     // Startup and tray
 
     public bool ShowTrayIcon

@@ -43,6 +43,21 @@
                 </StackPanel>
             </Border>
 
+            <!-- Appearance -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="Appearance" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="Theme" Style="{StaticResource SettingLabel}" />
+                    <TextBlock Text="Matching Windows follows it as it changes, for example with a light theme by day and dark at night. Animations follow Windows' Animation effects setting."
+                               Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                    <WrapPanel Margin="0,8,0,0">
+                        <RadioButton Content="Match Windows" GroupName="Theme" Margin="0,0,24,4" IsChecked="{Binding ThemeMatchWindows}" />
+                        <RadioButton Content="Dark" GroupName="Theme" Margin="0,0,24,4" IsChecked="{Binding ThemeDark}" />
+                        <RadioButton Content="Light" GroupName="Theme" Margin="0,0,0,4" IsChecked="{Binding ThemeLight}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Startup and tray -->
             <Border Style="{StaticResource PulseCard}">
                 <StackPanel>

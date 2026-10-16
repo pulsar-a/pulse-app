@@ -1,0 +1,87 @@
+<UserControl x:Class="Pulse.Views.SplashView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource Pulse.SplashBackground}"
+             Loaded="OnLoaded" Focusable="False" IsTabStop="False">
+
+    <!--
+        The launch heartbeat, drawn like a cardiac monitor: a white-hot point sweeps across a faint grid
+        drawing a glowing ECG trace that fades out behind it. On the spike, shockwave rings burst out,
+        the glow behind everything flares and the title thumps. The trace and all timing are built in
+        SplashView.xaml.cs, from one list of points, so the head follows the line exactly.
+        With Windows animations off it's a still picture of the full trace.
+    -->
+    <Grid x:Name="Root" RenderTransformOrigin="0.5,0.45">
+        <Grid.RenderTransform>
+            <ScaleTransform />
+        </Grid.RenderTransform>
+
+        <!-- A soft red glow behind the monitor; it flares on each beat. -->
+        <Ellipse x:Name="Aura" Width="660" Height="380" Opacity="0.35" IsHitTestVisible="False"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,90">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop x:Name="AuraCore" Offset="0" />
+                    <GradientStop x:Name="AuraEdge" Offset="1" />
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
+
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,60">
+            <!-- The monitor: grid, glow, trace, head and the rings. -->
+            <Grid x:Name="Monitor" Width="480" Height="150" RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform>
+                    <ScaleTransform />
+                </Grid.RenderTransform>
+
+                <Rectangle x:Name="GridLines" IsHitTestVisible="False" />
+
+                <Canvas x:Name="Scope" Width="480" Height="150" ClipToBounds="False">
+                    <Path x:Name="TraceGlow" StrokeThickness="9" Opacity="0.55"
+                          StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                        <Path.Effect>
+                            <BlurEffect Radius="12" />
+                        </Path.Effect>
+                    </Path>
+                    <Path x:Name="Trace" StrokeThickness="3"
+                          StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+
+                    <Ellipse x:Name="Ring1" Width="80" Height="80" StrokeThickness="2" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <ScaleTransform />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Ellipse x:Name="Ring2" Width="80" Height="80" StrokeThickness="1.5" Opacity="0" RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <ScaleTransform />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+
+                    <!-- The point drawing the line: a white-hot core in a red halo. -->
+                    <Grid x:Name="Head" Width="44" Height="44" Opacity="0" IsHitTestVisible="False">
+                        <Ellipse x:Name="HeadHalo" />
+                        <Ellipse Width="7" Height="7" Fill="White" />
+                    </Grid>
+                </Canvas>
+            </Grid>
+
+            <!-- "Pulse", assembled letter by letter. -->
+            <StackPanel x:Name="Title" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0"
+                        RenderTransformOrigin="0.5,0.5">
+                <StackPanel.RenderTransform>
+                    <ScaleTransform />
+                </StackPanel.RenderTransform>
+            </StackPanel>
+            <TextBlock x:Name="Status" Text="Reading your hardware…" HorizontalAlignment="Center" Margin="0,8,0,0"
+                       Style="{StaticResource Secondary}" FontSize="13" />
+        </StackPanel>
+
+        <!-- The parting shockwave when the dashboard takes over. -->
+        <Ellipse x:Name="Farewell" Width="200" Height="200" StrokeThickness="1.2" Opacity="0" IsHitTestVisible="False"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,110" RenderTransformOrigin="0.5,0.5">
+            <Ellipse.RenderTransform>
+                <ScaleTransform />
+            </Ellipse.RenderTransform>
+        </Ellipse>
+    </Grid>
+</UserControl>

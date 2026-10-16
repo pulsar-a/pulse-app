@@ -94,6 +94,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
 
     private string? PumpSensorId => _catalog.RoleSensor(SensorRoles.Pump);
 
+    private IReadOnlyList<AlertRule> Rules => _settings.Current.Alerts.Rules;
+
     /// <summary>Remembers which fan header the pump is on; the next tick moves it into the cooling card.</summary>
     private void SetPump(string sensorId) => _catalog.SetRole(SensorRoles.Pump, sensorId);
 
@@ -165,6 +167,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         if (temp is { } t)
         {
             Cpu.SetGauge("temperature", t, 100, v => SensorFormat.Degrees(v));
+            Cpu.Heat = Heat.Above(t, Heat.Limit(Rules, Heat.CpuRule), Cpu.Heat);
             Cpu.GaugeCaption = "package";
             Cpu.HistoryMax = 100;
             Cpu.HistoryLabel = "Temperature, last minute";
@@ -174,6 +177,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         else
         {
             Cpu.SetGauge("load", load, 100, v => $"{v:0}%");
+            Cpu.Heat = HeatLevel.None;
             Cpu.GaugeCaption = "load";
             Cpu.HistoryMax = 100;
             Cpu.HistoryLabel = "Load, last minute";
@@ -206,6 +210,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
 
         Gpu.Device = gpu.Name;
         Gpu.SetGauge("temperature", temp, 100, v => SensorFormat.Degrees(v));
+        // The hot spot is what the GPU alert watches; without one, the core temperature stands in.
+        Gpu.Heat = Heat.Above(hotSpot ?? temp, Heat.Limit(Rules, Heat.GpuRule), Gpu.Heat);
         Gpu.GaugeCaption = hotSpot is { } h ? $"hot spot {SensorFormat.Degrees(h)}" : "core";
         Gpu.HistoryMax = 100;
         Gpu.HistoryLabel = "Load, last minute";
@@ -291,6 +297,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
 
             Power.Device = psu.Name;
             Power.SetGauge("psu", total, capacity, v => $"{v:0} W");
+            // No alert for this one: warm from 75% of the PSU's rating, hot from 90%.
+            Power.Heat = Heat.Above(total / capacity * 100, 90, Power.Heat, band: 15);
             Power.GaugeCaption = $"of {capacity:0} W";
             Power.HistoryMax = double.NaN;
             Power.HistoryLabel = "System draw, last minute";
@@ -307,6 +315,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         float? sum = cpuPower is null && gpuPower is null ? null : (cpuPower ?? 0) + (gpuPower ?? 0);
         Power.Device = "CPU and graphics card";
         Power.SetGauge("cpu+gpu", sum, 800, v => $"{v:0} W");
+        Power.Heat = HeatLevel.None;
         Power.GaugeCaption = "CPU + GPU";
         Power.HistoryMax = double.NaN;
         Power.HistoryLabel = "Draw, last minute";
@@ -456,6 +465,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         var drives = snapshot.OfType(HardwareType.Storage).ToList();
         Sync(Drives, drives.Count, () => new DriveRowViewModel());
         DrivesCard.HasDrives = drives.Count > 0;
+        float? hottest = null;
 
         for (var i = 0; i < drives.Count; i++)
         {
@@ -463,6 +473,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             var row = Drives[i];
             var tempSensor = drive.AllSensors.FirstOrDefault(s => s.Type == SensorType.Temperature && s.HasValue);
             var temp = tempSensor?.Value;
+            if (temp is { } dt && (hottest is null || dt > hottest)) hottest = dt;
             row.SensorId = tempSensor?.Id;
             var used = drive.Value(SensorType.Load, "Used Space");
             var health = drive.Value(SensorType.Level, "Life", "Remaining Life")
@@ -486,6 +497,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                 ? $"R {SensorFormat.Rate(read ?? 0)}  ·  W {SensorFormat.Rate(write ?? 0)}"
                 : "";
         }
+
+        DrivesCard.Heat = Heat.Above(hottest, Heat.Limit(Rules, Heat.DriveRule), DrivesCard.Heat);
     }
 
     /// <summary>LHM names drives after the Windows disk number: "/nvme/2" is disk 2.</summary>
@@ -566,6 +579,9 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         UpdatePumpHeaders(headers, namedPump: pumps.Count > 0 && pumps[0].Id != PumpSensorId);
 
         Cooling.HasData = pumps.Count + coolant.Count + flows.Count > 0;
+        Cooling.Heat = pumps.Count > 0 && pumps[0].Id == PumpSensorId
+            ? Heat.Below(pumps[0].Value, Heat.Limit(Rules, Heat.PumpRule), Cooling.Heat, margin: 50)
+            : HeatLevel.None;
         if (!Cooling.HasData)
         {
             if (!_isElevated)
@@ -729,6 +745,10 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
 
         foreach (var tile in pinned)
             tile.Update(found, _catalog, _stream, HistorySamples, CardAccent);
+        // Pinned sensors with an alert limit (a coolant or drive temperature, say) warm up like the cards.
+        foreach (var tile in pinned)
+            tile.UpdateHeat(sensor =>
+                Heat.Above(sensor.Value, AlertEngine.AboveThresholdFor(sensor.SensorId, snapshot, Rules, PumpSensorId), sensor.Heat));
         foreach (var tile in _tiles.Values.Where(t => t.IsPinned))
             tile.RefreshTitle();
     }

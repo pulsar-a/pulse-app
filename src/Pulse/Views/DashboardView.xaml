@@ -18,7 +18,7 @@
     -->
     <UserControl.Resources>
         <DataTemplate DataType="{x:Type vm:GaugeCardViewModel}">
-            <Border Style="{StaticResource ClickableCard}" ToolTip="Show history">
+            <Border Style="{StaticResource HeatClickableCard}" ToolTip="Show history">
                 <Border.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
                 </Border.InputBindings>
@@ -46,7 +46,7 @@
                                             RangeMin="{Binding GaugeMin}" RangeMax="{Binding GaugeMax}" />
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock Text="{Binding GaugeText}" FontSize="34" HorizontalAlignment="Center"
-                                       Style="{StaticResource Metric}" />
+                                                    Style="{StaticResource Metric}" />
                             <TextBlock Text="{Binding GaugeCaption}" HorizontalAlignment="Center"
                                        Style="{StaticResource Secondary}" />
                         </StackPanel>
@@ -58,7 +58,7 @@
                             <Border Background="{DynamicResource Pulse.SubtleFill}" CornerRadius="6" Padding="6,1" Margin="0,0,4,0"
                                     ToolTip="Lowest since Pulse started">
                                 <TextBlock FontSize="11" Style="{StaticResource Metric}" FontWeight="Normal">
-                                    <Run Text="▾" Foreground="{DynamicResource TextFillColorTertiaryBrush}" /><Run Text="{Binding MinText, Mode=OneWay}" />
+                                    <Run Text="▾" Foreground="{DynamicResource Pulse.Text.Caption}" /><Run Text="{Binding MinText, Mode=OneWay}" />
                                 </TextBlock>
                             </Border>
                             <Border Background="{DynamicResource Pulse.SubtleFill}" CornerRadius="6" Padding="6,1"
@@ -134,7 +134,7 @@
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type vm:CoolingViewModel}">
-            <Border Style="{StaticResource ClickableCard}" ToolTip="Show history">
+            <Border Style="{StaticResource HeatClickableCard}" ToolTip="Show history">
                 <Border.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
                 </Border.InputBindings>
@@ -250,7 +250,7 @@
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type vm:DrivesCardViewModel}">
-                <Border Style="{StaticResource PulseCard}">
+                <Border Style="{StaticResource HeatCard}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,12">
                             <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Storage.Soft}">
@@ -373,7 +373,7 @@
 
         <!-- Pinned sensors: one in large type with a sparkline, or a group of rows. -->
         <DataTemplate DataType="{x:Type vm:PinnedTileViewModel}">
-            <Border Style="{StaticResource ClickableCard}" ToolTip="Show history">
+            <Border Style="{StaticResource HeatClickableCard}" ToolTip="Show history">
                 <Border.InputBindings>
                     <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Primary.SensorId}" />
                 </Border.InputBindings>
@@ -403,7 +403,7 @@
                                 <Border Background="{DynamicResource Pulse.SubtleFill}" CornerRadius="6" Padding="6,1" Margin="0,0,4,0"
                                         ToolTip="Lowest since Pulse started">
                                     <TextBlock FontSize="11" Style="{StaticResource Metric}" FontWeight="Normal">
-                                        <Run Text="▾" Foreground="{DynamicResource TextFillColorTertiaryBrush}" /><Run Text="{Binding MinText, Mode=OneWay}" />
+                                        <Run Text="▾" Foreground="{DynamicResource Pulse.Text.Caption}" /><Run Text="{Binding MinText, Mode=OneWay}" />
                                     </TextBlock>
                                 </Border>
                                 <Border Background="{DynamicResource Pulse.SubtleFill}" CornerRadius="6" Padding="6,1"
@@ -505,7 +505,7 @@
                                                                     <!-- How much of a row the card would take -->
                                                                     <Grid DockPanel.Dock="Right" Width="72" Height="6" Margin="16,0,0,0" VerticalAlignment="Center">
                                                                         <Border Background="{DynamicResource Pulse.Track}" CornerRadius="3" />
-                                                                        <Border x:Name="Fill" Background="{DynamicResource TextFillColorTertiaryBrush}" CornerRadius="3"
+                                                                        <Border x:Name="Fill" Background="{DynamicResource Pulse.Text.Caption}" CornerRadius="3"
                                                                                 Width="{Binding PreviewWidth}" HorizontalAlignment="Left" />
                                                                     </Grid>
                                                                     <StackPanel>

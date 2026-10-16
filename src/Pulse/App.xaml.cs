@@ -39,9 +39,15 @@ public partial class App : Application
             return;
         }
 
-        ApplicationThemeManager.Apply(ApplicationTheme.Dark, WindowBackdropType.Mica, true);
 
         Log.Start();
+        // WPF draws on the graphics card when it can (tier 2); worth knowing when someone reports slow drawing.
+        Log.Write((System.Windows.Media.RenderCapability.Tier >> 16) switch
+        {
+            2 => "Rendering on the graphics card (full hardware acceleration)",
+            1 => "Rendering partly on the graphics card",
+            _ => "Rendering in software (no usable graphics acceleration)",
+        });
         UiWatchdog.Start(Dispatcher);
 
         // A monitoring app should keep running: log UI errors instead of dying on them.
@@ -54,11 +60,22 @@ public partial class App : Application
             Log.Write($"Unhandled error (terminating: {args.IsTerminating}): {args.ExceptionObject}");
         var settings = _settings = new SettingsService();
         settings.Load();
+        // Dark, light, or whatever Windows uses (Settings → Appearance); before any window is built.
+        var theme = settings.Current.Appearance.Theme;
+        ThemeService.Apply(theme);
 
         var stream = new SensorStream();
         _hardware = new HardwareService(stream);
         var viewModel = new MainViewModel(_hardware, stream, settings, Dispatcher);
         MainWindow = new MainWindow(viewModel);
+        // Watching Windows' setting needs a window; switching in Settings applies straight away.
+        ThemeService.Apply(theme, MainWindow);
+        settings.Changed += () =>
+        {
+            if (settings.Current.Appearance.Theme == theme) return;
+            theme = settings.Current.Appearance.Theme;
+            ThemeService.Apply(theme, MainWindow);
+        };
         MainWindow.Closing += OnMainWindowClosing;
 
         _tray = new TrayIcon(settings, viewModel.Catalog, stream, Dispatcher, ToggleWindow, BringToFront, ExitPulse);

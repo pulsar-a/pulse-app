@@ -20,7 +20,7 @@ pipeline) come first, even though they're less visible than tray icons or charts
 | 6 ✅ | [Sensor details](06-sensor-details.md) | 1, 2, 5 | Click any sensor for a large chart and stats |
 | 7 ✅ | [Customizable dashboard](07-customizable-dashboard.md) | 1, 6 | Pin sensors, reorder and hide cards |
 | 8 ✅ | [Responsive layout and mini mode](08-responsive-and-mini-mode.md) | 7 | Reflowing dashboard, always-on-top mini window |
-| 9 | [Visual polish](09-visual-polish.md) | 1, 7 | Rolling numbers, hot-card glow, light theme |
+| 9 ✅ | [Visual polish](09-visual-polish.md) | 1, 7 | Heat-reactive cards, light theme, new splash |
 | 10 | [Process insights](10-process-insights.md) | 2 | "What's heating my PC" process list |
 | 11 | [Corsair cooler over USB](11-corsair-cooler.md) | 1, 2 | Coolant temperature and pump speed from the Corsair controller |
 | 12 | [Phone and web view](12-web-dashboard.md) | 2, 5 | Dashboard in a browser on the local network |

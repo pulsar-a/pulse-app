@@ -145,7 +145,7 @@
                         <TextBlock Text="{Binding Name}" FontSize="13" Style="{StaticResource Secondary}"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <ui:SymbolIcon Symbol="Pen16" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                       Foreground="{DynamicResource Pulse.Text.Caption}"
                                        Visibility="{Binding IsRenamed, Converter={StaticResource BoolToVisibility}}" />
                         <StackPanel.ToolTip>
                             <ToolTip Visibility="{Binding IsRenamed, Converter={StaticResource BoolToVisibility}}">

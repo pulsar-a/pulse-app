@@ -179,7 +179,7 @@ public sealed class TileFlowPanel : Panel
     private bool Place(UIElement child, Rect target, long now)
     {
         var placement = _placements.GetOrCreateValue(child);
-        if (!AnimateMoves || placement.Shown is not { } shown)
+        if (!AnimateMoves || !Motion.Enabled || placement.Shown is not { } shown)
         {
             placement.Shown = placement.From = placement.To = target;
             child.Arrange(target);

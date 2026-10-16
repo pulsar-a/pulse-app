@@ -149,6 +149,20 @@ public partial class PinnedTileViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(Title), nameof(Primary))]
     public partial bool IsGroup { get; private set; }
 
+    /// <summary>The hottest of its sensors that have an alert limit.</summary>
+    [ObservableProperty] public partial HeatLevel Heat { get; private set; }
+
+    public void UpdateHeat(Func<PinnedSensorViewModel, HeatLevel> heat)
+    {
+        var level = HeatLevel.None;
+        foreach (var sensor in Sensors)
+        {
+            sensor.Heat = heat(sensor);
+            if (sensor.Heat > level) level = sensor.Heat;
+        }
+        Heat = level;
+    }
+
     public PinnedSensorViewModel? Primary => Sensors.FirstOrDefault();
 
     public string Title => !string.IsNullOrWhiteSpace(CustomTitle) ? CustomTitle!
@@ -202,6 +216,10 @@ public partial class PinnedSensorViewModel : ObservableObject
     [ObservableProperty] public partial string? MinText { get; private set; }
     [ObservableProperty] public partial string? MaxText { get; private set; }
     [ObservableProperty] public partial bool IsMissing { get; private set; }
+    [ObservableProperty] public partial HeatLevel Heat { get; set; }
+
+    /// <summary>The latest reading, for the heat rules.</summary>
+    public double? Value { get; private set; }
     [ObservableProperty] public partial IReadOnlyList<double>? History { get; private set; }
     [ObservableProperty] public partial int HistoryCapacity { get; private set; } = GaugeCardViewModel.HistoryLength;
     [ObservableProperty] public partial Color Accent { get; private set; } = Palette.Cpu;
@@ -214,6 +232,7 @@ public partial class PinnedSensorViewModel : ObservableObject
         {
             // Not in this snapshot: unplugged, or only readable as administrator. Keep the tile, say why.
             IsMissing = true;
+            Value = null;
             if (Name.Length == 0)
                 Name = catalog.Settings.Current.Sensors.Names.GetValueOrDefault(SensorId) ?? SensorId;
             Hardware = "Not detected right now";
@@ -224,6 +243,7 @@ public partial class PinnedSensorViewModel : ObservableObject
         }
 
         var sensor = f.Sensor;
+        Value = sensor.HasValue ? sensor.Value : null;
         IsMissing = false;
         Name = catalog.DisplayName(sensor);
         Hardware = f.Hardware;
@@ -269,4 +289,7 @@ public partial class DrivesCardViewModel : ObservableObject
 {
     public ObservableCollection<DriveRowViewModel> Rows { get; } = [];
     [ObservableProperty] public partial bool HasDrives { get; set; }
+
+    /// <summary>From the hottest drive.</summary>
+    [ObservableProperty] public partial HeatLevel Heat { get; set; }
 }

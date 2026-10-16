@@ -24,6 +24,7 @@ public sealed class Settings
     public HistorySettings History { get; set; } = new();
     public DashboardSettings Dashboard { get; set; } = new();
     public MiniSettings Mini { get; set; } = new();
+    public AppearanceSettings Appearance { get; set; } = new();
 
     /// <summary>Version 1 stored the pump header here; <see cref="SettingsService.Load"/> moves it into roles.</summary>
     [JsonPropertyName("PumpSensorId")]
@@ -210,6 +211,8 @@ public sealed class SettingsService : IDisposable
         settings.Alerts.Rules ??= [];
         settings.Dashboard ??= new DashboardSettings();
         settings.Mini ??= new MiniSettings();
+        settings.Appearance ??= new AppearanceSettings();
+        settings.Appearance.Theme ??= AppearanceSettings.MatchWindows;
         settings.Mini.Positions ??= new Dictionary<string, MiniPosition>();
         settings.Mini.Hotkey ??= "";
         if (settings.Dashboard.Tiles is { } tiles && DashboardLayout.Normalize(tiles))
