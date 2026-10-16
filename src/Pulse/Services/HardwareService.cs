@@ -16,12 +16,18 @@ public sealed class HardwareService : IDisposable
 
     private readonly CancellationTokenSource _cts = new();
     private readonly SensorStream _stream;
+    private readonly Coolers.CoolerService? _coolers;
     private readonly PollSchedule _schedule = new();
     private readonly object _scheduleGate = new();
     private Task? _loop;
 
     /// <param name="stream">Every snapshot is published here; consumers subscribe to the stream.</param>
-    public HardwareService(SensorStream stream) => _stream = stream;
+    /// <param name="coolers">USB coolers Pulse reads itself; their latest readings join every snapshot.</param>
+    public HardwareService(SensorStream stream, Coolers.CoolerService? coolers = null)
+    {
+        _stream = stream;
+        _coolers = coolers;
+    }
 
     /// <summary>Keeps last good values through dropped readings (a PSU shared with iCUE, for one).</summary>
     private readonly ReadingHold _hold = new();
@@ -124,6 +130,14 @@ public sealed class HardwareService : IDisposable
             DateTime.Now);
     }
 
+    /// <summary>Adds the USB coolers' latest readings (read on their own thread) as Cooler hardware.</summary>
+    internal static HardwareSnapshot WithCoolers(HardwareSnapshot snapshot, IReadOnlyList<HardwareReading>? coolers,
+        IReadOnlyCollection<string>? unread = null) => snapshot with
+    {
+        Hardware = coolers is { Count: > 0 } ? [.. snapshot.Hardware, .. coolers] : snapshot.Hardware,
+        Unread = unread ?? [],
+    };
+
     /// <summary>A device whose read failed: its sensors without values (held briefly by <see cref="ReadingHold"/>).</summary>
     private static HardwareReading WithoutValues(HardwareReading hardware) => hardware with
     {
@@ -204,6 +218,7 @@ public sealed class HardwareService : IDisposable
                             reopen.Add(hardware.HardwareType);
                     },
                     succeeded: hardware => _health.Succeeded(hardware.Identifier.ToString(), hardware.Name));
+                snapshot = WithCoolers(snapshot, _coolers?.Readings, _coolers?.Unread);
                 _stream.Publish(_hold.Apply(snapshot));
 
                 // Reopen what keeps failing, and keep trying for a group that came back empty (the device

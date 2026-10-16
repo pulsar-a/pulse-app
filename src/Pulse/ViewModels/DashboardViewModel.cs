@@ -6,6 +6,7 @@ using LibreHardwareMonitor.Hardware;
 using Pulse.Controls;
 using Pulse.Models;
 using Pulse.Services;
+using Pulse.Services.Coolers;
 using Wpf.Ui.Controls;
 using Color = System.Windows.Media.Color;
 
@@ -119,6 +120,9 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     public NetworkViewModel Network { get; } = new();
     public CoolingViewModel Cooling { get; } = new();
     public ProcessesCardViewModel ProcessesCard { get; } = new();
+
+    /// <summary>What Pulse is doing with each USB cooler it supports (set by the main view model).</summary>
+    public IReadOnlyList<CoolerStatus> CoolerStatuses { get; set; } = [];
 
     /// <summary>The Top processes tile is on the dashboard (not hidden): processes are sampled only then.</summary>
     [ObservableProperty] public partial bool ShowsProcesses { get; private set; }
@@ -517,6 +521,12 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         int.TryParse(identifier[(identifier.LastIndexOf('/') + 1)..], out var n) ? n : null;
 
     private static readonly string[] PumpWords = ["pump", "aio"];
+
+    private const string UsbCoolers = "Coolers with a USB controller show up here when they're supported: NZXT Kraken, "
+                                      + "Aqua Computer and Corsair Commander Core, Core XT and ST.";
+
+    private static bool NamesAPump(HardwareReading owner) =>
+        owner.Sensors.Any(s => s.Type == SensorType.Fan && ContainsAny(s.Name, PumpWords));
     private static readonly string[] CoolantWords = ["water", "coolant", "liquid"];
 
     private void UpdateCooling(HardwareSnapshot snapshot, HardwareReading? cpu)
@@ -528,6 +538,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         var candidates = new List<SensorReading>();
         var candidateOwners = new List<string>();
         var headers = new List<SensorReading>();
+        var usbPump = false;
+        SensorReading? coolerPump = null;
 
         foreach (var hardware in snapshot.Hardware)
         {
@@ -539,6 +551,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                 {
                     if (owner.Type is HardwareType.SuperIO or HardwareType.EmbeddedController)
                         headers.Add(sensor);
+                    else if (owner.Type == HardwareType.Cooler)
+                        usbPump = true;
                     pumps.Insert(0, sensor);
                     if (!sources.Contains(owner.Name))
                         sources.Add(owner.Name);
@@ -553,7 +567,9 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                 var isCooler = owner.Type == HardwareType.Cooler;
                 var target = sensor.Type switch
                 {
-                    SensorType.Fan when isCooler || NameMatches(sensor, PumpWords) => pumps,
+                    // A cooler that names its pump (a Corsair Commander: "Pump", then "Fan #1"...) has fans too;
+                    // one that doesn't is all pump, as before.
+                    SensorType.Fan when NameMatches(sensor, PumpWords) || (isCooler && !NamesAPump(owner)) => pumps,
                     SensorType.Temperature when isCooler || NameMatches(sensor, CoolantWords) => coolant,
                     SensorType.Flow => flows,
                     _ => null,
@@ -571,9 +587,19 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                 }
 
                 target.Add(sensor);
+                if (target == pumps && isCooler)
+                    coolerPump ??= sensor;
                 if (!sources.Contains(owner.Name))
                     sources.Add(owner.Name);
             }
+        }
+
+        // A USB cooler's pump is the pump, unless the user picked a motherboard header. That includes "not on a
+        // header", which is exactly where a USB pump is. Alerts, the tray and the mini window then follow it.
+        if (coolerPump is not null && PumpSensorId is null or "")
+        {
+            SetPump(coolerPump.Id);
+            usbPump = true;
         }
 
         // With only one spinning header there's nothing to choose: assume it's the pump. This happens
@@ -587,7 +613,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         }
 
         _coolingIds = pumps.Concat(coolant).Concat(flows).Select(s => s.Id).ToHashSet();
-        UpdatePumpHeaders(headers, namedPump: pumps.Count > 0 && pumps[0].Id != PumpSensorId);
+        UpdatePumpHeaders(headers, namedPump: pumps.Count > 0 && pumps[0].Id != PumpSensorId, usbPump);
 
         Cooling.HasData = pumps.Count + coolant.Count + flows.Count > 0;
         Cooling.Heat = pumps.Count > 0 && pumps[0].Id == PumpSensorId
@@ -595,7 +621,18 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             : HeatLevel.None;
         if (!Cooling.HasData)
         {
-            if (!_isElevated)
+            if (CoolerStatuses.FirstOrDefault(c => c.State != CoolerState.Reading) is { } cooler)
+            {
+                Cooling.EmptyTitle = $"{cooler.Name} isn't being read";
+                Cooling.EmptyText = cooler.State switch
+                {
+                    CoolerState.Paused => $"{cooler.Detail}. Close it (iCUE keeps a background service running too), "
+                                          + "or choose \"Always read\" in Settings → USB coolers.",
+                    CoolerState.Off => "Reading USB coolers is turned off in Settings → USB coolers.",
+                    _ => $"{cooler.Detail}.",
+                };
+            }
+            else if (!_isElevated)
             {
                 Cooling.EmptyTitle = "No pump or coolant readings";
                 Cooling.EmptyText = "Pump and coolant sensors on the motherboard need admin rights. "
@@ -605,8 +642,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             {
                 Cooling.EmptyTitle = "No pump or coolant readings";
                 Cooling.EmptyText = "Pump speed and coolant temperatures from the motherboard's pump and water headers "
-                                    + "need the PawnIO driver. Corsair coolers connected over USB aren't supported "
-                                    + "by the sensor library yet.";
+                                    + "need the PawnIO driver. " + UsbCoolers;
             }
             else if (Cooling.ShowHeaderPicker && PumpSensorId is null)
             {
@@ -616,14 +652,12 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             else if (PumpSensorId == "")
             {
                 Cooling.EmptyTitle = "No pump or coolant readings";
-                Cooling.EmptyText = "Your pump isn't on a motherboard header. Corsair coolers connected over USB "
-                                    + "aren't supported by the sensor library yet.";
+                Cooling.EmptyText = "Your pump isn't on a motherboard header. " + UsbCoolers;
             }
             else
             {
                 Cooling.EmptyTitle = "No pump or coolant readings";
-                Cooling.EmptyText = "No spinning motherboard fan headers or water sensors were found. Corsair coolers "
-                                    + "connected over USB aren't supported by the sensor library yet.";
+                Cooling.EmptyText = "No spinning motherboard fan headers or water sensors were found. " + UsbCoolers;
             }
             return;
         }
@@ -672,9 +706,10 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     /// Hidden when there are no headers, or when the pump was found by name (a cooler, a "Pump" header)
     /// and the user never picked one.
     /// </summary>
-    private void UpdatePumpHeaders(List<SensorReading> headers, bool namedPump)
+    private void UpdatePumpHeaders(List<SensorReading> headers, bool namedPump, bool usbPump)
     {
-        Cooling.ShowHeaderPicker = headers.Count > 0 && !(namedPump && PumpSensorId is null);
+        // A pump on a USB cooler needs no header.
+        Cooling.ShowHeaderPicker = headers.Count > 0 && !usbPump && !(namedPump && PumpSensorId is null);
         var choices = headers
             .Select(h => (h.Id, _catalog.DisplayName(h), h.Value is { } rpm ? $"{rpm:N0} rpm" : "no reading"))
             .Append(("", NoHeaderLabel, ""))

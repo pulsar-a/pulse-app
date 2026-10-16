@@ -413,6 +413,47 @@
                 </StackPanel>
             </Border>
 
+            <!-- USB coolers -->
+            <Border Style="{StaticResource PulseCard}">
+                <StackPanel>
+                    <TextBlock Text="USB coolers" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="Pulse reads some cooler controllers itself over USB: Corsair Commander Core, Core XT and ST. It only reads; it never changes their fan curves, pump speed or lighting. A controller serves one app at a time, so Pulse is careful around iCUE and other cooler software."
+                               Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                    <StackPanel Margin="0,10,0,0">
+                        <RadioButton GroupName="Coolers" Margin="0,0,0,6" IsChecked="{Binding CoolersAutomatic}">
+                            <StackPanel>
+                                <TextBlock Text="Read, except while other cooler software runs (recommended)" />
+                                <TextBlock Text="Pauses while iCUE, SignalRGB, OpenRGB, FanControl, HWiNFO or similar apps are running, and starts again after they quit."
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton GroupName="Coolers" Margin="0,0,0,6" IsChecked="{Binding CoolersAlways}">
+                            <StackPanel>
+                                <TextBlock Text="Always read" />
+                                <TextBlock Text="Alongside other apps too. They may briefly lose control of the cooler, and readings can drop out."
+                                           Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton GroupName="Coolers" Content="Don't read USB coolers" IsChecked="{Binding CoolersOff}" />
+                    </StackPanel>
+
+                    <!-- What's plugged in and what Pulse is doing with it. -->
+                    <ItemsControl ItemsSource="{Binding Coolers}" Margin="0,14,0,0"
+                                  Visibility="{Binding HasCoolers, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource SettingLabel}" />
+                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="No supported USB cooler is plugged in." Style="{StaticResource Caption}" Margin="0,14,0,0"
+                               Visibility="{Binding HasCoolers, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
+                </StackPanel>
+            </Border>
+
             <!-- Sensors -->
             <Border Style="{StaticResource PulseCard}">
                 <StackPanel>

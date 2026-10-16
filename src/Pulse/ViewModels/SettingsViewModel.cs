@@ -4,6 +4,7 @@ using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pulse.Services;
+using Pulse.Services.Coolers;
 using Pulse.Services.History;
 
 namespace Pulse.ViewModels;
@@ -81,6 +82,47 @@ public partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(ThemeMatchWindows));
         OnPropertyChanged(nameof(ThemeDark));
         OnPropertyChanged(nameof(ThemeLight));
+    }
+
+    // USB coolers
+
+    public bool CoolersAutomatic
+    {
+        get => _settings.Current.Coolers.Access == CoolerAccess.Automatic;
+        set { if (value) SetCoolerAccess(CoolerAccess.Automatic); }
+    }
+
+    public bool CoolersAlways
+    {
+        get => _settings.Current.Coolers.Access == CoolerAccess.Always;
+        set { if (value) SetCoolerAccess(CoolerAccess.Always); }
+    }
+
+    public bool CoolersOff
+    {
+        get => _settings.Current.Coolers.Access == CoolerAccess.Off;
+        set { if (value) SetCoolerAccess(CoolerAccess.Off); }
+    }
+
+    private void SetCoolerAccess(CoolerAccess access)
+    {
+        if (_settings.Current.Coolers.Access == access) return;
+        _settings.Update(s => s.Coolers.Access = access);
+        Log.Write($"USB coolers: {access}");
+        OnPropertyChanged(nameof(CoolersAutomatic));
+        OnPropertyChanged(nameof(CoolersAlways));
+        OnPropertyChanged(nameof(CoolersOff));
+    }
+
+    /// <summary>Each supported USB cooler that's plugged in, and what Pulse is doing with it.</summary>
+    [ObservableProperty] public partial IReadOnlyList<CoolerStatus> Coolers { get; private set; } = [];
+
+    [ObservableProperty] public partial bool HasCoolers { get; private set; }
+
+    public void SetCoolers(IReadOnlyList<CoolerStatus> coolers)
+    {
+        Coolers = coolers;
+        HasCoolers = coolers.Count > 0;
     }
 
     // Startup and tray

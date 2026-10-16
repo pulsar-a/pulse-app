@@ -39,6 +39,8 @@ command is `mingw32-make start`. Other targets:
 | `make snapshot` | Save one reading of all sensors, as admin, to `tests/Pulse.Tests/Fixtures/admin.json` (close Pulse first) |
 | `make publish` | Release build with ReadyToRun in `artifacts/publish` |
 | `make icon` | Redraw the app icon from `tools/IconGen` |
+| `make probe` | List supported USB coolers and any cooler software running (sends nothing) |
+| `make probe-read` | Read a USB cooler once and log every exchange; close Pulse and iCUE first |
 | `make clean` | Remove build output |
 
 Only one Pulse runs at a time; launching it again brings the open window to the front.
@@ -64,6 +66,7 @@ src/Pulse/
   Services/HardwareService.cs   Polls LHM on a background thread and publishes immutable snapshots
   Services/SensorFormat.cs      Units and number formatting per sensor type
   Services/Processes/           Per-process CPU, GPU and memory sampling, grouped by program
+  Services/Coolers/             USB cooler drivers (Corsair Commander), shared politely with iCUE and similar apps
   Models/HardwareSnapshot.cs    Snapshot records handed to the UI thread
   ViewModels/                   Dashboard, All sensors and main window state (CommunityToolkit.Mvvm)
   Views/                        XAML for the Dashboard, All sensors and Processes pages

@@ -59,4 +59,21 @@ public sealed record HardwareSnapshot(
 {
     public IEnumerable<HardwareReading> OfType(params HardwareType[] types) =>
         Hardware.Where(h => types.Contains(h.Type));
+
+    /// <summary>
+    /// Hardware Pulse deliberately didn't read this time (a USB cooler left alone while iCUE runs). Its sensors
+    /// are missing on purpose: that says nothing about the device, so a pump in here hasn't stopped.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlyCollection<string> Unread { get; init; } = [];
+
+    public bool IsUnread(string sensorId)
+    {
+        foreach (var id in Unread)
+        {
+            if (sensorId.StartsWith(id, StringComparison.Ordinal) && sensorId.Length > id.Length && sensorId[id.Length] == '/')
+                return true;
+        }
+        return false;
+    }
 }

@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
-    <None Include="Fixtures\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fixtures\**\*.json;Fixtures\**\*.txt" CopyToOutputDirectory="PreserveNewest" />
     <!-- The theme files, so the contrast test checks the real colors. -->
     <None Include="..\..\src\Pulse\Themes\Dark.xaml;..\..\src\Pulse\Themes\Light.xaml" Link="Themes\%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" />

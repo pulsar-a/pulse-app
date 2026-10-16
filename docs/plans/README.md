@@ -22,7 +22,7 @@ pipeline) come first, even though they're less visible than tray icons or charts
 | 8 ✅ | [Responsive layout and mini mode](08-responsive-and-mini-mode.md) | 7 | Reflowing dashboard, always-on-top mini window |
 | 9 ✅ | [Visual polish](09-visual-polish.md) | 1, 7 | Heat-reactive cards, light theme, new splash |
 | 10 ✅ | [Process insights](10-process-insights.md) | 2 | "What's heating my PC" process list |
-| 11 | [Corsair cooler over USB](11-corsair-cooler.md) | 1, 2 | Coolant temperature and pump speed from the Corsair controller |
+| 11 ⏳ | [Corsair cooler over USB](11-corsair-cooler.md) | 1, 2 | Coolant temperature and pump speed from the Corsair controller |
 | 12 | [Phone and web view](12-web-dashboard.md) | 2, 5 | Dashboard in a browser on the local network |
 | 13 | [Fan control](13-fan-control.md) | 4, 11 | Deferred: safe, limited fan curves (maybe never) |
 

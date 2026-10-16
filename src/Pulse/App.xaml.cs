@@ -19,6 +19,7 @@ public partial class App : Application
     private HistoryRecorder? _history;
     private MiniController? _mini;
     private ProcessMonitor? _processes;
+    private Pulse.Services.Coolers.CoolerService? _coolers;
     private bool _exiting;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -67,7 +68,9 @@ public partial class App : Application
         ThemeService.Apply(theme);
 
         var stream = new SensorStream();
-        _hardware = new HardwareService(stream);
+        // USB coolers the sensor library doesn't support (Corsair Commander): read here, shared politely with iCUE and the like.
+        _coolers = new Pulse.Services.Coolers.CoolerService(settings);
+        _hardware = new HardwareService(stream, _coolers);
         var viewModel = new MainViewModel(_hardware, stream, settings, Dispatcher);
         MainWindow = new MainWindow(viewModel);
         // Watching Windows' setting needs a window; switching in Settings applies straight away.
@@ -133,6 +136,8 @@ public partial class App : Application
 
         _instance.ListenForActivation(() => Dispatcher.BeginInvoke(BringToFront));
         _hardware.Start();
+        _coolers.Start();
+        viewModel.AttachCoolers(_coolers);
 
         // If Pulse was moved since "Start with Windows" was turned on, point the task at the new location.
         if (HardwareService.IsElevated && Environment.ProcessPath is { } exe)
@@ -205,6 +210,8 @@ public partial class App : Application
         _mini?.Dispose();
         _processes?.Dispose();
         _hardware?.Dispose();
+        // Its reads always end by handing the cooler back to its own curves; this just stops the loop.
+        _coolers?.Dispose();
         // After polling stops, so the minute in progress is complete when it's written.
         _history?.Dispose();
         _settings?.Dispose();

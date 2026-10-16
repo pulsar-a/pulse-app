@@ -4,7 +4,7 @@ CONFIG  ?= Debug
 EXE     ?= src/Pulse/bin/$(CONFIG)/net10.0-windows10.0.19041.0/win-x64/Pulse.exe
 FIXTURE ?= $(CURDIR)/tests/Pulse.Tests/Fixtures/admin.json
 
-.PHONY: start build test snapshot icon publish clean
+.PHONY: start build test snapshot icon publish clean probe probe-read
 
 # Build, then launch through the Windows shell so the admin (UAC) prompt appears.
 # `dotnet run` can't do that from a non-elevated terminal and fails with error 740.
@@ -30,6 +30,14 @@ publish:
 # Redraw the app icon (src/Pulse/Resources/Pulse.ico and PNGs) from tools/IconGen.
 icon:
 	dotnet run --project tools/IconGen -- src/Pulse/Resources
+
+# USB coolers: list supported controllers and running cooler software (sends nothing), or do one read.
+# Close Pulse first. probe-read refuses while iCUE or similar is running; pass ARGS=--force to read anyway.
+probe:
+	dotnet run --project tools/CorsairProbe --artifacts-path artifacts/probe
+
+probe-read:
+	dotnet run --project tools/CorsairProbe --artifacts-path artifacts/probe -- --read --out artifacts/probe/exchanges.txt $(ARGS)
 
 clean:
 	dotnet clean $(PROJECT) -c $(CONFIG) --nologo

@@ -131,6 +131,22 @@ public partial class MainViewModel : ObservableObject
         Settings.AttachAlerts(alerts);
     }
 
+    // ---- USB coolers (step 11) -----------------------------------------------------------------
+
+    /// <summary>Shows what Pulse does with each USB cooler on the cooling card and in Settings, as it changes.</summary>
+    public void AttachCoolers(Services.Coolers.CoolerService coolers)
+    {
+        void Apply()
+        {
+            Dashboard.CoolerStatuses = coolers.Statuses;
+            Settings.SetCoolers(coolers.Statuses);
+            if (_stream.Latest is { } latest && IsDashboardSelected)
+                Dashboard.Apply(latest);
+        }
+        coolers.StatusChanged += () => _dispatcher.BeginInvoke(Apply);
+        Apply();
+    }
+
     // ---- Processes (step 10) -------------------------------------------------------------------
 
     private ProcessMonitor? _processes;

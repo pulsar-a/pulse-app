@@ -1,0 +1,28 @@
+# Corsair Commander ST (1B1C:0C32), firmware 2.0.19, 64-byte reports. Captured with make probe-read on 2026-10-16,
+# iCUE closed. > is what Pulse sent, < the reply (trailing zero padding trimmed), with the time each reply took.
+> 0801030001
+< 0001  (139 ms)
+> 0801030002
+< 0001  (30 ms)
+> 080213
+< 000200020013  (2 ms)
+> 080D001A
+< 000D  (0 ms)
+> 08080001
+< 00080009000707070707070707  (1 ms)
+> 080501
+< 0005  (0 ms)
+> 080D0017
+< 000D  (0 ms)
+> 08080001
+< 000800060007170ADE07240840085C0569056105  (1 ms)
+> 080501
+< 0005  (0 ms)
+> 080D0021
+< 000D  (0 ms)
+> 08080001
+< 00080010000200A00101  (1 ms)
+> 080501
+< 0005  (0 ms)
+> 0801030001
+< 0001  (138 ms)

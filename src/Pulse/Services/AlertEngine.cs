@@ -65,6 +65,9 @@ public sealed class AlertEngine
             {
                 var key = (rule.Id, check.Key);
                 active.Add(key);
+                // Not read on purpose (a cooler Pulse leaves to iCUE): unknown, not missing. Nothing changes.
+                if (check.Value is null && check.SensorId is { } unread && snapshot.IsUnread(unread))
+                    continue;
                 if (!_states.TryGetValue(key, out var state))
                     _states[key] = state = new TargetState();
 
