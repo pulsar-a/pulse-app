@@ -8,9 +8,11 @@
 Temperatures, fans, pump, power, drives and network, live and at a glance, with history, alerts,
 and your PC on your phone.
 
-[![CI](https://github.com/pulsar-a/pulse-app/actions/workflows/ci.yml/badge.svg)](https://github.com/pulsar-a/pulse-app/actions/workflows/ci.yml)
+[![Download](https://img.shields.io/github/v/release/pulsar-a/pulse-app?include_prereleases&label=download&color=FF3B5C)](https://github.com/pulsar-a/pulse-app/releases)
 ![Windows 10 and 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
-![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
+[![CI](https://github.com/pulsar-a/pulse-app/actions/workflows/ci.yml/badge.svg)](https://github.com/pulsar-a/pulse-app/actions/workflows/ci.yml)
+
+**[⬇ Download Pulse for Windows](https://github.com/pulsar-a/pulse-app/releases/latest)**
 
 <img src="docs/images/dashboard-dark.png" alt="The Pulse dashboard: rings for processor, graphics, power and memory, the CPU cooling card with coolant temperature and pump speed, and fans" width="900">
 
@@ -54,21 +56,26 @@ the QR code (middle). The **mini window** stays on top of games, click-through i
 
 <sub>All screenshots are from a real PC (Core i9-14900K, RTX 4090, a Corsair Commander ST cooling controller), recorded live.</sub>
 
-## Get started
+## Download and install
 
-> **Note:** a signed installer with automatic updates is on its way ([step 14](docs/plans/14-release.md)).
-> Until then, Pulse runs from source; it takes a couple of minutes.
+1. **Download** `PulseApp-win-Setup.exe` from the [latest release](https://github.com/pulsar-a/pulse-app/releases/latest).
+   Windows 10 or 11, 64-bit.
+2. **Run it.** Pulse installs for your user account in a few seconds, with a Start menu and desktop shortcut,
+   and starts. If the .NET runtime Pulse needs isn't on your PC yet, the installer gets it for you.
+3. **Say yes to the admin prompt** when Pulse starts (why below).
 
-**You need:** Windows 10 or 11 (x64) and the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+> **"Windows protected your PC"?** The installer isn't code-signed yet, so Windows SmartScreen doesn't recognize
+> it. Click **More info**, then **Run anyway**.
 
-```powershell
-git clone https://github.com/pulsar-a/pulse-app.git
-cd pulse-app
-make start
-```
+**Updates install themselves:** Pulse checks once a day, downloads a new version in the background and installs
+it when Pulse exits, so the next start is the new version. Settings → About can check now and restart straight
+into it. You get stable versions unless you choose betas there.
 
-Windows asks for administrator rights; say yes (see below for why). No `make`? Use `mingw32-make start`, or run
-`dotnet run --project src/Pulse` from a terminal opened as administrator.
+**Prefer no installer?** Each release also has `PulseApp-win-Portable.zip`: unzip and run `Pulse.exe`. The portable
+copy doesn't update itself.
+
+**Uninstall** from Windows Settings → Apps → Installed apps → Pulse. Your settings and history stay, unless you
+turn that off in Settings → About first.
 
 ### Two things for the full picture
 
@@ -120,6 +127,19 @@ Want your controller supported? Run `make probe` with it plugged in and
 
 Pulse is WPF on .NET 10 with [WPF-UI](https://github.com/lepoco/wpfui) and
 [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet). CI builds and tests every push and pull request.
+
+### Build from source
+
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+
+```powershell
+git clone https://github.com/pulsar-a/pulse-app.git
+cd pulse-app
+make start
+```
+
+`make start` builds Pulse and starts it (it asks for admin rights). No `make`? Use `mingw32-make start`, or
+`dotnet run --project src/Pulse`.
 
 ### Run and test
 
@@ -182,8 +202,3 @@ src/Pulse/
 tests/Pulse.Tests/              xUnit tests, including recorded snapshots and a captured Corsair exchange
 tools/                          CorsairProbe (USB cooler checks), IconGen (the app icon)
 ```
-
-### Roadmap
-
-The plan lives in [docs/plans](docs/plans/README.md), in steps built one at a time. Next up:
-[release and distribution](docs/plans/14-release.md) (signed installer, updates, first-run setup).
