@@ -127,6 +127,36 @@ public class ReleaseTests : PulseTest
         Assert.False(service.RestartToUpdate());
     }
 
+    // ---- The Store package ------------------------------------------------------------------------
+
+    [Fact]
+    public void Unpackaged_pulse_starts_itself_from_its_own_exe()
+    {
+        // The tests run unpackaged; inside the Store package the launch path is the pulse.exe execution alias.
+        Assert.False(AppPackage.IsPackaged);
+        Assert.Null(AppPackage.FullName);
+        Assert.Equal(Environment.ProcessPath, AppPackage.LaunchPath);
+    }
+
+    [Fact]
+    public void The_package_manifest_declares_what_pulse_relies_on()
+    {
+        var manifest = File.ReadAllText(Path.Combine(RepoRoot(), "packaging", "msix", "AppxManifest.xml"));
+
+        Assert.Contains("Name=\"runFullTrust\"", manifest);
+        Assert.Contains("Name=\"allowElevation\"", manifest);
+        Assert.Contains($"Alias=\"{AppPackage.Alias}\"", manifest);
+        Assert.Contains("Executable=\"Pulse.exe\"", manifest);
+    }
+
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Pulse.slnx")))
+            dir = dir.Parent;
+        return dir?.FullName ?? throw new InvalidOperationException("repository root not found");
+    }
+
     // ---- Uninstalling -------------------------------------------------------------------------
 
     private sealed class FakeSystem : ICleanupSystem

@@ -151,10 +151,11 @@ public partial class SettingsViewModel : ObservableObject
     private void RefreshUpdates()
     {
         if (_updates is null) return;
-        IsInstalled = _updates.State != UpdateState.NotInstalled;
+        IsInstalled = _updates.State is not (UpdateState.NotInstalled or UpdateState.Store);
         UpdateStatus = _updates.State switch
         {
             UpdateState.NotInstalled => "This copy wasn't installed with the installer (built from source, or from a zip), so it doesn't update itself.",
+            UpdateState.Store => "Installed from the Microsoft Store, which keeps Pulse up to date.",
             UpdateState.Idle => _settings.Current.Updates.LastCheck is { } last
                 ? $"Last checked {last.ToLocalTime():d MMM, HH:mm}."
                 : "Not checked yet.",
@@ -393,7 +394,7 @@ public partial class SettingsViewModel : ObservableObject
     private async Task ApplyStartWithWindowsAsync(bool enable)
     {
         var ok = enable
-            ? await StartupTask.EnableAsync(Environment.ProcessPath!)
+            ? await StartupTask.EnableAsync(AppPackage.LaunchPath!)
             : await StartupTask.DisableAsync();
         if (!ok)
             await LoadStartWithWindowsAsync();

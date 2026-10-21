@@ -32,6 +32,9 @@ public enum UpdateState
 {
     /// <summary>Built from source or run from a zip: updates come with the installer.</summary>
     NotInstalled,
+
+    /// <summary>Installed from the Microsoft Store, which updates it.</summary>
+    Store,
     Idle,
     Checking,
     UpToDate,
@@ -85,6 +88,11 @@ public sealed class UpdateService
     {
         _settings = settings;
         _criticalAlert = criticalAlert;
+        if (AppPackage.IsPackaged)
+        {
+            State = UpdateState.Store;
+            return;
+        }
         try
         {
             var manager = new UpdateManager(new GithubSource(RepositoryUrl, accessToken: null, prerelease: false));

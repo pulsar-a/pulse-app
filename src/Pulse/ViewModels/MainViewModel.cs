@@ -124,6 +124,7 @@ public partial class MainViewModel : ObservableObject
         _webDashboard = new DashboardViewModel(HardwareService.IsDriverInstalled, _catalog, _stream)
         {
             CoolerStatuses = Dashboard.CoolerStatuses,
+            PumpWatch = Dashboard.PumpWatch,
         };
 
     /// <summary>The name in the header: the motherboard, or the PC's name.</summary>
@@ -164,6 +165,9 @@ public partial class MainViewModel : ObservableObject
     {
         Alerts = alerts;
         Settings.AttachAlerts(alerts);
+        Dashboard.PumpWatch = alerts.Pump;
+        if (_webDashboard is not null)
+            _webDashboard.PumpWatch = alerts.Pump;
     }
 
     // ---- Diagnostics (step 14) ------------------------------------------------------------------

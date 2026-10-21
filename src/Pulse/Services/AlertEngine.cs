@@ -38,6 +38,9 @@ public sealed class AlertEngine
         public DateTime PendingSince;
         public DateTime LastNotified = DateTime.MinValue;
         public bool HasSeenValue;
+
+        /// <summary>The severity it fired with when not the rule's own (a pump that may only have moved).</summary>
+        public AlertSeverity? FiredAs;
     }
 
     private readonly Dictionary<(string Rule, string Target), TargetState> _states = new();
@@ -47,24 +50,37 @@ public sealed class AlertEngine
         _states.Where(kv => kv.Value.Status == Status.Firing).Select(kv => kv.Key).ToList();
 
     public bool IsCriticalFiring(IEnumerable<AlertRule> rules) =>
-        rules.Any(r => r.Severity == AlertSeverity.Critical
-                       && _states.Any(kv => kv.Key.Rule == r.Id && kv.Value.Status == Status.Firing));
+        rules.Any(r => _states.Any(kv => kv.Key.Rule == r.Id && kv.Value.Status == Status.Firing
+                                         && (kv.Value.FiredAs ?? r.Severity) == AlertSeverity.Critical));
 
-    /// <summary>One reading to check: a target key (for per-drive state), a label, the value and the threshold.</summary>
-    private sealed record Check(string Key, string Label, float? Value, double Threshold, SensorType Type, string? SensorId = null);
+    /// <summary>
+    /// One reading to check: a target key (for per-drive state), a label, the value and the threshold.
+    /// The rest overrides the rule for the pump while <see cref="PumpWatch"/> thinks the cooling changed:
+    /// <paramref name="Breach"/> decides without the value, <paramref name="Note"/> is added to the message,
+    /// and an alert with its own <paramref name="Severity"/> notifies only once.
+    /// </summary>
+    private sealed record Check(string Key, string Label, float? Value, double Threshold, SensorType Type, string? SensorId = null,
+        bool? Breach = null, AlertSeverity? Severity = null, string? Title = null, string? Note = null);
 
+    /// <param name="pump">The pump watch's view; null treats the pump role as checked and unchanged.</param>
     public IReadOnlyList<AlertEvent> Evaluate(
-        HardwareSnapshot snapshot, IEnumerable<AlertRule> rules, string? pumpSensorId, DateTime now)
+        HardwareSnapshot snapshot, IEnumerable<AlertRule> rules, string? pumpSensorId, DateTime now, PumpStatus? pump = null)
     {
         var events = new List<AlertEvent>();
-        var active = new HashSet<(string, string)>();
 
         foreach (var rule in rules.Where(r => r.Enabled))
         {
-            foreach (var check in Resolve(rule, snapshot, pumpSensorId))
+            if (rule.Target == AlertTarget.Pump)
+            {
+                ForgetOtherPumps(rule, pumpSensorId, now, events);
+                // Pulse just started and is still comparing the pump with how it read before: no verdict yet.
+                if (pump is { Settled: false })
+                    continue;
+            }
+
+            foreach (var check in Resolve(rule, snapshot, pumpSensorId, pump?.Change))
             {
                 var key = (rule.Id, check.Key);
-                active.Add(key);
                 // Not read on purpose (a cooler Pulse leaves to iCUE): unknown, not missing. Nothing changes.
                 if (check.Value is null && check.SensorId is { } unread && snapshot.IsUnread(unread))
                     continue;
@@ -97,7 +113,7 @@ public sealed class AlertEngine
         if (check.Value is { } v && !float.IsNaN(v))
         {
             state.HasSeenValue = true;
-            breach = rule.Condition == AlertCondition.Above ? v > check.Threshold : v < check.Threshold;
+            breach = check.Breach ?? (rule.Condition == AlertCondition.Above ? v > check.Threshold : v < check.Threshold);
         }
         else
         {
@@ -112,14 +128,21 @@ public sealed class AlertEngine
         if (breach == false)
         {
             if (state.Status == Status.Firing)
-                events.Add(Event(rule, check.Key, AlertEventKind.Cleared, $"{check.Label} is back to normal",
+                events.Add(Event(rule, check, AlertEventKind.Cleared, $"{check.Label} is back to normal",
                     Describe(check), now, notify: false));
             state.Status = Status.Ok;
             return;
         }
 
-        if (state.Status == Status.Firing)
+        // Firing already, unless it fired softer than it now should (the user said the changed pump is the pump).
+        if (state.Status == Status.Firing && (check.Severity ?? rule.Severity) <= (state.FiredAs ?? rule.Severity))
             return;
+        if (state.Status == Status.Firing)
+        {
+            // Raised again at full strength, and heard: the softer notification doesn't count against the cooldown.
+            state.Status = Status.Ok;
+            state.LastNotified = DateTime.MinValue;
+        }
 
         if (state.Status == Status.Ok)
         {
@@ -132,13 +155,32 @@ public sealed class AlertEngine
             return;
 
         state.Status = Status.Firing;
-        var notify = now - state.LastNotified >= TimeSpan.FromMinutes(rule.CooldownMinutes);
+        state.FiredAs = check.Severity;
+        // A softened alert is a question for the user: asked once, not every cooldown.
+        var notify = check.Severity is null
+            ? now - state.LastNotified >= TimeSpan.FromMinutes(rule.CooldownMinutes)
+            : state.LastNotified == DateTime.MinValue;
         if (notify)
             state.LastNotified = now;
-        events.Add(Event(rule, check.Key, AlertEventKind.Raised, Title(rule, check), Describe(check), now, notify));
+        events.Add(Event(rule, check, AlertEventKind.Raised, Title(rule, check), Describe(check), now, notify));
     }
 
-    private static IEnumerable<Check> Resolve(AlertRule rule, HardwareSnapshot snapshot, string? pumpSensorId)
+    /// <summary>
+    /// The pump role moved to another sensor: what was firing for the old one no longer applies, so it's
+    /// cleared and forgotten instead of keeping the tray red for a header that isn't the pump.
+    /// </summary>
+    private void ForgetOtherPumps(AlertRule rule, string? pumpSensorId, DateTime now, List<AlertEvent> events)
+    {
+        foreach (var (key, state) in _states.Where(kv => kv.Key.Rule == rule.Id && kv.Key.Target != pumpSensorId).ToList())
+        {
+            if (state.Status == Status.Firing)
+                events.Add(new AlertEvent(rule.Id, key.Target, AlertEventKind.Cleared, state.FiredAs ?? rule.Severity,
+                    $"{rule.Name}: pump header changed", "", now, Notify: false));
+            _states.Remove(key);
+        }
+    }
+
+    private static IEnumerable<Check> Resolve(AlertRule rule, HardwareSnapshot snapshot, string? pumpSensorId, PumpChange? change = null)
     {
         var all = snapshot.Hardware.SelectMany(h => h.AllSensors);
         switch (rule.Target)
@@ -150,7 +192,17 @@ public sealed class AlertEngine
 
             case AlertTarget.Pump when pumpSensorId is { Length: > 0 }:
                 var pump = all.FirstOrDefault(s => s.Id == pumpSensorId);
-                yield return new Check(pumpSensorId, "Pump", pump?.Value, rule.Threshold, SensorType.Fan, pumpSensorId);
+                var check = new Check(pumpSensorId, "Pump", pump?.Value, rule.Threshold, SensorType.Fan, pumpSensorId);
+                if (change?.SensorId == pumpSensorId)
+                {
+                    // Something still spins there, just not like the pump did: most likely the cooling changed while
+                    // the PC was off. A warning, once, that stays up until the user answers, instead of a critical
+                    // alarm every few minutes. Stopped (or gone) stays critical: it may be exactly that.
+                    check = pump?.Value >= PumpWatch.SpinningRpm
+                        ? check with { Breach = true, Severity = AlertSeverity.Warning, Title = "Pump reading changed", Note = change.AlertNote }
+                        : check with { Note = change.AlertNote };
+                }
+                yield return check;
                 break;
 
             case AlertTarget.CpuPackage:
@@ -190,7 +242,7 @@ public sealed class AlertEngine
             .SelectMany(r => Resolve(r, snapshot, pumpSensorId))
             .FirstOrDefault(c => c.SensorId == sensorId)?.Threshold;
 
-    private static string Title(AlertRule rule, Check check) => rule.Target switch
+    private static string Title(AlertRule rule, Check check) => check.Title ?? rule.Target switch
     {
         AlertTarget.DriveTemperature => $"{check.Label} is too hot",
         _ => rule.Name,
@@ -198,14 +250,18 @@ public sealed class AlertEngine
 
     private static string Describe(Check check)
     {
+        // Decided without the limit (the cooling changed): the note says it all.
+        if (check is { Breach: not null, Note: { } explanation })
+            return explanation;
         var value = check.Value is { } v
             ? SensorFormat.Format(check.Type, v)
             : "no reading";
         var limit = SensorFormat.Format(check.Type, (float)check.Threshold);
-        return $"{check.Label}: {value} (limit {limit})";
+        var message = $"{check.Label}: {value} (limit {limit})";
+        return check.Note is { } note ? $"{message}. {note}" : message;
     }
 
-    private static AlertEvent Event(AlertRule rule, string target, AlertEventKind kind, string title, string message,
+    private static AlertEvent Event(AlertRule rule, Check check, AlertEventKind kind, string title, string message,
         DateTime now, bool notify) =>
-        new(rule.Id, target, kind, rule.Severity, title, message, now, notify);
+        new(rule.Id, check.Key, kind, check.Severity ?? rule.Severity, title, message, now, notify);
 }

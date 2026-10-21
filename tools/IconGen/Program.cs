@@ -1,7 +1,9 @@
 // Draws the Pulse icon (a red heartbeat trace on a dark rounded square) at every size Windows
 // asks for, and packs them into an .ico. Small sizes use a simpler trace so it stays legible.
 //
-//   dotnet run --project tools/IconGen -- <output folder>
+//   dotnet run --project tools/IconGen -- <output folder> [<msix assets folder>]
+//
+// With a second folder it also writes the logos the Microsoft Store package needs (packaging/msix/Assets).
 
 using System.IO;
 using System.Windows;
@@ -18,6 +20,24 @@ WriteIco(Path.Combine(output, "Pulse.ico"), pngs);
 File.WriteAllBytes(Path.Combine(output, "Pulse-64.png"), pngs[64]);
 File.WriteAllBytes(Path.Combine(output, "Pulse-256.png"), pngs[256]);
 Console.WriteLine($"Wrote Pulse.ico ({string.Join(", ", icoSizes)} px) and PNGs to {Path.GetFullPath(output)}");
+
+if (args.Length > 1)
+{
+    // The Store package's logos: the Start menu and tiles (44, 150, 310x150), the Store listing (50), and the exact
+    // sizes the taskbar and Alt+Tab ask for, also "unplated" (drawn as is, without a colored plate behind them).
+    var assets = args[1];
+    Directory.CreateDirectory(assets);
+    File.WriteAllBytes(Path.Combine(assets, "Square44x44Logo.png"), Render(44));
+    foreach (var size in new[] { 16, 24, 32, 48, 256 })
+    {
+        File.WriteAllBytes(Path.Combine(assets, $"Square44x44Logo.targetsize-{size}.png"), Render(size));
+        File.WriteAllBytes(Path.Combine(assets, $"Square44x44Logo.targetsize-{size}_altform-unplated.png"), Render(size));
+    }
+    File.WriteAllBytes(Path.Combine(assets, "Square150x150Logo.png"), Render(150));
+    File.WriteAllBytes(Path.Combine(assets, "StoreLogo.png"), Render(50));
+    File.WriteAllBytes(Path.Combine(assets, "Wide310x150Logo.png"), Centered(Render(120), 310, 150));
+    Console.WriteLine($"Wrote the Store package's logos to {Path.GetFullPath(assets)}");
+}
 
 static byte[] Render(int size)
 {
@@ -60,6 +80,22 @@ static byte[] Render(int size)
     }
 
     var bitmap = new RenderTargetBitmap(size, size, 96, 96, PixelFormats.Pbgra32);
+    bitmap.Render(visual);
+    var encoder = new PngBitmapEncoder();
+    encoder.Frames.Add(BitmapFrame.Create(bitmap));
+    using var stream = new MemoryStream();
+    encoder.Save(stream);
+    return stream.ToArray();
+}
+
+// A square icon centered on a transparent canvas (the wide tile).
+static byte[] Centered(byte[] png, int width, int height)
+{
+    var icon = BitmapFrame.Create(new MemoryStream(png));
+    var visual = new DrawingVisual();
+    using (var dc = visual.RenderOpen())
+        dc.DrawImage(icon, new Rect((width - icon.PixelWidth) / 2.0, (height - icon.PixelHeight) / 2.0, icon.PixelWidth, icon.PixelHeight));
+    var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
     bitmap.Render(visual);
     var encoder = new PngBitmapEncoder();
     encoder.Frames.Add(BitmapFrame.Create(bitmap));

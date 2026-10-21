@@ -28,7 +28,7 @@ public static class Program
             return UninstallCleanup.RunElevatedPart();
 
         if (Elevation.Decide(args, Elevation.IsElevated, Elevation.CanElevate, Debugger.IsAttached) == Elevation.Plan.Elevate
-            && Environment.ProcessPath is { } exe)
+            && AppPackage.LaunchPath is { } exe)
         {
             if (SingleInstance.SignalIfRunning())
                 return ExitCodes.AlreadyRunning;

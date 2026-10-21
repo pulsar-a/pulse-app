@@ -97,6 +97,26 @@ public sealed class SensorSettings
     /// A missing role means "never chosen"; an empty id means "the user cleared it".
     /// </summary>
     public Dictionary<string, string> Roles { get; set; } = new();
+
+    /// <summary>What the pump normally reads, learned by <see cref="PumpWatch"/>; null until it has seen it run.</summary>
+    public PumpProfile? Pump { get; set; }
+}
+
+/// <summary>
+/// The pump as Pulse last knew it: its normal speed range, and the fans that spun alongside it.
+/// Comparing against this when Pulse starts tells a changed cooler apart from a failing pump.
+/// </summary>
+public sealed class PumpProfile
+{
+    /// <summary>The sensor this describes; a different pump role means a different pump.</summary>
+    public string SensorId { get; set; } = "";
+
+    /// <summary>The slowest and fastest the pump ran while healthy (0 while nothing is learned yet).</summary>
+    public float Low { get; set; }
+    public float High { get; set; }
+
+    /// <summary>Fan sensors seen spinning while the pump ran normally.</summary>
+    public List<string> Fans { get; set; } = [];
 }
 
 public static class SensorRoles

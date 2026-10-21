@@ -149,6 +149,23 @@
                         </StackPanel>
                     </DockPanel>
 
+                    <!-- The pump reads unlike itself since Pulse started: probably a hardware change, so ask rather than alarm. -->
+                    <Border Background="{DynamicResource Pulse.Warning.Background}" BorderBrush="{DynamicResource Pulse.Warning.Border}"
+                            BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12"
+                            Visibility="{Binding HasChange, Converter={StaticResource BoolToVisibility}}">
+                        <StackPanel>
+                            <TextBlock Text="Did your cooling change?" Style="{StaticResource CardTitle}" FontSize="13" Margin="0,0,0,4" />
+                            <TextBlock Text="{Binding ChangeText}" Style="{StaticResource Secondary}" FontSize="13" TextWrapping="Wrap" />
+                            <WrapPanel Margin="0,8,0,0">
+                                <ui:Button Appearance="Primary" Content="{Binding UseLabel}" Margin="0,4,6,0" Command="{Binding UseSuggestionCommand}"
+                                           Visibility="{Binding UseLabel, Converter={x:Static views:Converters.NotNullToVisibility}}" />
+                                <ui:Button Content="{Binding KeepLabel}" Margin="0,4,0,0" Command="{Binding KeepCommand}"
+                                           ToolTip="Same header, different pump: Pulse learns how it runs from now"
+                                           Visibility="{Binding KeepLabel, Converter={x:Static views:Converters.NotNullToVisibility}}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Nothing to show: explain why instead of an empty card. -->
                     <StackPanel Visibility="{Binding HasData, Converter={x:Static views:Converters.InverseBoolToVisibility}}">
                         <TextBlock Text="{Binding EmptyTitle}" Style="{StaticResource CardTitle}" FontSize="13" Margin="0,0,0,4" />

@@ -1,0 +1,7 @@
+{
+  "_comment": "Fill these from Partner Center → your app → Product management → Product identity, after reserving the name. Until then the package can only be tested locally.",
+  "IdentityName": "Pulse.LocalTest",
+  "Publisher": "CN=Pulse Local Test",
+  "PublisherDisplayName": "Pulse (local test)",
+  "DisplayName": "Pulse"
+}

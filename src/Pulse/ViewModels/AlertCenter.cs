@@ -36,8 +36,12 @@ public partial class AlertCenter : ObservableObject
         _catalog = catalog;
         _notifier = notifier;
         _dispatcher = dispatcher;
+        Pump = new PumpWatch(catalog);
         stream.SnapshotPublished += OnSnapshotPublished;
     }
+
+    /// <summary>Tells a changed cooler from a failing pump; the Cooling card asks the user about what it finds.</summary>
+    public PumpWatch Pump { get; }
 
     public ObservableCollection<AlertItem> Items { get; } = [];
 
@@ -66,7 +70,8 @@ public partial class AlertCenter : ObservableObject
     internal void Evaluate(HardwareSnapshot snapshot, DateTime now)
     {
         var rules = _settings.Current.Alerts.Rules;
-        foreach (var e in _engine.Evaluate(snapshot, rules, _catalog.RoleSensor(SensorRoles.Pump), now))
+        Pump.Observe(snapshot, rules, now);
+        foreach (var e in _engine.Evaluate(snapshot, rules, _catalog.RoleSensor(SensorRoles.Pump), now, Pump.Status))
             Handle(e);
         IsCriticalActive = _engine.IsCriticalFiring(rules);
     }

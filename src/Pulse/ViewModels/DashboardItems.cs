@@ -1,5 +1,6 @@
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Pulse.Models;
 
 namespace Pulse.ViewModels;
@@ -93,6 +94,35 @@ public partial class CoolingViewModel : ObservableObject
 
     /// <summary>Called with the chosen header's sensor id ("" for "not on a header") when the user picks one.</summary>
     public Action<string>? PumpChosen { get; set; }
+
+    /// <summary>The pump reads unlike itself since Pulse started (see <see cref="Services.PumpWatch"/>): ask what changed.</summary>
+    [ObservableProperty] public partial bool HasChange { get; set; }
+    [ObservableProperty] public partial string ChangeText { get; set; } = "";
+
+    /// <summary>"Use Fan #6": the header that started spinning since. Null when there's none to suggest.</summary>
+    [ObservableProperty] public partial string? UseLabel { get; set; }
+
+    /// <summary>"Fan #2 is the pump": it's the same header, with a different pump. Null when the pump is gone.</summary>
+    [ObservableProperty] public partial string? KeepLabel { get; set; }
+
+    /// <summary>Set by the dashboard: switch to the suggested header, or keep the current one and learn it again.</summary>
+    public Action? UseSuggested { get; set; }
+    public Action? KeepPump { get; set; }
+
+    [RelayCommand]
+    private void UseSuggestion() => UseSuggested?.Invoke();
+
+    [RelayCommand]
+    private void Keep() => KeepPump?.Invoke();
+
+    /// <summary>Shows what <see cref="Services.PumpWatch"/> noticed, or hides it (null).</summary>
+    public void SetChange(Services.PumpChange? change)
+    {
+        HasChange = change is not null;
+        ChangeText = change is null ? "" : change.Suggestion is { } s ? $"{change.Description} {s}" : change.Description;
+        UseLabel = change?.SuggestedName is { } suggested ? $"Use {suggested}" : null;
+        KeepLabel = change?.Rpm is not null ? $"{change.Name} is the pump" : null;
+    }
 
     private bool _syncing;
 

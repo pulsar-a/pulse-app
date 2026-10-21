@@ -172,6 +172,79 @@ public class DashboardViewModelTests : PulseTest
     }
 
     [Fact]
+    public void A_header_renamed_Pump_stays_pickable_while_another_header_is_the_pump()
+    {
+        var dashboard = NewDashboard(out var settings);
+        settings.Current.Sensors.Names["/lpc/nct6798d/0/fan/1"] = "Fan";
+        settings.Current.Sensors.Names["/lpc/nct6798d/0/fan/5"] = "Pump";
+        settings.Current.Sensors.Roles[SensorRoles.Pump] = "/lpc/nct6798d/0/fan/1";
+        var board = Of(Board(0, 500, 0, 0, 0, 2100));
+        dashboard.Apply(board);
+
+        // The pick is the pump; the header called "Pump" is a fan with a name, still in the list.
+        Assert.Equal(["Fan", "Pump", "Not on a motherboard header"], dashboard.Cooling.Headers.Select(h => h.Name));
+        Assert.Equal(["Fan"], dashboard.Cooling.Rows.Select(r => r.Label));
+        Assert.Contains(dashboard.Fans, f => f.Name == "Pump");
+
+        dashboard.Cooling.SelectedHeader = dashboard.Cooling.Headers.Single(h => h.Name == "Pump");
+        dashboard.Apply(board);
+
+        Assert.Equal("/lpc/nct6798d/0/fan/5", Pump(settings));
+        Assert.Equal(["Fan", "Pump", "Not on a motherboard header"], dashboard.Cooling.Headers.Select(h => h.Name));
+        Assert.Equal(["Pump"], dashboard.Cooling.Rows.Select(r => r.Label));
+        Assert.Equal("2,100", dashboard.Cooling.Headline);
+        Assert.Contains(dashboard.Fans, f => f.Name == "Fan");
+        Assert.DoesNotContain(dashboard.Fans, f => f.Name == "Pump");
+    }
+
+    [Fact]
+    public void A_header_named_as_the_pump_becomes_the_pump_until_another_is_picked()
+    {
+        var dashboard = NewDashboard(out var settings);
+        settings.Current.Sensors.Names["/lpc/nct6798d/0/fan/5"] = "Pump";
+        dashboard.Apply(Of(Board(1200, 500, 0, 0, 0, 2100)));
+
+        Assert.Equal("/lpc/nct6798d/0/fan/5", Pump(settings));
+        Assert.Equal("2,100", dashboard.Cooling.Headline);
+        Assert.Equal("Pump", dashboard.Cooling.SelectedHeader!.Name);
+    }
+
+    [Fact]
+    public void The_cooling_card_asks_when_the_cooling_changed()
+    {
+        var dashboard = NewDashboard(out var settings);
+        var catalog = new SensorCatalog(settings);
+        catalog.SetRole(SensorRoles.Pump, "/lpc/nct6798d/0/fan/1");
+        var start = new DateTime(2026, 10, 21, 12, 0, 0);
+        var rules = settings.Current.Alerts.Rules;
+        var before = new PumpWatch(catalog);
+        for (var s = 0; s < 60; s++)
+            before.Observe(PumpWatchTests.OldCooler(s), rules, start.AddSeconds(s));
+        var watch = new PumpWatch(catalog);
+        for (var s = 0; s < 20; s++)
+            watch.Observe(PumpWatchTests.NewCooler(s), rules, start.AddHours(3).AddSeconds(s));
+
+        dashboard.PumpWatch = watch;
+        dashboard.Apply(Of(PumpWatchTests.NewCooler(20).Hardware.ToArray()));
+
+        Assert.True(dashboard.Cooling.HasChange);
+        Assert.Equal("Fan #2 has read about 500 rpm since Pulse started. Before, it ran at about 2,560 rpm. "
+                     + "Fan #6 started spinning at 2,100 rpm.", dashboard.Cooling.ChangeText);
+        Assert.Equal("Use Fan #6", dashboard.Cooling.UseLabel);
+        Assert.Equal("Fan #2 is the pump", dashboard.Cooling.KeepLabel);
+        Assert.True(dashboard.Cooling.ShowHeaderPicker);
+        Assert.Equal(HeatLevel.Warm, dashboard.Cooling.Heat);
+
+        dashboard.Cooling.UseSuggestionCommand.Execute(null);
+        dashboard.Apply(PumpWatchTests.NewCooler(21));
+
+        Assert.Equal("/lpc/nct6798d/0/fan/5", Pump(settings));
+        Assert.False(dashboard.Cooling.HasChange);
+        Assert.Equal("2,100", dashboard.Cooling.Headline);
+        Assert.Contains(dashboard.Fans, f => f.Name == "Fan #2");
+    }
+
+    [Fact]
     public void Drives_show_their_volume_letters()
     {
         var nvme = Hardware("/nvme/2", "CT4000T705SSD3", HardwareType.Storage,

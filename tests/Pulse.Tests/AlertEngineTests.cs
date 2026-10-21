@@ -162,4 +162,54 @@ public class AlertEngineTests : PulseTest
         Assert.Equal(5, rules.Count);
         Assert.False(AlertDefaults.AddMissing(rules));
     }
+
+    [Fact]
+    public void Pump_alerts_wait_while_the_startup_check_runs()
+    {
+        var engine = new AlertEngine();
+        var checking = new PumpStatus(Settled: false, Change: null);
+        for (var s = 0; s < 10; s++)
+            Assert.Empty(engine.Evaluate(Machine(pump: 0), Rules, PumpId, T0.AddSeconds(s), checking));
+    }
+
+    [Fact]
+    public void Moving_the_pump_to_another_header_clears_what_fired_for_the_old_one()
+    {
+        var engine = new AlertEngine();
+        Run(engine, Rules, Machine(pump: 0), Machine(pump: 0), Machine(pump: 0), Machine(pump: 0));
+        Assert.True(engine.IsCriticalFiring(Rules));
+
+        var events = engine.Evaluate(Machine(pump: 0), Rules, "/lpc/nct6798d/0/fan/5", T0.AddSeconds(4));
+
+        var cleared = Assert.Single(events);
+        Assert.Equal(AlertEventKind.Cleared, cleared.Kind);
+        Assert.Equal("Pump stopped: pump header changed", cleared.Title);
+        Assert.False(engine.IsCriticalFiring(Rules));
+    }
+
+    [Fact]
+    public void A_softened_pump_alert_turns_critical_once_the_user_says_it_is_the_pump()
+    {
+        var engine = new AlertEngine();
+        var changed = new PumpStatus(true, new PumpChange(PumpId, "Fan #2", 450, 2500, 2600));
+        var events = new List<AlertEvent>();
+        for (var s = 0; s < 5; s++)
+            events.AddRange(engine.Evaluate(Machine(pump: 450), Rules, PumpId, T0.AddSeconds(s), changed));
+
+        var soft = Assert.Single(events);
+        Assert.Equal(AlertSeverity.Warning, soft.Severity);
+        Assert.Equal("Fan #2 has read about 450 rpm since Pulse started. Before, it ran at 2,500–2,600 rpm. "
+                     + "If you changed or re-plugged your cooler, choose the pump header in the Cooling card.", soft.Message);
+        Assert.False(engine.IsCriticalFiring(Rules));
+
+        events.Clear();
+        for (var s = 5; s < 10; s++)
+            events.AddRange(engine.Evaluate(Machine(pump: 450), Rules, PumpId, T0.AddSeconds(s), new PumpStatus(true, null)));
+
+        var loud = Assert.Single(events);
+        Assert.Equal("Pump stopped", loud.Title);
+        Assert.Equal(AlertSeverity.Critical, loud.Severity);
+        Assert.True(loud.Notify);
+        Assert.True(engine.IsCriticalFiring(Rules));
+    }
 }

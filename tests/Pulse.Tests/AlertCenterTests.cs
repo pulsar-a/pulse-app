@@ -107,6 +107,55 @@ public class AlertCenterTests : PulseTest
         Assert.False(row.DeleteCommand.CanExecute(null));
         Assert.Equal("rpm", row.UnitText);
     }
+
+    /// <summary>Pulse closed and started again: a new alert center over the same settings.</summary>
+    private static AlertCenter Restart(SettingsService settings, FakeNotifier notifier) =>
+        new(settings, new SensorCatalog(settings), new SensorStream(), notifier, Dispatcher.CurrentDispatcher);
+
+    [Fact]
+    public void A_changed_cooler_warns_once_instead_of_sounding_the_alarm()
+    {
+        var center = NewCenter(out var notifier, out var settings);
+        for (var s = 0; s < 60; s++)
+            center.Evaluate(PumpWatchTests.OldCooler(s), T0.AddSeconds(s));
+
+        // The new AIO's radiator fans now sit on the old pump header, hovering around the 500 rpm limit.
+        var restarted = Restart(settings, notifier);
+        var start = T0.AddHours(3);
+        for (var s = 0; s < 600; s++)
+            restarted.Evaluate(PumpWatchTests.NewCooler(s), start.AddSeconds(s));
+
+        var shown = Assert.Single(notifier.Shown);
+        Assert.Equal("Pump reading changed", shown.Title);
+        Assert.Equal(AlertSeverity.Warning, shown.Severity);
+        Assert.Contains("Fan #6 started spinning at 2,100 rpm. If you moved the pump there, choose it in the Cooling card.", shown.Message);
+        Assert.False(restarted.IsCriticalActive);
+        Assert.Single(restarted.Items);
+
+        // Choosing the suggested header settles it, quietly.
+        restarted.Pump.Use(restarted.Pump.Change!.SuggestedId!);
+        restarted.Evaluate(PumpWatchTests.NewCooler(600), start.AddSeconds(600));
+        Assert.True(restarted.Items[0].IsCleared);
+        Assert.Single(notifier.Shown);
+        Assert.False(restarted.IsCriticalActive);
+    }
+
+    [Fact]
+    public void A_pump_stopped_when_Pulse_starts_still_sounds_the_alarm_once_checked()
+    {
+        var center = NewCenter(out var notifier, out var settings);
+        for (var s = 0; s < 60; s++)
+            center.Evaluate(PumpWatchTests.OldCooler(s), T0.AddSeconds(s));
+
+        var restarted = Restart(settings, notifier);
+        for (var s = 0; s < 20; s++)
+            restarted.Evaluate(PumpWatchTests.Board(0), T0.AddHours(3).AddSeconds(s));
+
+        var shown = Assert.Single(notifier.Shown);
+        Assert.Equal("Pump stopped", shown.Title);
+        Assert.Equal(AlertSeverity.Critical, shown.Severity);
+        Assert.True(restarted.IsCriticalActive);
+    }
 }
 
 public class ToastXmlTests

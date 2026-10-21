@@ -26,6 +26,7 @@ pipeline) come first, even though they're less visible than tray icons or charts
 | 12 ✅ | [Phone and web view](12-web-dashboard.md) | 2, 5 | Dashboard in a browser on the local network |
 | 13 | [Fan control](13-fan-control.md) | 4, 11 | Deferred: safe, limited fan curves (maybe never) |
 | 14 | [Release and distribution](14-release.md) | all | Signed installer, auto-updates, CI, first-run setup, clean uninstall, diagnostics |
+| 15 | [Microsoft Store](15-microsoft-store.md) | 14 | MSIX package signed by the Store; asks for allowElevation, discloses PawnIO |
 
 ## Dependency map
 
@@ -49,6 +50,7 @@ graph TD
     S4 --> S13[13 Fan control]
     S11 --> S13
     S12 --> S14[14 Release]
+    S14 --> S15[15 Microsoft Store]
     S11 --> S14
 ```
 

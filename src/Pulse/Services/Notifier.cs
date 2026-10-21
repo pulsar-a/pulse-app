@@ -45,7 +45,11 @@ public sealed class Notifier : INotifier
                 if ((args as ToastActivatedEventArgs)?.Arguments != "dismiss")
                     OpenRequested?.Invoke();
             };
-            ToastNotificationManager.CreateToastNotifier(AppUserModelId).Show(toast);
+            // Packaged (Store), the package's identity is the toast identity; unpackaged, the one registered below.
+            var notifier = AppPackage.IsPackaged
+                ? ToastNotificationManager.CreateToastNotifier()
+                : ToastNotificationManager.CreateToastNotifier(AppUserModelId);
+            notifier.Show(toast);
         }
         catch (Exception ex)
         {
@@ -83,7 +87,7 @@ public sealed class Notifier : INotifier
     /// <summary>Registers the toast identity (name and icon) for the current user. Cheap to call again.</summary>
     private void EnsureRegistered()
     {
-        if (_registered)
+        if (_registered || AppPackage.IsPackaged)
             return;
 
         var iconPath = Path.Combine(SettingsService.DefaultFolder, "pulse-icon.png");

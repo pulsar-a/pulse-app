@@ -4,7 +4,7 @@ CONFIG  ?= Debug
 EXE     ?= src/Pulse/bin/$(CONFIG)/net10.0-windows10.0.19041.0/win-x64/Pulse.exe
 FIXTURE ?= $(CURDIR)/tests/Pulse.Tests/Fixtures/admin.json
 
-.PHONY: start build test snapshot icon publish package release changelog clean probe probe-read
+.PHONY: start build test snapshot icon publish package msix release changelog clean probe probe-read
 
 # Build, then launch through the Windows shell so the admin (UAC) prompt appears.
 # `dotnet run` can't do that from a non-elevated terminal and fails with error 740.
@@ -34,6 +34,10 @@ package: publish
 	dotnet tool restore
 	dotnet vpk pack --packId PulseApp --packVersion $(PACKAGE_VERSION) --packDir artifacts/publish --mainExe Pulse.exe --packTitle Pulse --icon src/Pulse/Resources/Pulse.ico --framework net10-x64-desktop -o artifacts/releases
 
+# The Microsoft Store package (artifacts/msix), unsigned: the Store signs it. MSIX_VERSION=0.3.0 to pick the version.
+msix:
+	powershell -NoProfile -ExecutionPolicy Bypass -File tools/msix.ps1 -Version "$(MSIX_VERSION)"
+
 # Release: the next version from the conventional commits, CHANGELOG.md, a release commit and tag, pushed
 # (which starts the release workflow). Asks before it changes anything. PRE=beta for a beta, VERSION=1.0.0 to choose.
 release:
@@ -43,9 +47,9 @@ release:
 changelog:
 	powershell -NoProfile -ExecutionPolicy Bypass -File tools/release.ps1 -Pre "$(PRE)" -Version "$(VERSION)" -DryRun
 
-# Redraw the app icon (src/Pulse/Resources/Pulse.ico and PNGs) from tools/IconGen.
+# Redraw the app icon (src/Pulse/Resources/Pulse.ico and PNGs) and the Store logos from tools/IconGen.
 icon:
-	dotnet run --project tools/IconGen -- src/Pulse/Resources
+	dotnet run --project tools/IconGen -- src/Pulse/Resources packaging/msix/Assets
 
 # USB coolers: list supported controllers and running cooler software (sends nothing), or do one read.
 # Close Pulse first. probe-read refuses while iCUE or similar is running; pass ARGS=--force to read anyway.

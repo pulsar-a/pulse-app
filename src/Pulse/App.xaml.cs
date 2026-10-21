@@ -102,6 +102,11 @@ public partial class App : Application
         // History: every minute of every sensor, on disk (Settings → History).
         _history = new HistoryRecorder(stream, settings);
         viewModel.AttachHistory(_history, new HistoryStore(stream, _history.DatabasePath));
+        // A pump watched since before Pulse learned pump profiles: what it read before comes from history.
+        var historyPath = _history.DatabasePath;
+        if (settings.Current.History.RetentionDays is var days and > 0)
+            alerts.Pump.History = (pump, limit, before) =>
+                Task.Run(() => PumpWatch.FromHistory(historyPath, pump, limit, before, days));
 
         // What's using the CPU and GPU: sampled only while the Top processes tile or the Processes page is on screen.
         _processes = new ProcessMonitor();
@@ -165,7 +170,7 @@ public partial class App : Application
         _updateTimer.Start();
 
         // If Pulse was moved since "Start with Windows" was turned on, point the task at the new location.
-        if (HardwareService.IsElevated && Environment.ProcessPath is { } exe)
+        if (HardwareService.IsElevated && AppPackage.LaunchPath is { } exe)
             _ = StartupTask.RepairPathAsync(exe);
     }
 

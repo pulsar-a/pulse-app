@@ -349,7 +349,7 @@ public sealed class TrayIcon : IDisposable
         _ = RefreshStartupCheckAsync(startup);
         startup.Click += async (_, _) =>
         {
-            var exe = Environment.ProcessPath!;
+            var exe = AppPackage.LaunchPath!;
             var ok = startup.IsChecked ? await StartupTask.EnableAsync(exe) : await StartupTask.DisableAsync();
             if (!ok)
                 await RefreshStartupCheckAsync(startup);

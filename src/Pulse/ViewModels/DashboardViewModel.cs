@@ -52,6 +52,11 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             if (id.Length == 0) ClearPump();
             else SetPump(id);
         };
+        Cooling.UseSuggested = () =>
+        {
+            if (PumpWatch?.Change?.SuggestedId is { } id) PumpWatch.Use(id);
+        };
+        Cooling.KeepPump = () => PumpWatch?.Confirm();
 
         // Every layout change (here, from the details panel, or "Reset" in Settings) goes through settings.
         SyncTiles();
@@ -94,6 +99,9 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     }
 
     private string? PumpSensorId => _catalog.RoleSensor(SensorRoles.Pump);
+
+    /// <summary>Notices when the cooling changed since Pulse last ran; set by the main view model with the alerts.</summary>
+    public PumpWatch? PumpWatch { get; set; }
 
     private IReadOnlyList<AlertRule> Rules => _settings.Current.Alerts.Rules;
 
@@ -444,7 +452,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             {
                 // Pumps get their own spot in the cooling card.
                 if (sensor.Type != SensorType.Fan || !sensor.HasValue
-                    || sensor.Id == PumpSensorId || NameMatches(sensor, PumpWords))
+                    || sensor.Id == PumpSensorId || IsNamedPump(owner, sensor))
                     continue;
 
                 // Super I/O chips report every fan header; hide the ones that have never spun.
@@ -538,6 +546,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         var candidates = new List<SensorReading>();
         var candidateOwners = new List<string>();
         var headers = new List<SensorReading>();
+        var namedHeaders = new List<SensorReading>();
         var usbPump = false;
         SensorReading? coolerPump = null;
         var pumpOwners = new Dictionary<string, HardwareReading>();
@@ -571,7 +580,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                 {
                     // A cooler that names its pump (a Corsair Commander: "Pump", then "Fan #1"...) has fans too;
                     // one that doesn't is all pump, as before.
-                    SensorType.Fan when NameMatches(sensor, PumpWords) || (isCooler && !NamesAPump(owner)) => pumps,
+                    SensorType.Fan when IsNamedPump(owner, sensor) || (isCooler && !NamesAPump(owner)) => pumps,
                     SensorType.Temperature when isCooler || NameMatches(sensor, CoolantWords) => coolant,
                     SensorType.Flow => flows,
                     _ => null,
@@ -593,6 +602,12 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                     pumpOwners[sensor.Id] = owner;
                 if (target == pumps && isCooler)
                     coolerPump ??= sensor;
+                // A header named as the pump is still a header: it stays in the list, to be picked or not.
+                if (target == pumps && owner.Type is HardwareType.SuperIO or HardwareType.EmbeddedController)
+                {
+                    headers.Add(sensor);
+                    namedHeaders.Add(sensor);
+                }
                 if (!sources.Contains(owner.Name))
                     sources.Add(owner.Name);
             }
@@ -606,6 +621,14 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             usbPump = true;
         }
 
+        // One header named as the pump ("AIO Pump", or the user's rename): it is the pump, alerts included.
+        if (PumpSensorId is null && namedHeaders.Count == 1)
+        {
+            SetPump(namedHeaders[0].Id);
+            pumps.Remove(namedHeaders[0]);
+            pumps.Insert(0, namedHeaders[0]);
+        }
+
         // With only one spinning header there's nothing to choose: assume it's the pump. This happens
         // only until the user has made a choice, so their pick in the header list doesn't get overruled.
         if (pumps.Count == 0 && PumpSensorId is null && candidates.Count == 1)
@@ -617,11 +640,17 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         }
 
         _coolingIds = pumps.Concat(coolant).Concat(flows).Select(s => s.Id).ToHashSet();
-        UpdatePumpHeaders(headers, namedPump: pumps.Count > 0 && pumps[0].Id != PumpSensorId, usbPump);
+        // The pump reads unlike itself since Pulse started: say so, and offer every header, USB pump or not.
+        var change = PumpWatch?.Change is { } c && c.SensorId == PumpSensorId ? c : null;
+        UpdatePumpHeaders(headers, namedPump: pumps.Count > 0 && pumps[0].Id != PumpSensorId, usbPump && change is null);
+        Cooling.SetChange(change);
 
         Cooling.HasData = pumps.Count + coolant.Count + flows.Count > 0;
         Cooling.Heat = pumps.Count > 0 && pumps[0].Id == PumpSensorId
-            ? Heat.Below(pumps[0].Value, Heat.Limit(Rules, Heat.PumpRule), Cooling.Heat, margin: 50)
+            ? change is { IsSpinning: true }
+                // Probably not the pump at all any more: a question, not an alarm.
+                ? HeatLevel.Warm
+                : Heat.Below(pumps[0].Value, Heat.Limit(Rules, Heat.PumpRule), Cooling.Heat, margin: 50)
             : HeatLevel.None;
         if (!Cooling.HasData)
         {
@@ -732,6 +761,15 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     /// <summary>The pump shows as "Pump" unless the user renamed it; other sensors by their display name.</summary>
     private string Label(SensorReading sensor) =>
         sensor.Id == PumpSensorId ? _catalog.DisplayName(sensor.Id, "Pump") : _catalog.DisplayName(sensor);
+
+    /// <summary>
+    /// A pump by its name ("Pump", "AIO", or the user's rename to one). A motherboard header counts only while no
+    /// header is picked: after that the pick is the pump, and a header called "Pump" is only a name. It stays in the
+    /// header list and the fans, instead of turning into a second pump nobody chose.
+    /// </summary>
+    private bool IsNamedPump(HardwareReading owner, SensorReading sensor) =>
+        sensor.Type == SensorType.Fan && NameMatches(sensor, PumpWords)
+        && (owner.Type is not (HardwareType.SuperIO or HardwareType.EmbeddedController) || PumpSensorId is null);
 
     /// <summary>Matches the original name or the user's name, so renaming a header "... pump" also counts.</summary>
     private bool NameMatches(SensorReading sensor, string[] words) =>
