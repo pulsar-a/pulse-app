@@ -155,6 +155,7 @@ make start
 | `make snapshot` | Record every sensor once, as admin, to `tests/Pulse.Tests/Fixtures/admin.json` (close Pulse first) |
 | `make publish` | Release build with ReadyToRun in `artifacts/publish` |
 | `make package` | The installer and update packages, as a release builds them, in `artifacts/releases` |
+| `make install` | Install this build for your user account with the installer (shortcuts, Settings → Apps entry), then start it |
 | `make changelog` | What the next release would be: its version and changelog (changes nothing) |
 | `make release` | Release: version from the commits, `CHANGELOG.md`, release commit and tag, pushed (asks first). `PRE=beta` for a beta, `VERSION=1.0.0` to choose |
 | `make probe` | List supported USB coolers and any cooler software running (sends nothing) |

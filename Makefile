@@ -4,7 +4,7 @@ CONFIG  ?= Debug
 EXE     ?= src/Pulse/bin/$(CONFIG)/net10.0-windows10.0.19041.0/win-x64/Pulse.exe
 FIXTURE ?= $(CURDIR)/tests/Pulse.Tests/Fixtures/admin.json
 
-.PHONY: start build test snapshot icon publish package msix release changelog clean probe probe-read
+.PHONY: start build test snapshot icon publish package install msix release changelog clean probe probe-read
 
 # Build, then launch through the Windows shell so the admin (UAC) prompt appears.
 # `dotnet run` can't do that from a non-elevated terminal and fails with error 740.
@@ -33,6 +33,13 @@ PACKAGE_VERSION ?= 0.0.1-local
 package: publish
 	dotnet tool restore
 	dotnet vpk pack --packId PulseApp --packVersion $(PACKAGE_VERSION) --packDir artifacts/publish --mainExe Pulse.exe --packTitle Pulse --icon src/Pulse/Resources/Pulse.ico --framework net10-x64-desktop -o artifacts/releases
+
+# Install this build for your user account, as the release installer does (Start menu and desktop shortcut,
+# an entry in Settings → Apps), then start it. Versioned from git like the build (MinVer), so Pulse's updater
+# only replaces it with a newer release.
+install: PACKAGE_VERSION = $(strip $(shell dotnet msbuild $(PROJECT) -nologo -t:MinVer -getProperty:MinVerVersion))
+install: package
+	powershell -NoProfile -Command "Start-Process -FilePath 'artifacts/releases/PulseApp-win-Setup.exe' -Wait"
 
 # The Microsoft Store package (artifacts/msix), unsigned: the Store signs it. MSIX_VERSION=0.3.0 to pick the version.
 msix:
