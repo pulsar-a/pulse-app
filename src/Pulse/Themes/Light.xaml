@@ -45,6 +45,7 @@
     <Color x:Key="Pulse.Accent.Upload.Color">#A78BFA</Color>
     <Color x:Key="Pulse.Accent.Storage.Color">#38BDF8</Color>
     <Color x:Key="Pulse.Accent.Fans.Color">#2DD4BF</Color>
+    <Color x:Key="Pulse.Accent.Board.Color">#F472B6</Color>
 
     <SolidColorBrush x:Key="Pulse.Accent.Cpu" Color="{StaticResource Pulse.Accent.Cpu.Color}" />
     <SolidColorBrush x:Key="Pulse.Accent.Network" Color="{StaticResource Pulse.Accent.Network.Color}" />
@@ -53,11 +54,13 @@
     <SolidColorBrush x:Key="Pulse.Accent.Fans" Color="{StaticResource Pulse.Accent.Fans.Color}" />
     <SolidColorBrush x:Key="Pulse.Accent.Gpu" Color="{StaticResource Pulse.Accent.Gpu.Color}" />
     <SolidColorBrush x:Key="Pulse.Accent.Memory" Color="{StaticResource Pulse.Accent.Memory.Color}" />
+    <SolidColorBrush x:Key="Pulse.Accent.Board" Color="{StaticResource Pulse.Accent.Board.Color}" />
 
     <SolidColorBrush x:Key="Pulse.Accent.Cpu.Soft" Color="#33FF7A45" />
     <SolidColorBrush x:Key="Pulse.Accent.Network.Soft" Color="#334FA8FF" />
     <SolidColorBrush x:Key="Pulse.Accent.Storage.Soft" Color="#3338BDF8" />
     <SolidColorBrush x:Key="Pulse.Accent.Fans.Soft" Color="#332DD4BF" />
+    <SolidColorBrush x:Key="Pulse.Accent.Board.Soft" Color="#33F472B6" />
 
     <!-- Heat borders on cards -->
     <SolidColorBrush x:Key="Pulse.Heat.Warm" Color="#EA580C" />

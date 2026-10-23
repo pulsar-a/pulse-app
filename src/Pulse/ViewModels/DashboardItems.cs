@@ -210,3 +210,60 @@ public partial class NetworkViewModel : ObservableObject
         Scale = Math.Max(peak * 1.15, 1024);
     }
 }
+
+/// <summary>Total CPU load and the busiest core: a single-threaded program can max one core at a low total.</summary>
+public partial class CpuLoadViewModel : ObservableObject
+{
+    /// <summary>The total load sensor.</summary>
+    [ObservableProperty] public partial string? SensorId { get; set; }
+    [ObservableProperty] public partial string Device { get; set; } = "Not detected";
+    [ObservableProperty] public partial string TotalText { get; set; } = "—";
+    [ObservableProperty] public partial string BusiestText { get; set; } = "—";
+    [ObservableProperty] public partial string Details { get; set; } = "";
+    [ObservableProperty] public partial IReadOnlyList<double>? TotalHistory { get; set; }
+    [ObservableProperty] public partial IReadOnlyList<double>? BusiestHistory { get; set; }
+    [ObservableProperty] public partial int HistoryCapacity { get; set; } = GaugeCardViewModel.HistoryLength;
+
+    public void SetHistory(double[] total, double[] busiest, int capacity)
+    {
+        HistoryCapacity = capacity;
+        TotalHistory = total;
+        BusiestHistory = busiest;
+    }
+}
+
+/// <summary>One reading in the motherboard card: a board temperature or a supply voltage.</summary>
+public partial class BoardRowViewModel : ObservableObject
+{
+    [ObservableProperty] public partial string? SensorId { get; set; }
+    [ObservableProperty] public partial string Name { get; set; } = "";
+    [ObservableProperty] public partial string ValueText { get; set; } = "";
+
+    /// <summary>Temperatures are colored by how warm they are; voltages use the normal text color.</summary>
+    [ObservableProperty] public partial Brush? ValueBrush { get; set; }
+}
+
+/// <summary>The motherboard's own sensors, headed by the chipset temperature.</summary>
+public partial class MotherboardViewModel : ObservableObject
+{
+    /// <summary>The headline reading (the chipset, else the board temperature).</summary>
+    [ObservableProperty] public partial string? SensorId { get; set; }
+    public System.Collections.ObjectModel.ObservableCollection<BoardRowViewModel> Rows { get; } = [];
+
+    [ObservableProperty] public partial bool HasData { get; set; }
+
+    /// <summary>From the hottest board temperature.</summary>
+    [ObservableProperty] public partial HeatLevel Heat { get; set; }
+    [ObservableProperty] public partial string Device { get; set; } = "Not detected";
+    [ObservableProperty] public partial string Headline { get; set; } = "—";
+    [ObservableProperty] public partial string HeadlineCaption { get; set; } = "";
+    [ObservableProperty] public partial string EmptyText { get; set; } = "";
+    [ObservableProperty] public partial IReadOnlyList<double>? History { get; set; }
+    [ObservableProperty] public partial int HistoryCapacity { get; set; } = GaugeCardViewModel.HistoryLength;
+
+    public void SetHistory(double[] values, int capacity)
+    {
+        HistoryCapacity = capacity;
+        History = values;
+    }
+}

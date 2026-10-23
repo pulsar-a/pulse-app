@@ -17,6 +17,7 @@ public static class Palette
     public static Color Network => Accent("Network", Color.FromRgb(0x4F, 0xA8, 0xFF));
     public static Color Storage => Accent("Storage", Color.FromRgb(0x38, 0xBD, 0xF8));
     public static Color Fans => Accent("Fans", Color.FromRgb(0x2D, 0xD4, 0xBF));
+    public static Color Board => Accent("Board", Color.FromRgb(0xF4, 0x72, 0xB6));
 
     /// <summary>
     /// The accent for a sensor, matching the dashboard's color code: what it belongs to comes first

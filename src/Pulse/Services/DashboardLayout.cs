@@ -18,6 +18,12 @@ public enum TileKind
     /// <summary>The busiest programs by CPU, GPU and memory (step 10).</summary>
     Processes,
 
+    /// <summary>Total CPU load and the busiest core, with a minute of history.</summary>
+    CpuLoad,
+
+    /// <summary>The motherboard's own sensors: chipset, VRM and board temperatures, main voltages.</summary>
+    Motherboard,
+
     /// <summary>Sensors the user pinned: one sensor in large type, or a few as a group.</summary>
     Pinned,
 }
@@ -84,10 +90,12 @@ public static class DashboardLayout
         (TileKind.Memory, TileSize.Small),
         (TileKind.Power, TileSize.Small),
         (TileKind.Cores, TileSize.Wide),
+        (TileKind.CpuLoad, TileSize.Medium),
         (TileKind.Cooling, TileSize.Medium),
+        (TileKind.Motherboard, TileSize.Medium),
         (TileKind.Fans, TileSize.Medium),
-        (TileKind.Drives, TileSize.Medium),
-        (TileKind.Network, TileSize.Medium),
+        (TileKind.Drives, TileSize.Large),
+        (TileKind.Network, TileSize.Large),
         (TileKind.Processes, TileSize.Full),
     ];
 

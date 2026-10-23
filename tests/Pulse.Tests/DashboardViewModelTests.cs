@@ -269,6 +269,81 @@ public class DashboardViewModelTests : PulseTest
     }
 
     [Fact]
+    public void Cpu_load_card_shows_the_total_and_the_busiest_core()
+    {
+        var dashboard = NewDashboard(out _);
+        dashboard.Apply(Of(Hardware("/intelcpu/0", "Intel Core i9-14900K", HardwareType.Cpu,
+            Sensor("/intelcpu/0/load/0", "CPU Total", SensorType.Load, 12.4f),
+            Sensor("/intelcpu/0/load/1", "CPU Core Max", SensorType.Load, 97),
+            Sensor("/intelcpu/0/load/2", "CPU Core #1 Thread #1", SensorType.Load, 97),
+            Sensor("/intelcpu/0/load/3", "CPU Core #1 Thread #2", SensorType.Load, 3),
+            Sensor("/intelcpu/0/load/4", "CPU Core #2", SensorType.Load, 1))));
+
+        Assert.Equal("12%", dashboard.CpuLoad.TotalText);
+        Assert.Equal("97%", dashboard.CpuLoad.BusiestText);
+        Assert.Equal("2 cores · 3 threads", dashboard.CpuLoad.Details);
+        Assert.Equal("/intelcpu/0/load/0", dashboard.CpuLoad.SensorId);
+    }
+
+    /// <summary>The Z790 Hero's sensor chip and embedded controller, as the admin snapshot has them.</summary>
+    private static HardwareReading BoardSensors() =>
+        Hardware("/motherboard", "ASUS ROG MAXIMUS Z790 HERO", HardwareType.Motherboard).WithSub(
+            Hardware("/lpc/nct6798d/0", "Nuvoton NCT6798D", HardwareType.SuperIO,
+                Sensor("/lpc/nct6798d/0/temperature/0", "CPU Package", SensorType.Temperature, 47, max: 60),
+                Sensor("/lpc/nct6798d/0/temperature/1", "CPU", SensorType.Temperature, 47.5f, max: 60),
+                Sensor("/lpc/nct6798d/0/temperature/2", "Motherboard", SensorType.Temperature, 32, max: 33),
+                Sensor("/lpc/nct6798d/0/temperature/8", "Temperature #8", SensorType.Temperature, 84, max: 84),
+                Sensor("/lpc/nct6798d/0/temperature/13", "Chipset", SensorType.Temperature, 64, max: 65),
+                Sensor("/lpc/nct6798d/0/temperature/16", "Temperature #16", SensorType.Temperature, 0, max: 0),
+                Sensor("/lpc/nct6798d/0/voltage/0", "Vcore", SensorType.Voltage, 1.1f, max: 1.3f),
+                Sensor("/lpc/nct6798d/0/voltage/1", "Voltage #2", SensorType.Voltage, 0.9f, max: 0.9f)),
+            Hardware("/lpc/ec", "Embedded Controller", HardwareType.EmbeddedController,
+                Sensor("/lpc/ec/temperature/0", "VRM", SensorType.Temperature, 44, max: 50),
+                Sensor("/lpc/ec/temperature/1", "Water In", SensorType.Temperature, 30, max: 31)));
+
+    [Fact]
+    public void Motherboard_card_leads_with_the_chipset_and_lists_the_board_sensors()
+    {
+        var dashboard = NewDashboard(out _);
+        dashboard.Apply(Of(BoardSensors()));
+
+        var board = dashboard.Motherboard;
+        Assert.True(board.HasData);
+        Assert.Equal("ASUS ROG MAXIMUS Z790 HERO", board.Device);
+        Assert.Equal("64°", board.Headline);
+        Assert.Equal("Chipset", board.HeadlineCaption);
+        Assert.Equal("/lpc/nct6798d/0/temperature/13", board.SensorId);
+        // Temperatures, then voltages. Not the package (Processor card), coolant (cooling card), unnamed or never-read inputs.
+        Assert.Equal(["CPU socket", "Motherboard", "Chipset", "VRM", "Vcore"], board.Rows.Select(r => r.Name));
+        Assert.Equal("1.100 V", board.Rows.Single(r => r.Name == "Vcore").ValueText);
+        Assert.Null(board.Rows.Single(r => r.Name == "Vcore").ValueBrush);
+        Assert.Equal(HeatLevel.None, board.Heat);
+    }
+
+    [Fact]
+    public void A_renamed_board_input_shows_on_the_motherboard_card()
+    {
+        var dashboard = NewDashboard(out var settings);
+        settings.Update(s => s.Sensors.Names["/lpc/nct6798d/0/temperature/8"] = "M.2 heatsink");
+        dashboard.Apply(Of(BoardSensors()));
+
+        Assert.Contains("M.2 heatsink", dashboard.Motherboard.Rows.Select(r => r.Name));
+        // 84 °C: warm, not yet hot.
+        Assert.Equal(HeatLevel.Warm, dashboard.Motherboard.Heat);
+    }
+
+    [Fact]
+    public void Motherboard_card_explains_missing_sensors()
+    {
+        var dashboard = NewDashboard(out _, driverInstalled: false);
+        dashboard.Apply(Of(Board(1200)));
+
+        Assert.False(dashboard.Motherboard.HasData);
+        Assert.NotEmpty(dashboard.Motherboard.EmptyText);
+        Assert.Null(dashboard.Motherboard.SensorId);
+    }
+
+    [Fact]
     public void Real_snapshot_without_admin_fills_the_dashboard()
     {
         var dashboard = NewDashboard(out _);
@@ -294,5 +369,6 @@ public class DashboardViewModelTests : PulseTest
         Assert.Equal("package", dashboard.Cpu.GaugeCaption);
         Assert.Equal("Core temperatures", dashboard.CoresTitle);
         Assert.Equal(5, dashboard.Drives.Count);
+        Assert.Equal("Chipset", dashboard.Motherboard.HeadlineCaption);
     }
 }

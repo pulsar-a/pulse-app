@@ -97,6 +97,8 @@ public partial class DashboardTileViewModel : ObservableObject
             TileKind.Drives => "Drives",
             TileKind.Network => "Network",
             TileKind.Processes => "Top processes",
+            TileKind.CpuLoad => "CPU load",
+            TileKind.Motherboard => "Motherboard",
             _ => Kind.ToString(),
         },
     };
@@ -117,6 +119,8 @@ public partial class DashboardTileViewModel : ObservableObject
             TileKind.Drives => 330,
             TileKind.Network => 280,
             TileKind.Processes => 300,
+            TileKind.CpuLoad => 280,
+            TileKind.Motherboard => 320,
             _ => 240,
         },
     };

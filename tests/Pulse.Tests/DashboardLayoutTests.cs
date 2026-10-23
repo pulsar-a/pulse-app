@@ -35,9 +35,11 @@ public class DashboardLayoutTests : PulseTest
     {
         var tiles = DashboardLayout.Default();
 
-        Assert.Equal(["Processor", "Graphics", "Memory", "Power", "Cores", "Cooling", "Fans", "Drives", "Network", "Processes"], Kinds(tiles));
-        // Four gauges in a row, then cores and cooling, then fans, drives and network, then top processes: four full rows.
-        Assert.Equal([12, 12, 12, 12], Rows(tiles.Select(t => DashboardLayout.Span(t.SizeValue))));
+        Assert.Equal(["Processor", "Graphics", "Memory", "Power", "Cores", "CpuLoad", "Cooling", "Motherboard", "Fans", "Drives", "Network", "Processes"],
+            Kinds(tiles));
+        // Four gauges in a row, then cores and CPU load, cooling, motherboard and fans, drives and network,
+        // then top processes: five full rows.
+        Assert.Equal([12, 12, 12, 12, 12], Rows(tiles.Select(t => DashboardLayout.Span(t.SizeValue))));
     }
 
     private static List<int> Rows(IEnumerable<int> spans)
@@ -69,7 +71,7 @@ public class DashboardLayoutTests : PulseTest
         Assert.Equal("Small", tiles[0].Size);
         Assert.Equal("Wide", tiles.Single(t => t.Id == "cores").Size);
         Assert.DoesNotContain(tiles, t => t.Kind is "Weather" or "Pinned");
-        Assert.Equal(10, tiles.Count);   // every built-in card is there, the missing ones at the end
+        Assert.Equal(12, tiles.Count);   // every built-in card is there, the missing ones at the end
         Assert.False(DashboardLayout.Normalize(tiles));
     }
 
@@ -86,7 +88,7 @@ public class DashboardLayoutTests : PulseTest
         var settings = NewSettings();
 
         Assert.Equal("CPU", settings.Current.Sensors.Names["/intelcpu/0/temperature/0"]);
-        Assert.Equal(10, settings.Current.Dashboard.Tiles!.Count);
+        Assert.Equal(12, settings.Current.Dashboard.Tiles!.Count);
     }
 
     [Fact]
@@ -145,7 +147,7 @@ public class DashboardLayoutTests : PulseTest
     {
         var dashboard = new DashboardViewModel(true, NewCatalog(out var settings), new SensorStream());
 
-        Assert.Equal(10, dashboard.Tiles.Count);
+        Assert.Equal(12, dashboard.Tiles.Count);
         Assert.Same(dashboard.Cpu, dashboard.Tiles[0].Card);
         Assert.Null(settings.Current.Dashboard.Tiles);
     }
@@ -241,8 +243,8 @@ public class DashboardLayoutTests : PulseTest
 
         DashboardViewModel.ResetLayout(settings);
 
-        Assert.Equal(["processor", "graphics", "memory", "power", "cores", "cooling", "fans", "drives", "network"],
-            dashboard.Tiles.Take(9).Select(t => t.Id));
+        Assert.Equal(["processor", "graphics", "memory", "power", "cores", "cpuload", "cooling", "motherboard", "fans", "drives", "network"],
+            dashboard.Tiles.Take(11).Select(t => t.Id));
         Assert.True(dashboard.Tiles[^1].IsPinned);
     }
 

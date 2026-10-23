@@ -387,6 +387,107 @@
                 </Border>
         </DataTemplate>
 
+        <!-- CPU load: the total and the busiest core, since one maxed-out thread hides in a low total. -->
+        <DataTemplate DataType="{x:Type vm:CpuLoadViewModel}">
+                <Border Style="{StaticResource ClickableCard}" ToolTip="Show load history">
+                    <Border.InputBindings>
+                        <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                    </Border.InputBindings>
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Cpu.Soft}">
+                                <ui:SymbolIcon Symbol="Gauge24" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Cpu}" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="CPU load" Style="{StaticResource CardTitle}" />
+                                <TextBlock Text="{Binding Device}" Style="{StaticResource Secondary}" ToolTip="{Binding Device}" />
+                            </StackPanel>
+                        </DockPanel>
+
+                        <UniformGrid Columns="2" Margin="0,4,0,10">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Secondary}">
+                                    <Run Text="●" Foreground="{DynamicResource Pulse.Accent.Cpu}" />
+                                    <Run Text="Total" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding TotalText}" FontSize="22" Style="{StaticResource Metric}" />
+                            </StackPanel>
+                            <StackPanel ToolTip="The busiest core: a single-threaded program can max it out at a low total">
+                                <TextBlock Style="{StaticResource Secondary}">
+                                    <Run Text="●" Foreground="{DynamicResource Pulse.Accent.Upload}" />
+                                    <Run Text="Busiest core" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding BusiestText}" FontSize="22" Style="{StaticResource Metric}" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <Grid Height="96">
+                            <controls:Sparkline Values="{Binding BusiestHistory}" Color="{DynamicResource Pulse.Accent.Upload.Color}"
+                                                Maximum="100" Capacity="{Binding HistoryCapacity}" />
+                            <controls:Sparkline Values="{Binding TotalHistory}" Color="{DynamicResource Pulse.Accent.Cpu.Color}"
+                                                Maximum="100" Capacity="{Binding HistoryCapacity}" />
+                        </Grid>
+                        <TextBlock Text="{Binding Details}" Style="{StaticResource Caption}" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+        </DataTemplate>
+
+        <!-- Motherboard: chipset, VRM and board temperatures and the main voltages, headed by the chipset. -->
+        <DataTemplate DataType="{x:Type vm:MotherboardViewModel}">
+            <Border Style="{StaticResource HeatClickableCard}" ToolTip="Show history">
+                <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                </Border.InputBindings>
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <Border Style="{StaticResource IconChip}" Background="{DynamicResource Pulse.Accent.Board.Soft}">
+                            <ui:SymbolIcon Symbol="DeveloperBoardLightning20" FontSize="18" Foreground="{DynamicResource Pulse.Accent.Board}" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Motherboard" Style="{StaticResource CardTitle}" />
+                            <TextBlock Text="{Binding Device}" Style="{StaticResource Secondary}" ToolTip="{Binding Device}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <TextBlock Text="{Binding EmptyText}" Style="{StaticResource Secondary}" TextWrapping="Wrap"
+                               Visibility="{Binding HasData, Converter={x:Static views:Converters.InverseBoolToVisibility}}" />
+
+                    <Grid Visibility="{Binding HasData, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                            <TextBlock Text="{Binding Headline}" FontSize="32" Style="{StaticResource Metric}" />
+                            <TextBlock Text="{Binding HeadlineCaption}" Style="{StaticResource Secondary}" />
+                            <controls:Sparkline Values="{Binding History}" Color="{DynamicResource Pulse.Accent.Board.Color}" Capacity="{Binding HistoryCapacity}"
+                                                Width="110" Height="40" Margin="0,10,0,0" HorizontalAlignment="Left" />
+                        </StackPanel>
+                        <ItemsControl Grid.Column="1" ItemsSource="{Binding Rows}" VerticalAlignment="Center">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:BoardRowViewModel}">
+                                    <DockPanel Margin="0,3" Background="Transparent" Cursor="Hand">
+                                        <DockPanel.InputBindings>
+                                            <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding SensorId}" />
+                                        </DockPanel.InputBindings>
+                                        <TextBlock x:Name="Value" DockPanel.Dock="Right" Text="{Binding ValueText}" FontSize="13"
+                                                   Foreground="{Binding ValueBrush}" Style="{StaticResource Metric}" />
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Secondary}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                    </DockPanel>
+                                    <DataTemplate.Triggers>
+                                        <!-- Voltages: the normal text color. -->
+                                        <DataTrigger Binding="{Binding ValueBrush}" Value="{x:Null}">
+                                            <Setter TargetName="Value" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
         <!-- Top processes: the busiest programs by CPU, GPU and memory, as many columns as the tile has room for.
              Clicking it opens the Processes page. -->
         <DataTemplate DataType="{x:Type vm:ProcessesCardViewModel}">

@@ -31,6 +31,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     private static readonly Regex PsuCapacity = new(@"(\d{3,4})");
     private static readonly Regex DimmTemperature = new(@"^DIMM #\d+$");
     private static readonly Regex DimmSlot = new(@"\s*\(#\d+\)$");
+    private static readonly Regex UnnamedInput = new(@"^(Temperature|Voltage) #\d+$");
+    private static readonly Regex SupplyRail = new(@"^(Vcore|CPU VCore|\+12V|\+5V|\+3\.3V)$", RegexOptions.IgnoreCase);
 
     private readonly bool _driverInstalled;
     private readonly bool _isElevated = HardwareService.IsElevated;
@@ -128,6 +130,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     public NetworkViewModel Network { get; } = new();
     public CoolingViewModel Cooling { get; } = new();
     public ProcessesCardViewModel ProcessesCard { get; } = new();
+    public CpuLoadViewModel CpuLoad { get; } = new();
+    public MotherboardViewModel Motherboard { get; } = new();
 
     /// <summary>What Pulse is doing with each USB cooler it supports (set by the main view model).</summary>
     public IReadOnlyList<CoolerStatus> CoolerStatuses { get; set; } = [];
@@ -160,7 +164,9 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         UpdateMemory(snapshot);
         UpdatePower(snapshot, cpu, gpu);
         UpdateCores(cpu);
+        UpdateCpuLoad(cpu);
         UpdateCooling(snapshot, cpu);
+        UpdateMotherboard(snapshot);
         UpdateFans(snapshot);
         UpdateDrives(snapshot);
         UpdateNetwork(snapshot);
@@ -423,6 +429,27 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
                 tile.ToolTip = $"{name}: {v:0.0} % load";
             }
         }
+    }
+
+    private void UpdateCpuLoad(HardwareReading? cpu)
+    {
+        if (cpu is null) return;
+
+        var totalSensor = cpu.First(SensorType.Load, "CPU Total");
+        var busiestSensor = cpu.First(SensorType.Load, "CPU Core Max");
+        var threads = cpu.Sensors.Where(s => s.Type == SensorType.Load && CoreLoad.IsMatch(s.Name)).ToList();
+        var cores = threads.Select(s => CoreLoad.Match(s.Name).Groups[1].Value).Distinct().Count();
+        // Without a "CPU Core Max" sensor, the busiest thread stands in (with no history).
+        var busiest = busiestSensor?.Value ?? threads.Where(s => s.HasValue).Select(s => s.Value).Max();
+
+        CpuLoad.Device = cpu.Name;
+        CpuLoad.SensorId = totalSensor?.Id;
+        CpuLoad.TotalText = totalSensor?.Value is { } total ? $"{total:0}%" : SensorFormat.Empty;
+        CpuLoad.BusiestText = busiest is { } b ? $"{b:0}%" : SensorFormat.Empty;
+        CpuLoad.Details = cores == 0 ? ""
+            : threads.Count > cores ? $"{cores} cores · {threads.Count} threads"
+            : $"{cores} cores";
+        CpuLoad.SetHistory(History(totalSensor), History(busiestSensor), HistorySamples);
     }
 
     /// <summary>
@@ -778,6 +805,82 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     private static bool ContainsAny(string text, string[] words) =>
         words.Any(w => text.Contains(w, StringComparison.OrdinalIgnoreCase));
 
+    private static readonly string[] ChipsetWords = ["chipset", "pch"];
+    private static readonly string[] BoardWords = ["motherboard", "system"];
+
+    private void UpdateMotherboard(HardwareSnapshot snapshot)
+    {
+        var board = snapshot.OfType(HardwareType.Motherboard).FirstOrDefault();
+        var temps = new List<SensorReading>();
+        var volts = new List<SensorReading>();
+        foreach (var (_, sensor) in board is null ? [] : WithOwners(board))
+        {
+            // Unconnected inputs read 0 (or nothing) forever.
+            if (!sensor.HasValue || (sensor.Max ?? 0) <= 0)
+                continue;
+
+            // LHM's unnamed inputs ("Temperature #8") could be anything; a name the user gave says what it is.
+            var renamed = _catalog.DisplayName(sensor) != sensor.Name;
+            var named = renamed || !UnnamedInput.IsMatch(sensor.Name);
+            if (sensor.Type == SensorType.Temperature)
+            {
+                // The package is on the Processor card, coolant on the cooling card.
+                if (named && sensor.Name != "CPU Package" && !NameMatches(sensor, CoolantWords))
+                    temps.Add(sensor);
+            }
+            else if (sensor.Type == SensorType.Voltage && (renamed || SupplyRail.IsMatch(sensor.Name)))
+            {
+                volts.Add(sensor);
+            }
+        }
+
+        _boardIds = temps.Concat(volts).Select(s => s.Id).ToHashSet();
+        Motherboard.Device = board?.Name ?? "Not detected";
+        Motherboard.HasData = _boardIds.Count > 0;
+        // No alert for these: warm from 80 °C, hot from 95 °C, both still short of where chipsets and VRMs throttle.
+        Motherboard.Heat = Heat.Above(temps.Count > 0 ? temps.Max(s => s.Value) : null, 95, Motherboard.Heat, band: 15);
+
+        if (!Motherboard.HasData)
+        {
+            Motherboard.EmptyText = !_isElevated
+                ? "Motherboard sensors need admin rights. Restart Pulse as administrator to see them."
+                : !_driverInstalled
+                    ? "Chipset, VRM and board temperatures need the PawnIO driver."
+                    : "No motherboard temperatures or voltages were found.";
+            Motherboard.Rows.Clear();
+            Motherboard.SetHistory([], HistorySamples);
+            Motherboard.SensorId = null;
+            return;
+        }
+
+        var headline = temps.FirstOrDefault(s => NameMatches(s, ChipsetWords))
+                       ?? temps.FirstOrDefault(s => NameMatches(s, BoardWords))
+                       ?? temps.FirstOrDefault()
+                       ?? volts[0];
+        Motherboard.Headline = headline.Type == SensorType.Temperature
+            ? SensorFormat.Degrees(headline.Value!.Value)
+            : SensorFormat.Format(headline.Type, headline.Value);
+        Motherboard.HeadlineCaption = BoardLabel(headline);
+        Motherboard.SetHistory(History(headline), HistorySamples);
+        Motherboard.SensorId = headline.Id;
+
+        var readings = temps.Concat(volts).ToList();
+        Sync(Motherboard.Rows, readings.Count, () => new BoardRowViewModel());
+        for (var i = 0; i < readings.Count; i++)
+        {
+            var sensor = readings[i];
+            var row = Motherboard.Rows[i];
+            row.SensorId = sensor.Id;
+            row.Name = BoardLabel(sensor);
+            row.ValueText = SensorFormat.Format(sensor.Type, sensor.Value);
+            row.ValueBrush = sensor.Type == SensorType.Temperature ? Palette.Temperature(sensor.Value!.Value) : null;
+        }
+    }
+
+    /// <summary>The sensor chip's "CPU" input is the socket, not the CPU's own sensor.</summary>
+    private string BoardLabel(SensorReading sensor) =>
+        _catalog.DisplayName(sensor) is var name && name == "CPU" ? "CPU socket" : name;
+
     private void UpdateNetwork(HardwareSnapshot snapshot)
     {
         // Follow the adapter that has moved the most data; it's almost always the one in use.
@@ -801,6 +904,7 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
     // ---- Color code ----------------------------------------------------------------------------
 
     private HashSet<string> _coolingIds = [];
+    private HashSet<string> _boardIds = [];
 
     /// <summary>
     /// The accent of the card a sensor appears in, so its details chart (and a pinned tile) use the same
@@ -813,7 +917,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
             if (card.SensorId == sensorId) return card.Accent;
         }
         if (_coolingIds.Contains(sensorId) || sensorId == PumpSensorId) return Palette.Network;
-        if (Cores.Any(c => c.SensorId == sensorId)) return Palette.Cpu;
+        if (Cores.Any(c => c.SensorId == sensorId) || CpuLoad.SensorId == sensorId) return Palette.Cpu;
+        if (_boardIds.Contains(sensorId)) return Palette.Board;
         if (Fans.Any(f => f.SensorId == sensorId)) return Palette.Fans;
         if (Drives.Any(d => d.SensorId == sensorId)) return Palette.Storage;
         if (Network.SensorId == sensorId) return Palette.Network;
@@ -989,6 +1094,8 @@ public partial class DashboardViewModel : ObservableObject, IPinBoard
         TileKind.Drives => DrivesCard,
         TileKind.Network => Network,
         TileKind.Processes => ProcessesCard,
+        TileKind.CpuLoad => CpuLoad,
+        TileKind.Motherboard => Motherboard,
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
     };
 
